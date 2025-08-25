@@ -27,5 +27,7 @@ To enable LoRA, we generate:
 
 Multiple LoRA-adapted PTE files can share the same foundation weights and adding a model adapted to a new task incurs minimal binary size and runtime memory overhead.
 
+Please take a look at [program-data-separation/cpp/lora_example](lora_example/) for a demo of the program-data separation APIs with LoRA. This example generates and runs a LoRA and a non-LoRA model that share foundation weights. At runtime, we see that memory usage does not double.
+
 ### Requirements
 LoRA is currently supported on executorch main. [Please install ExecuTorch pip package from source](https://docs.pytorch.org/executorch/stable/using-executorch-building-from-source.html#install-executorch-pip-package-from-source), until executorch==1.0 is released.

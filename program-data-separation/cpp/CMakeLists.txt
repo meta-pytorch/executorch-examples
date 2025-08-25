@@ -14,29 +14,56 @@ option(EXECUTORCH_BUILD_EXTENSION_TENSOR "" ON)
 option(EXECUTORCH_BUILD_KERNELS_OPTIMIZED "" ON)
 option(EXECUTORCH_BUILD_XNNPACK "" ON)
 
-# Add ExecuTorch subdirectory
+# Dependencies required for llm runner in lora demo.
+if(EXECUTORCH_BUILD_LORA_DEMO)
+option(EXECUTORCH_BUILD_EXTENSION_LLM "" ON)
+option(EXECUTORCH_BUILD_EXTENSION_LLM_RUNNER "" ON)
+option(EXECUTORCH_BUILD_KERNELS_LLM "" ON)
+option(EXECUTORCH_BUILD_KERNELS_LLM_AOT "" ON)
+endif()
+
+# Add ExecuTorch subdirectory, after setting options.
 add_subdirectory("executorch")
 
-set(DEMO_SOURCES linear_example/main.cpp)
+set(LINK_LIBS executorch
+              executorch::extensions
+              xnnpack_backend
+              # NOTE: xnnpack_backend has to go before
+              # kernels otherwise it doesn't get registered.
+              executorch::kernels
+              gflags
+)
+
+# Add sources and dependencies.
+set(DEMO_SOURCES "")
+if(EXECUTORCH_BUILD_LINEAR_DEMO)
+  list(APPEND DEMO_SOURCES "linear_example/main.cpp")
+endif()
+if(EXECUTORCH_BUILD_LORA_DEMO)
+  list(APPEND DEMO_SOURCES "lora_example/main.cpp")
+endif()
 
 # Create executable
 add_executable(executorch_program_data_separation ${DEMO_SOURCES})
 
-# Include directories
-target_include_directories(executorch_program_data_separation PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
-
 # Link libraries
 target_link_libraries(
   executorch_program_data_separation
-  PRIVATE executorch
-          extension_module_static
-          extension_flat_tensor
-          extension_tensor
-          xnnpack_backend
-          portable_ops_lib
-          portable_kernels
-          gflags
+  PRIVATE ${LINK_LIBS}
 )
+
+# Include directories for lora demo.
+if(EXECUTORCH_BUILD_LORA_DEMO)
+  # Include directories
+  target_include_directories(executorch_program_data_separation PRIVATE
+      ${CMAKE_CURRENT_SOURCE_DIR}
+      ${CMAKE_CURRENT_SOURCE_DIR}/executorch/extension/llm/tokenizers/include
+  )
+  target_link_libraries(
+    executorch_program_data_separation
+    PUBLIC tokenizers::tokenizers
+  )
+endif()
 
 # Set output directory
 set_target_properties(executorch_program_data_separation
