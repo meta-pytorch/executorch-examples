@@ -148,7 +148,7 @@ class MainActivity : ComponentActivity(),  WhisperCallback {
         val byteArray = arrayOf(byteBuffer.array())
 
         val whisperModule = WhisperModule("/data/local/tmp/whisper/whisper_qnn_16a8w.pte",
-            "/data/local/tmp/rohansjoshi/executorch/whisper/tokenizer.json")
+            "/data/local/tmp/whisper/tokenizer.json")
 
         Log.v(TAG, "Starting transcribe")
         whisperModule.transcribe(128, byteArray, this@MainActivity) // this runs runner.transcribe()
