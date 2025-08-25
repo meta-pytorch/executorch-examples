@@ -18,3 +18,8 @@ Move these two .pte files along with `tokenizer.json` to `/data/local/tmp/whispe
 ### Run app
 
 Open WhisperApp in Android studio. Copy the Android library `executorch.aar` which should have audio JNI bindings and the Qualcomm HTP libraries, into `app/libs`.
+
+
+
+https://github.com/user-attachments/assets/ff8c71c5-b734-4ed4-8382-70a429830665
+
