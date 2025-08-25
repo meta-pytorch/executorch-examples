@@ -61,7 +61,7 @@ Alternatively, clone ExecuTorch and set up the environment as explained in the [
 ### 5. Clone the Demo App
 
 ```bash
-git clone https://github.com/pytorch-labs/executorch-examples.git && cd executorch-examples
+git clone https://github.com/meta-pytorch/executorch-examples.git && cd executorch-examples
 ```
 
 ## Models and Labels
@@ -130,4 +130,4 @@ you can explore and enjoy the power of ExecuTorch on your iOS device!
 
 Learn more about integrating and running [ExecuTorch on Apple](https://pytorch.org/executorch/main/using-executorch-ios.html) platforms.
 
-For specific examples, take a look at this [GitHub repository](https://github.com/pytorch-labs/executorch-examples/mv3/apple/ExecuTorchDemo/).
+For specific examples, take a look at this [GitHub repository](https://github.com/meta-pytorch/executorch-examples/mv3/apple/ExecuTorchDemo/).
