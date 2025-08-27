@@ -1,6 +1,9 @@
 # System files
 .DS_Store
 
+# Python environment
+.venv/
+
 # Build and tool-generated files
 build/
 
