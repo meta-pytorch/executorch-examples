@@ -1,0 +1,36 @@
+<!--
+  Copyright (c) Meta Platforms, Inc. and affiliates.
+  All rights reserved.
+  This source code is licensed under the BSD-style license found in the
+  LICENSE file in the root directory of this source tree.
+-->
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8" />
+    <title>Executorch Wasm Demo</title>
+</head>
+<body>
+    <button type="button" id="upload_model_button">Upload pte file</button>
+    <button disabled type="button" id="upload_tokenizer_button">Upload tokenizer file</button>
+    <button disabled type="button" id="etdump_button">Download etdump</button>
+    <p id="model_text">No model uploaded</p>
+    <p id="tokenizer_text">No tokenizer uploaded</p>
+    <p id="tokenizer_warning_text" style="color: red;"></p>
+    <textarea id="prompt" name="prompt" placeholder="Prompt" rows="20" cols="100">Once upon a time</textarea>
+    <p id="warning_text" style="color: red;"></p>
+    <div style="float:left; margin-right:20px;">
+      <input type="range" min="0" max="20" value="0" class="slider" id="temperature_slider">
+      <p id="temperature_text">Temperature: 0</p>
+    </div>
+    <div style="float:left; margin-right:20px;">
+      <input disabled type="range" min="1" max="2" value="1" style="width: 500px;" class="slider" id="token_count_slider">
+      <p id="token_count_text">Tokens to generate: 1</p>
+    </div>
+    <button disabled type="button" id="inference_button">Generate tokens</button>
+    <script src="tokenizers.js"></script>
+    <script src="demo.js"></script>
+    <script src="executorch_wasm_demo_lib.js"></script>
+</body>
+</html>
