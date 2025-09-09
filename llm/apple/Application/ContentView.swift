@@ -63,7 +63,7 @@ struct ContentView: View {
   @State private var shouldStopShowingToken = false
   @State private var thinkingMode = false
   @State private var showThinkingModeNotification = false
-  private let runnerQueue = DispatchQueue(label: "org.pytorch.executorch.llama")
+  private let runnerQueue = DispatchQueue(label: "org.pytorch.executorch.etllm")
   @StateObject private var runnerHolder = RunnerHolder()
   @StateObject private var resourceManager = ResourceManager()
   @StateObject private var resourceMonitor = ResourceMonitor()
