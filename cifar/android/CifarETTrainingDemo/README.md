@@ -44,7 +44,7 @@ $ ./install_executorch.sh
 $ ./scripts/build_android_library.sh
 
 # Fetch the examples
-$ git clone git@github.com:pytorch-labs/executorch-examples.git
+$ git clone git@github.com:meta-pytorch/executorch-examples.git
 
 # Copy the ExecuTorch AAR into the libs directory
 $ mkdir -p executorch-examples/cifar/android/CifarETTrainingDemo/app/libs
