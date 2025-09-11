@@ -20,14 +20,14 @@ import androidx.core.content.ContextCompat
 import org.pytorch.executorch.EValue
 import org.pytorch.executorch.Module
 import org.pytorch.executorch.Tensor
-import org.pytorch.executorch.extension.audio.WhisperCallback
-import org.pytorch.executorch.extension.audio.WhisperModule
+import org.pytorch.executorch.extension.audio.ASRCallback
+import org.pytorch.executorch.extension.audio.ASRModule
 import java.io.*
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 
-class MainActivity : ComponentActivity(),  WhisperCallback {
+class MainActivity : ComponentActivity(),  ASRCallback {
 
     companion object {
         private const val TAG = "MainActivity"
@@ -147,7 +147,7 @@ class MainActivity : ComponentActivity(),  WhisperCallback {
         result.forEach { byteBuffer.putFloat(it) }
         val byteArray = arrayOf(byteBuffer.array())
 
-        val whisperModule = WhisperModule("/data/local/tmp/whisper/whisper_qnn_16a8w.pte",
+        val whisperModule = ASRModule("/data/local/tmp/whisper/whisper_qnn_16a8w.pte",
             "/data/local/tmp/whisper/tokenizer.json")
 
         Log.v(TAG, "Starting transcribe")
