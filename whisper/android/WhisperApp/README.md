@@ -11,7 +11,7 @@ Checkout [Whisper JNI Bindings](https://github.com/pytorch/executorch/pull/13525
 There are two steps, audio processing and the Whisper model (encoder+decoder), which are both done via ExecuTorch.
 
 1) Run the script `extension/audio/mel_spectrogram.py` to export `whisper_preprocess.pte`
-2) Run the scrint `examples/qualcomm/oss_scripts/whisper/whisper.py` to export `whisper_qnn_16a8w.pte`
+2) Run the script `examples/qualcomm/oss_scripts/whisper/whisper.py` to export `whisper_qnn_16a8w.pte`
 
 Move these two .pte files along with `tokenizer.json` to `/data/local/tmp/whisper` on device.
 
@@ -22,4 +22,3 @@ Open WhisperApp in Android studio. Copy the Android library `executorch.aar` whi
 
 
 https://github.com/user-attachments/assets/ff8c71c5-b734-4ed4-8382-70a429830665
-
