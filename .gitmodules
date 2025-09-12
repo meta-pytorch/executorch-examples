@@ -19,3 +19,7 @@
 [submodule "stories110M/wasm/executorch"]
 	path = stories110M/wasm/executorch
 	url = https://github.com/pytorch/executorch.git
+
+[submodule "llm/cpp/executorch"]
+	path = llm/cpp/executorch
+	url = https://github.com/pytorch/executorch.git
