@@ -250,7 +250,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         val batchSize = 4
-        val numEpochs = 5
+        val numEpochs = 10
         val width = 32
         val height = 32
         val channels = 3
@@ -405,15 +405,48 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            // Start fine-tuning
-            trainModel(
-                tModule!!, trnImgData!!, trnLblData!!, tstImgData!!, tstLblData!!, numEpochs, batchSize
-            )
+            // Start fine-tuning in a background thread to prevent ANR
+            Thread {
+                try {
+                    trainModel(
+                        tModule!!, trnImgData!!, trnLblData!!, tstImgData!!, tstLblData!!, numEpochs, batchSize
+                    )
+                } catch (e: Exception) {
+                    Log.e(debugTag, "Error during training: ${e.message}", e)
+                    runOnUiThread {
+                        val statusText = findViewById<TextView>(R.id.statusText)
+                        statusText.text = "Training failed: ${e.message}"
+                    }
+                }
+            }.start()
         }
 
         evaluateButton.setOnClickListener {
-            // Evaluate the model
-            evaluateModel(tModule!!, tstImgData!!, tstLblData!!, batchSize)
+            Log.d("Button", "Evaluate button clicked")
+
+            // Show progress immediately on the UI thread
+            runOnUiThread {
+                try {
+                    val statusText = findViewById<TextView>(R.id.statusText)
+                    statusText.text = "Starting evaluation..."
+                } catch (e: Exception) {
+                    Log.e("StatusText", "Error in evaluate button click: ${e.message}")
+                    e.printStackTrace()
+                }
+            }
+
+            // Evaluate the model in a background thread to prevent ANR
+            Thread {
+                try {
+                    evaluateModel(tModule!!, tstImgData!!, tstLblData!!, batchSize)
+                } catch (e: Exception) {
+                    Log.e(debugTag, "Error during evaluation: ${e.message}", e)
+                    runOnUiThread {
+                        val statusText = findViewById<TextView>(R.id.statusText)
+                        statusText.text = "Evaluation failed: ${e.message}"
+                    }
+                }
+            }.start()
         }
     }
 
