@@ -9,7 +9,7 @@ Verified on MacOS, Linux CentOS (model export), Python 3.10, Android NDK 26.3.11
 Phone verified: MediaTek Dimensity 9300 (D9300) chip.
 
 ## Prerequisites
-* Download and link the Buck2 build, Android NDK, and MediaTek ExecuTorch Libraries from the MediaTek Backend Readme ([link](https://github.com/pytorch/executorch/tree/main/backends/mediatek/scripts#prerequisites)).
+* Download and link the Android NDK, and MediaTek ExecuTorch Libraries from the MediaTek Backend Readme ([link](https://github.com/pytorch/executorch/tree/main/backends/mediatek/scripts#prerequisites)).
 * MediaTek Dimensity 9300 (D9300) chip device
 * Desired Llama 3 model weights. You can download them on HuggingFace [Example](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct)).
 * Download NeuroPilot Express SDK from the [MediaTek NeuroPilot Portal](https://neuropilot.mediatek.com/resources/public/npexpress/en/docs/npexpress):
@@ -45,12 +45,6 @@ Install dependencies
 ```
 
 ## Setup Environment Variables
-### Download Buck2 and make executable
-* Download Buck2 from the official [Release Page](https://github.com/facebook/buck2/releases/tag/2024-02-01)
-* Create buck2 executable
-```
-zstd -cdq "<downloaded_buck2_file>.zst" > "<path_to_store_buck2>/buck2" && chmod +x "<path_to_store_buck2>/buck2"
-```
 
 ### Set Environment Variables
 ```
@@ -126,6 +120,9 @@ The Mediatek runner (`examples/mediatek/executor_runner/mtk_llama_runner.cpp`) c
 
 ## Build AAR Library
 1. Open a terminal window and navigate to the root directory of the executorch
+```sh
+cd $EXECUTORCH_ROOT
+```
 2. Set the following environment variables:
 ```sh
 export ANDROID_NDK=<path_to_android_ndk>
@@ -145,10 +142,11 @@ export BUILD_AAR_DIR=aar-out
 sh scripts/build_android_library.sh
 ```
 
-5. Copy the AAR to the app:
+5. Now go to demo app root (containing main README.md) and copy the AAR to the app:
 ```sh
-mkdir -p examples/demo-apps/android/LlamaDemo/app/libs
-cp aar-out/executorch.aar examples/demo-apps/android/LlamaDemo/app/libs/executorch.aar
+cd $DEMO_APP
+mkdir -p app/libs
+cp $EXECUTORCH_ROOT/aar-out/executorch.aar app/libs/executorch.aar
 ```
 
 If you were to unzip the .aar file or open it in Android Studio, verify it contains the following related to MediaTek backend:
@@ -159,16 +157,15 @@ If you were to unzip the .aar file or open it in Android Studio, verify it conta
 ## Run Demo
 
 ### Alternative 1: Android Studio (Recommended)
-1. Open Android Studio and select “Open an existing Android Studio project” to open examples/demo-apps/android/LlamaDemo.
+1. Open Android Studio and select “Open an existing Android Studio project” to open LlamaDemo.
 2. Run the app (^R). This builds and launches the app on the phone.
 
 ### Alternative 2: Command line
 Without Android Studio UI, we can run gradle directly to build the app. We need to set up the Android SDK path and invoke gradle.
 ```
 export ANDROID_HOME=<path_to_android_sdk_home>
-pushd examples/demo-apps/android/LlamaDemo
+cd LlamaDemo
 ./gradlew :app:installDebug
-popd
 ```
 If the app successfully run on your device, you should see something like below:
 
