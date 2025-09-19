@@ -1,1 +1,0 @@
-Example Android app that uses LLM Java/Kotlin APIs in extension/llm. Priority P0
