@@ -26,7 +26,15 @@ As a whole, the models that this app supports are (varies by delegate):
 
 
 ## Building the APK
-First it’s important to note that currently ExecuTorch provides support across 3 delegates. Once you identify the delegate of your choice, select the README link to get a complete end-to-end instructions for environment set-up to exporting the models to build ExecuTorch libraries and apps to run on device:
+First it’s important to note that by default, the app depends on [ExecuTorch library](https://central.sonatype.com/artifact/org.pytorch/executorch-android) on Maven Central. It uses the latest `org.pytorch:executorch-android` package, which comes with all the default kernel libraries (portable, quantized, optimized), LLM customized libraries, and XNNPACK backend.
+
+No modification is needed if you want to use the default ExecuTorch library.
+
+However, you can build your own ExecuTorch Android library (an AAR file). In app/build.gradle.kts file, replace `org.pytorch:executorch-android:x.y.z` with `files("path-to-aar")`.
+
+[This page](https://github.com/pytorch/executorch/blob/main/extension/android/README.md) contains the documentation for building the ExecuTorch Android library.
+
+Currently ExecuTorch provides support across 3 delegates. Once you identify the delegate of your choice, select the README link to get a complete end-to-end instructions for environment set-up to exporting the models to build ExecuTorch libraries and apps to run on device:
 
 | Delegate      | Resource |
 | ------------- | ------------- |
@@ -40,7 +48,7 @@ First it’s important to note that currently ExecuTorch provides support across
 This section will provide the main steps to use the app, along with a code snippet of the ExecuTorch API.
 
 For loading the app, development, and running on device we recommend Android Studio:
-1. Open Android Studio and select "Open an existing Android Studio project" to open examples/demo-apps/android/LlamaDemo.
+1. Open Android Studio and select "Open an existing Android Studio project" to open the directory containing this README.md file.
 2. Run the app (^R). This builds and launches the app on the phone.
 
 ### Opening the App
@@ -143,14 +151,14 @@ You can run the instrumentation test for sanity check. The test loads a model pt
 under `/data/local/tmp/llama`.
 
 ### Model preparation
-Go to ExecuTorch root,
+You need to install [executorch python package](https://docs.pytorch.org/executorch/stable/getting-started.html#installation) first.
 ```sh
 curl -C - -Ls "https://huggingface.co/karpathy/tinyllamas/resolve/main/stories110M.pt" --output stories110M.pt
 curl -C - -Ls "https://raw.githubusercontent.com/karpathy/llama2.c/master/tokenizer.model" --output tokenizer.model
 # Create params.json file
 touch params.json
 echo '{"dim": 768, "multiple_of": 32, "n_heads": 12, "n_layers": 12, "norm_eps": 1e-05, "vocab_size": 32000}' > params.json
-python -m extension.llm.export.export_llm base.checkpoint=stories110M.pt base.params=params.json model.dtype_override="fp16" export.output_name=stories110m_h.pte model.use_kv_cache=True
+python -m executorch.extension.llm.export.export_llm base.checkpoint=stories110M.pt base.params=params.json model.dtype_override="fp16" export.output_name=stories110m_h.pte model.use_kv_cache=True
 python -m pytorch_tokenizers.tools.llama2c.convert -t tokenizer.model -o tokenizer.bin
 ```
 ### Push model
@@ -161,7 +169,6 @@ adb push tokenizer.bin /data/local/tmp/llama
 ```
 
 ### Run test
-Go to `examples/demo-apps/android/LlamaDemo`,
 ```sh
 ./gradlew connectedAndroidTest
 ```

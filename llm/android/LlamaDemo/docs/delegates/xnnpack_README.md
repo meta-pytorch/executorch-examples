@@ -131,6 +131,9 @@ adb push tokenizer.bin /data/local/tmp/llama
 
 ## Build AAR Library
 1. Open a terminal window and navigate to the root directory of the executorch
+```sh
+cd $EXECUTORCH_ROOT
+```
 2. Set the following environment variables:
 ```sh
 export ANDROID_NDK=<path_to_android_ndk>
@@ -149,35 +152,26 @@ export BUILD_AAR_DIR=aar-out
 sh scripts/build_android_library.sh
 ```
 
-5. Copy the AAR to the app:
+5. Now go to demo app root (containing main README.md) and copy the AAR to the app:
 ```sh
-mkdir -p examples/demo-apps/android/LlamaDemo/app/libs
-cp aar-out/executorch.aar examples/demo-apps/android/LlamaDemo/app/libs/executorch.aar
-```
-
-Alternative you can also just run the shell script directly as in the root directory:
-```sh
-sh examples/demo-apps/android/LlamaDemo/setup.sh
+cd $DEMO_APP
+mkdir -p app/libs
+cp $EXECUTORCH_ROOT/aar-out/executorch.aar app/libs/executorch.aar
 ```
 
 This is running the shell script which configures the required core ExecuTorch, Llama2/3, and Android libraries, builds them into AAR, and copies it to the app.
 
-**Output**: The executorch.aar file will be generated in a newly created folder in the example/demo-apps/android/LlamaDemo/app/libs directory. This is the path that the Android app expects it to be in.
-
-**Note**: If you are building the Android app mentioned in the next section on a separate machine (i.e. MacOS but building and exporting on Linux), make sure you copy the aar file generated from setup script to “examples/demo-apps/android/LlamaDemo/app/libs” before building the Android app.
+**Output**: The executorch.aar file will be generated in a newly created folder in app/libs directory. This is the path that the Android app expects it to be in.
 
 ### Alternative: Use prebuilt AAR library
-1. Open a terminal window and navigate to the root directory of the executorch.
-2. Run the following command to download the prebuilt library
+Simply add ExecuTorch to your gradle dependency:
 ```
-bash examples/demo-apps/android/LlamaDemo/download_prebuilt_lib.sh
+implementation("org.pytorch:executorch-android:1.0.0-rc1")
 ```
-The prebuilt AAR library contains the Java library and the JNI binding for Module.java and ExecuTorch native library, including core ExecuTorch runtime libraries, XNNPACK backend, Portable kernels, Optimized kernels, and Quantized kernels. It comes with two ABI variants, arm64-v8a and x86_64.
-If you need to use other dependencies (like tokenizer), please build from the local machine option.
 
 ## Run the Android Demo App
 ### Alternative 1: Android Studio (Recommended)
-1. Open Android Studio and select “Open an existing Android Studio project” to open examples/demo-apps/android/LlamaDemo.
+1. Open Android Studio and select “Open an existing Android Studio project” to open LlamaDemo.
 2. Run the app (^R). This builds and launches the app on the phone.
 
 ### Alternative 2: Command line
@@ -185,9 +179,8 @@ Without Android Studio UI, we can run gradle directly to build the app. We need 
 ```
 export ANDROID_SDK=<path_to_android_sdk_home>
 export ANDROID_HOME=<path_to_android_sdk_home>
-pushd examples/demo-apps/android/LlamaDemo
+cd LlamaDemo
 ./gradlew :app:installDebug
-popd
 ```
 If the app successfully run on your device, you should see something like below:
 

@@ -179,7 +179,10 @@ adb push tokenizer.bin /data/local/tmp/llama
 
 ## Build AAR Library
 1. Open a terminal window and navigate to the root directory of the executorch
-Set the following environment variables:
+```sh
+cd $EXECUTORCH_ROOT
+```
+2. Set the following environment variables:
 ```sh
 export ANDROID_NDK=<path_to_android_ndk>
 export ANDROID_ABIS=arm64-v8a
@@ -199,39 +202,33 @@ export BUILD_AAR_DIR=aar-out
 sh scripts/build_android_library.sh
 ```
 
-5. Copy the AAR to the app:
+5. Now go to demo app root (containing main README.md) and copy the AAR to the app:
 ```sh
-mkdir -p examples/demo-apps/android/LlamaDemo/app/libs
-cp aar-out/executorch.aar examples/demo-apps/android/LlamaDemo/app/libs/executorch.aar
+cd $DEMO_APP
+mkdir -p app/libs
+cp $EXECUTORCH_ROOT/aar-out/executorch.aar app/libs/executorch.aar
 ```
 
-Alternative you can also just run the shell script directly as in the root directory:
-```sh
-sh examples/demo-apps/android/LlamaDemo/setup-with-qnn.sh
-```
 This is running the shell script which configures the required core ExecuTorch, Llama2/3, and Android libraries, builds them into AAR, and copies it to the app.
-Note: If you are building the Android app mentioned in the next section on a separate machine (i.e. MacOS but building and exporting for QNN backend on Linux), make sure you copy the aar file generated from setup-with-qnn script to "examples/demo-apps/android/LlamaDemo/app/libs" before building the Android app.
 
-6. Set up the correct QNN version in gradle rule
-Currently, the gralde rule searches for the property `qnnVersion`. When this variable is defined, it will add QNN runtime library to the dependency. To use it, append the string `qnnVersion=<version>` (ex. `qnnVersion=2.37.0`) to the end of the `gradle.properties` file.
-
+6. Add QNN runtime dependency to gradle
+```
+implementation("com.qualcomm.qti:qnn-runtime:2.33.0")
+```
 ## Run the Android Demo App
 
 First, make sure your Android phone's chipset version is compatible with this demo (SM8650, SM8550). You can find the Qualcomm chipset version here in the [mapping](https://docs.qualcomm.com/bundle/publicresource/topics/80-63442-50/overview.html).
 
-If you build and run the setup-with-qnn script on a separate machine rather than where you are building the Android app, make sure you copy the aar file it generated into "examples/demo-apps/android/LlamaDemo/app/libs"
-
 ### Alternative 1: Android Studio (Recommended)
-Open Android Studio and select "Open an existing Android Studio project" to open examples/demo-apps/android/LlamaDemo.
+Open Android Studio and select "Open an existing Android Studio project" to open LlamaDemo.
 Run the app (^R). This builds and launches the app on the phone.
 
 ### Alternative 2: Command line
 Without Android Studio UI, we can run gradle directly to build the app. We need to set up the Android SDK path and invoke gradle.
 ```
 export ANDROID_HOME=<path_to_android_sdk_home>
-pushd examples/demo-apps/android/LlamaDemo
+cd LlamaDemo
 ./gradlew :app:installDebug
-popd
 ```
 If the app successfully run on your device, you should see something like below:
 
