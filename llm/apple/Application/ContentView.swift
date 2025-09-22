@@ -446,12 +446,13 @@ struct ContentView: View {
         var tokens: [String] = []
 
         if let img = selectedImage {
-          let llava_prompt = "\(text) ASSISTANT"
+          let llava_prompt = String(format: Constants.llavaTextPromptTemplate, text)
           let MAX_WIDTH = 336.0
           let newHeight = MAX_WIDTH * img.size.height / img.size.width
           let resizedImage = img.resized(to: CGSize(width: MAX_WIDTH, height: newHeight))
 
           try runnerHolder.multimodalRunner?.generate([
+            MultimodalInput(Constants.llavaPreamble),
             MultimodalInput(Image(data: Data(resizedImage.toRGBArray() ?? []), width: Int(MAX_WIDTH), height: Int(newHeight.rounded()), channels: 3)),
             MultimodalInput(llava_prompt),
           ], sequenceLength: seq_len) { token in
@@ -490,7 +491,7 @@ struct ContentView: View {
           case .llama:
             prompt = String(format: Constants.llama3PromptTemplate, text)
           case .llava:
-            prompt = String(format: Constants.llama3PromptTemplate, text)
+            prompt = String(format: Constants.llavaTextPromptTemplate, text)
           case .phi4:
               prompt = String(format: Constants.phi4PromptTemplate, text)
           }
