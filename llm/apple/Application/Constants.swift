@@ -9,22 +9,9 @@
 import Foundation
 
 public enum Constants {
-    public static let qwen3PromptTemplate = """
-<|im_start|>system
-You are a helpful assistant.
-<|im_end|>
-<|im_start|>user
-%@<|im_end|>
-<|im_start|>assistant
-<think>
-
-</think>
-
-
-
-"""
-    
-    public static let llama3PromptTemplate = "<|begin_of_text|><|start_header_id|>user<|end_header_id|>%@<|eot_id|><|start_header_id|>assistant<|end_header_id|>"
-    
-public static let phi4PromptTemplate = "<|user|>%@<|end|><|assistant|>"
+  public static let llama3PromptTemplate = "<|begin_of_text|><|start_header_id|>user<|end_header_id|>%@<|eot_id|><|start_header_id|>assistant<|end_header_id|>"
+  public static let llavaPreamble = "A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions. USER: "
+  public static let llavaTextPromptTemplate = "%@ ASSISTANT: "
+  public static let phi4PromptTemplate = "<|user|>%@<|end|><|assistant|>"
+  public static let qwen3PromptTemplate = "<|im_start|>system\nYou are a helpful assistant.\n<|im_end|>\n<|im_start|>user\n%@<|im_end|>\n<|im_start|>assistant\n<think>\n\n</think>\n\n\n"
 }
