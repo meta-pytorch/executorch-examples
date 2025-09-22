@@ -58,8 +58,8 @@ public class MobileNetClassifier: ImageClassification {
   public func classify(image: UIImage) throws -> [Classification] {
     try normalize(transformed(image))
     let input = Tensor<Float>(&normalizedBuffer, shape: [1, 3, 224, 224])
-    let output: Tensor<Float> = try module.forward(input)[0].tensor()!
-    return softmax(try output.scalars())
+    let output = try Tensor<Float>(module.forward(input))
+    return softmax(output.scalars())
       .enumerated()
       .sorted(by: { $0.element > $1.element })
       .compactMap { index, probability in
