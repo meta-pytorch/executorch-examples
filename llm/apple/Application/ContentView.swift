@@ -16,12 +16,25 @@ class RunnerHolder: ObservableObject {
 }
 
 extension UIImage {
-  func resized(to newSize: CGSize) -> UIImage {
+  func preprocess(to sideLength: CGFloat) -> UIImage {
+    let scale = max(sideLength / size.width, sideLength / size.height)
+    let scaledSize = CGSize(width: size.width * scale, height: size.height * scale)
     let format = UIGraphicsImageRendererFormat.default()
     format.scale = 1
-    return UIGraphicsImageRenderer(size: newSize, format: format).image {
-      _ in draw(in: CGRect(origin: .zero, size: newSize))
+    let scaledImage = UIGraphicsImageRenderer(size: scaledSize, format: format).image { _ in
+      draw(in: CGRect(origin: .zero, size: scaledSize))
     }
+    guard let scaledCGImage = scaledImage.cgImage else { return scaledImage }
+    let cropRect = CGRect(
+      x: max(0, (scaledSize.width - sideLength) * 0.5).rounded(.down),
+      y: max(0, (scaledSize.height - sideLength) * 0.5).rounded(.down),
+      width: sideLength.rounded(.down),
+      height: sideLength.rounded(.down)
+    )
+    if let croppedCGImage = scaledCGImage.cropping(to: cropRect) {
+      return UIImage(cgImage: croppedCGImage)
+    }
+    return scaledImage
   }
 
   func toRGBArray() -> [UInt8]? {
@@ -445,15 +458,19 @@ struct ContentView: View {
       do {
         var tokens: [String] = []
 
-        if let img = selectedImage {
+        if let image = selectedImage {
           let llava_prompt = String(format: Constants.llavaTextPromptTemplate, text)
-          let MAX_WIDTH = 336.0
-          let newHeight = MAX_WIDTH * img.size.height / img.size.width
-          let resizedImage = img.resized(to: CGSize(width: MAX_WIDTH, height: newHeight))
+          let sideLength: CGFloat = 336
+          let preprocessedImage = image.preprocess(to: sideLength)
 
           try runnerHolder.multimodalRunner?.generate([
             MultimodalInput(Constants.llavaPreamble),
-            MultimodalInput(Image(data: Data(resizedImage.toRGBArray() ?? []), width: Int(MAX_WIDTH), height: Int(newHeight.rounded()), channels: 3)),
+            MultimodalInput(Image(
+                  data: Data(preprocessedImage.toRGBArray() ?? []),
+                  width: Int(sideLength),
+                  height: Int(sideLength),
+                  channels: 3)
+            ),
             MultimodalInput(llava_prompt),
           ], sequenceLength: seq_len) { token in
             if token != llava_prompt {
