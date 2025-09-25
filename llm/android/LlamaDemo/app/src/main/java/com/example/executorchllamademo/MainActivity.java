@@ -351,7 +351,9 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
   }
 
   private void setBackendMode(BackendType backendType) {
-    if (backendType.equals(BackendType.XNNPACK) || backendType.equals(BackendType.QUALCOMM)) {
+    if (backendType.equals(BackendType.XNNPACK)
+        || backendType.equals(BackendType.QUALCOMM)
+        || backendType.equals(BackendType.VULKAN)) {
       setXNNPACKMode();
     } else if (backendType.equals(BackendType.MEDIATEK)) {
       setMediaTekMode();
