@@ -337,7 +337,7 @@ struct ContentView: View {
     shouldStopGenerating = false
     shouldStopShowingToken = false
     let text = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
-    let seq_len = 768 // text: 256, vision: 768
+    let sequenceLength = 768 // text: 256, vision: 768
     let modelPath = resourceManager.modelPath
     let tokenizerPath = resourceManager.tokenizerPath
     let modelType = ModelType.fromPath(modelPath)
@@ -455,6 +455,10 @@ struct ContentView: View {
         }
         return
       }
+      defer {
+        runnerHolder.textRunner?.reset()
+        runnerHolder.multimodalRunner?.reset()
+      }
       do {
         var tokens: [String] = []
 
@@ -472,7 +476,9 @@ struct ContentView: View {
                   channels: 3)
             ),
             MultimodalInput(llava_prompt),
-          ], sequenceLength: seq_len) { token in
+          ], Config {
+            $0.sequenceLength = sequenceLength
+          }) { token in
             if token != llava_prompt {
               if token == "</s>" {
                 shouldStopGenerating = true
@@ -510,11 +516,12 @@ struct ContentView: View {
           case .llava:
             prompt = String(format: Constants.llavaTextPromptTemplate, text)
           case .phi4:
-              prompt = String(format: Constants.phi4PromptTemplate, text)
+            prompt = String(format: Constants.phi4PromptTemplate, text)
           }
 
-          try runnerHolder.textRunner?.generate(prompt, sequenceLength: seq_len) { token in
-
+          try runnerHolder.textRunner?.generate(prompt, Config {
+            $0.sequenceLength = sequenceLength
+          }) { token in
             if token != prompt {
                 if token == "<|eot_id|>" {
                 // hack to fix the issue that extension/llm/runner/text_token_generator.h
