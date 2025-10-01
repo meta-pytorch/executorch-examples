@@ -669,49 +669,8 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
     mMessageAdapter.notifyDataSetChanged();
   }
 
-  private String getConversationHistory() {
-    String conversationHistory = "";
-
-    ArrayList<Message> conversations =
-        mMessageAdapter.getRecentSavedTextMessages(CONVERSATION_HISTORY_MESSAGE_LOOKBACK);
-    if (conversations.isEmpty()) {
-      return conversationHistory;
-    }
-
-    int prevPromptID = conversations.get(0).getPromptID();
-    String conversationFormat =
-        PromptFormat.getConversationFormat(mCurrentSettingsFields.getModelType());
-    String format = conversationFormat;
-    for (int i = 0; i < conversations.size(); i++) {
-      Message conversation = conversations.get(i);
-      int currentPromptID = conversation.getPromptID();
-      if (currentPromptID != prevPromptID) {
-        conversationHistory = conversationHistory + format;
-        format = conversationFormat;
-        prevPromptID = currentPromptID;
-      }
-      if (conversation.getIsSent()) {
-        format =
-            format
-                .replace(PromptFormat.USER_PLACEHOLDER, conversation.getText())
-                .replace(PromptFormat.THINKING_MODE_PLACEHOLDER, "");
-      } else {
-        format = format.replace(PromptFormat.ASSISTANT_PLACEHOLDER, conversation.getText());
-      }
-    }
-    conversationHistory = conversationHistory + format;
-
-    return conversationHistory;
-  }
-
-  private String getTotalFormattedPrompt(String conversationHistory, String rawPrompt) {
-    if (conversationHistory.isEmpty()) {
+  private String getTotalFormattedPrompt(String rawPrompt) {
       return mCurrentSettingsFields.getFormattedSystemAndUserPrompt(rawPrompt, mThinkMode);
-    }
-
-    return mCurrentSettingsFields.getFormattedSystemPrompt()
-        + conversationHistory
-        + mCurrentSettingsFields.getFormattedUserPrompt(rawPrompt, mThinkMode);
   }
 
   private void onModelRunStarted() {
@@ -743,7 +702,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
             finalPrompt =
                 mCurrentSettingsFields.getFormattedSystemAndUserPrompt(rawPrompt, mThinkMode);
           } else {
-            finalPrompt = getTotalFormattedPrompt(getConversationHistory(), rawPrompt);
+            finalPrompt = getTotalFormattedPrompt(rawPrompt);
           }
           // We store raw prompt into message adapter, because we don't want to show the extra
           // tokens from system prompt
