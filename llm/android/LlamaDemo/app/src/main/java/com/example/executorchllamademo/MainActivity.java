@@ -669,10 +669,6 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
     mMessageAdapter.notifyDataSetChanged();
   }
 
-  private String getTotalFormattedPrompt(String rawPrompt) {
-      return mCurrentSettingsFields.getFormattedSystemAndUserPrompt(rawPrompt, mThinkMode);
-  }
-
   private void onModelRunStarted() {
     mSendButton.setClickable(false);
     mSendButton.setImageResource(R.drawable.baseline_stop_24);
@@ -694,16 +690,9 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
             ETLogging.getInstance().log("Keyboard dismissal error: " + e.getMessage());
           }
           addSelectedImagesToChatThread(mSelectedImageUri);
-          String finalPrompt;
           String rawPrompt = mEditTextMessage.getText().toString();
-          if (ModelUtils.getModelCategory(
-                  mCurrentSettingsFields.getModelType(), mCurrentSettingsFields.getBackendType())
-              == ModelUtils.VISION_MODEL) {
-            finalPrompt =
-                mCurrentSettingsFields.getFormattedSystemAndUserPrompt(rawPrompt, mThinkMode);
-          } else {
-            finalPrompt = getTotalFormattedPrompt(rawPrompt);
-          }
+          String finalPrompt =
+              mCurrentSettingsFields.getFormattedSystemAndUserPrompt(rawPrompt, mThinkMode);
           // We store raw prompt into message adapter, because we don't want to show the extra
           // tokens from system prompt
           mMessageAdapter.add(new Message(rawPrompt, true, MessageType.TEXT, promptID));
