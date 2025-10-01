@@ -9,10 +9,10 @@
 package com.example.executorchllamademo;
 
 public class ModelUtils {
-  // XNNPACK or QNN
+  // XNNPACK or QNN or Vulkan
   static final int TEXT_MODEL = 1;
 
-  // XNNPACK
+  // XNNPACK or Vulkan
   static final int VISION_MODEL = 2;
   static final int VISION_MODEL_IMAGE_CHANNELS = 3;
   static final int VISION_MODEL_SEQ_LEN = 768;
@@ -25,7 +25,7 @@ public class ModelUtils {
   static final int QNN_TEXT_MODEL = 4;
 
   public static int getModelCategory(ModelType modelType, BackendType backendType) {
-    if (backendType.equals(BackendType.XNNPACK)) {
+    if (backendType.equals(BackendType.XNNPACK) || backendType.equals(BackendType.VULKAN)) {
       switch (modelType) {
         case GEMMA_3:
         case LLAVA_1_5:
