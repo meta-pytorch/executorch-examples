@@ -424,8 +424,6 @@ public class SettingsActivity extends AppCompatActivity {
     requireViewById(R.id.tokenizerLayout).setVisibility(View.VISIBLE);
     requireViewById(R.id.parametersView).setVisibility(View.VISIBLE);
     requireViewById(R.id.temperatureLayout).setVisibility(View.VISIBLE);
-    mModelFilePath = "";
-    mTokenizerFilePath = "";
   }
 
   private void setMediaTekSettingMode() {
