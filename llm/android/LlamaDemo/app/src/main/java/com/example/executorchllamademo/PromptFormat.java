@@ -38,7 +38,7 @@ public class PromptFormat {
   public static String getUserPromptTemplate(ModelType modelType, boolean thinkingMode) {
     switch (modelType) {
       case GEMMA_3:
-        return "<start_of_turn>user\n" + USER_PLACEHOLDER + "<end_of_turn>\n";
+        return "<start_of_turn>user\n" + USER_PLACEHOLDER + "<end_of_turn>\n<start_of_turn>model";
       case LLAMA_3:
       case LLAMA_3_1:
       case LLAMA_3_2:
@@ -55,26 +55,6 @@ public class PromptFormat {
             + "<|im_start|>assistant\n"
             + THINKING_MODE_PLACEHOLDER;
       case LLAVA_1_5:
-      default:
-        return USER_PLACEHOLDER;
-    }
-  }
-
-  public static String getConversationFormat(ModelType modelType) {
-    switch (modelType) {
-      case GEMMA_3:
-        return getUserPromptTemplate(modelType, false) + ASSISTANT_PLACEHOLDER + "<end_of_turn>";
-      case LLAMA_3:
-      case LLAMA_3_1:
-      case LLAMA_3_2:
-        return getUserPromptTemplate(modelType, false)
-            + "\n"
-            + ASSISTANT_PLACEHOLDER
-            + "<|eot_id|>";
-      case LLAVA_1_5:
-        return USER_PLACEHOLDER + " ASSISTANT:";
-      case QWEN_3:
-        return getUserPromptTemplate(modelType, false) + "<|im_end|>\n";
       default:
         return USER_PLACEHOLDER;
     }
