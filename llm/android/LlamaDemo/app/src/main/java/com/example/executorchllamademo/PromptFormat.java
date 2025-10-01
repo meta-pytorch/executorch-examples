@@ -19,7 +19,7 @@ public class PromptFormat {
   public static String getSystemPromptTemplate(ModelType modelType) {
     switch (modelType) {
       case GEMMA_3:
-        return "";
+        return SYSTEM_PLACEHOLDER;
       case LLAMA_3:
       case LLAMA_3_1:
       case LLAMA_3_2:
