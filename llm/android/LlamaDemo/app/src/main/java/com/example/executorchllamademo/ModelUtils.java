@@ -27,6 +27,7 @@ public class ModelUtils {
   public static int getModelCategory(ModelType modelType, BackendType backendType) {
     if (backendType.equals(BackendType.XNNPACK)) {
       switch (modelType) {
+        case GEMMA_3:
         case LLAVA_1_5:
           return VISION_MODEL;
         case LLAMA_3:

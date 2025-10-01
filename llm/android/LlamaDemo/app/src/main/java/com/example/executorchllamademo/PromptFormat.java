@@ -18,6 +18,8 @@ public class PromptFormat {
 
   public static String getSystemPromptTemplate(ModelType modelType) {
     switch (modelType) {
+      case GEMMA_3:
+        return "";
       case LLAMA_3:
       case LLAMA_3_1:
       case LLAMA_3_2:
@@ -35,6 +37,8 @@ public class PromptFormat {
 
   public static String getUserPromptTemplate(ModelType modelType, boolean thinkingMode) {
     switch (modelType) {
+      case GEMMA_3:
+        return "<start_of_turn>user\n" + USER_PLACEHOLDER + "<end_of_turn>\n";
       case LLAMA_3:
       case LLAMA_3_1:
       case LLAMA_3_2:
@@ -58,6 +62,8 @@ public class PromptFormat {
 
   public static String getConversationFormat(ModelType modelType) {
     switch (modelType) {
+      case GEMMA_3:
+        return getUserPromptTemplate(modelType, false) + ASSISTANT_PLACEHOLDER + "<end_of_turn>";
       case LLAMA_3:
       case LLAMA_3_1:
       case LLAMA_3_2:
@@ -76,6 +82,8 @@ public class PromptFormat {
 
   public static String getStopToken(ModelType modelType) {
     switch (modelType) {
+      case GEMMA_3:
+        return "<end_of_turn>";
       case LLAMA_3:
       case LLAMA_3_1:
       case LLAMA_3_2:
