@@ -273,7 +273,7 @@ public class SettingsActivity extends AppCompatActivity {
                     public void onClick(DialogInterface dialog, int whichButton) {
                       // Clear the messageAdapter and sharedPreference
                       mUserPromptEditText.setText(
-                          PromptFormat.getUserPromptTemplate(mModelType, false));
+                          PromptFormat.getUserPromptTemplate(mModelType));
                     }
                   })
               .setNegativeButton(android.R.string.no, null)
@@ -296,7 +296,7 @@ public class SettingsActivity extends AppCompatActivity {
         .setPositiveButton(
             android.R.string.yes,
             (dialog, whichButton) -> {
-              mUserPromptEditText.setText(PromptFormat.getUserPromptTemplate(mModelType, false));
+              mUserPromptEditText.setText(PromptFormat.getUserPromptTemplate(mModelType));
             })
         .setNegativeButton(android.R.string.no, null)
         .show();
@@ -378,7 +378,7 @@ public class SettingsActivity extends AppCompatActivity {
         (dialog, item) -> {
           mModelTypeTextView.setText(modelTypes[item]);
           mModelType = ModelType.valueOf(modelTypes[item]);
-          mUserPromptEditText.setText(PromptFormat.getUserPromptTemplate(mModelType, false));
+          mUserPromptEditText.setText(PromptFormat.getUserPromptTemplate(mModelType));
           dialog.dismiss();
         });
 

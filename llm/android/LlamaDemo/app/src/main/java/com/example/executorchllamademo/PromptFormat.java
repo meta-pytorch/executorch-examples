@@ -35,7 +35,7 @@ public class PromptFormat {
     }
   }
 
-  public static String getUserPromptTemplate(ModelType modelType, boolean thinkingMode) {
+  public static String getUserPromptTemplate(ModelType modelType) {
     switch (modelType) {
       case GEMMA_3:
         return "<start_of_turn>user\n" + USER_PLACEHOLDER + "<end_of_turn>\n<start_of_turn>model";
@@ -109,7 +109,7 @@ public class PromptFormat {
   }
 
   public static String getFormattedLlamaGuardPrompt(String userPrompt) {
-    return getUserPromptTemplate(ModelType.LLAMA_GUARD_3, false)
+    return getUserPromptTemplate(ModelType.LLAMA_GUARD_3)
         .replace(
             USER_PLACEHOLDER, getLlamaGuardPresetPrompt().replace(USER_PLACEHOLDER, userPrompt));
   }

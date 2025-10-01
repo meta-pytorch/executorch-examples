@@ -81,7 +81,7 @@ public class SettingsFields {
     tokenizerFilePath = "";
     temperature = SettingsActivity.TEMPERATURE_MIN_VALUE;
     systemPrompt = "";
-    userPrompt = PromptFormat.getUserPromptTemplate(DEFAULT_MODEL, false);
+    userPrompt = PromptFormat.getUserPromptTemplate(DEFAULT_MODEL);
     isClearChatHistory = false;
     isLoadModel = false;
     modelType = DEFAULT_MODEL;
