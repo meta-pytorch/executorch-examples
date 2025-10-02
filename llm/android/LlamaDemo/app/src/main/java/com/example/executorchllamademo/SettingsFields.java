@@ -44,15 +44,15 @@ public class SettingsFields {
 
   public String getFormattedSystemPrompt() {
     return PromptFormat.getSystemPromptTemplate(modelType)
-            .replace(PromptFormat.SYSTEM_PLACEHOLDER, systemPrompt);
+        .replace(PromptFormat.SYSTEM_PLACEHOLDER, systemPrompt);
   }
 
   public String getFormattedUserPrompt(String prompt, boolean thinkingMode) {
     return userPrompt
-            .replace(PromptFormat.USER_PLACEHOLDER, prompt)
-            .replace(
-                    PromptFormat.THINKING_MODE_PLACEHOLDER,
-                    PromptFormat.getThinkingModeToken(modelType, thinkingMode));
+        .replace(PromptFormat.USER_PLACEHOLDER, prompt)
+        .replace(
+            PromptFormat.THINKING_MODE_PLACEHOLDER,
+            PromptFormat.getThinkingModeToken(modelType, thinkingMode));
   }
 
   public boolean getIsClearChatHistory() {
@@ -147,14 +147,14 @@ public class SettingsFields {
   public boolean equals(SettingsFields anotherSettingsFields) {
     if (this == anotherSettingsFields) return true;
     return modelFilePath.equals(anotherSettingsFields.modelFilePath)
-            && tokenizerFilePath.equals(anotherSettingsFields.tokenizerFilePath)
-            && java.util.Objects.equals(dataPath, anotherSettingsFields.dataPath)
-            && temperature == anotherSettingsFields.temperature
-            && systemPrompt.equals(anotherSettingsFields.systemPrompt)
-            && userPrompt.equals(anotherSettingsFields.userPrompt)
-            && isClearChatHistory == anotherSettingsFields.isClearChatHistory
-            && isLoadModel == anotherSettingsFields.isLoadModel
-            && modelType == anotherSettingsFields.modelType
-            && backendType == anotherSettingsFields.backendType;
+        && tokenizerFilePath.equals(anotherSettingsFields.tokenizerFilePath)
+        && java.util.Objects.equals(dataPath, anotherSettingsFields.dataPath)
+        && temperature == anotherSettingsFields.temperature
+        && systemPrompt.equals(anotherSettingsFields.systemPrompt)
+        && userPrompt.equals(anotherSettingsFields.userPrompt)
+        && isClearChatHistory == anotherSettingsFields.isClearChatHistory
+        && isLoadModel == anotherSettingsFields.isLoadModel
+        && modelType == anotherSettingsFields.modelType
+        && backendType == anotherSettingsFields.backendType;
   }
 }
