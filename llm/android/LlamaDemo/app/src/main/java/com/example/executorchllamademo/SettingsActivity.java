@@ -361,12 +361,23 @@ public class SettingsActivity extends AppCompatActivity {
     AlertDialog.Builder dataPathBuilder = new AlertDialog.Builder(this);
     dataPathBuilder.setTitle("Select data path");
 
+    String[] dataPathOptions = new String[dataPathFiles.length + 1];
+    for (int i = 0; i < dataPathFiles.length; i++) {
+      dataPathOptions[i] = dataPathFiles[i];
+    }
+    dataPathOptions[dataPathOptions.length - 1] = "(unused)";
+
     dataPathBuilder.setSingleChoiceItems(
-        dataPathFiles,
+        dataPathOptions,
         -1,
         (dialog, item) -> {
-          mDataPath = dataPathFiles[item];
-          mDataPathTextView.setText(getFilenameFromPath(mDataPath));
+          if (dataPathOptions[item] != "(unused)") {
+            mDataPath = dataPathOptions[item];
+            mDataPathTextView.setText(getFilenameFromPath(mDataPath));
+          } else {
+            mDataPath = null;
+            mDataPathTextView.setText(getFilenameFromPath("no data path selected"));
+          }
           mLoadModelButton.setEnabled(true);
           dialog.dismiss();
         });
@@ -435,6 +446,9 @@ public class SettingsActivity extends AppCompatActivity {
   }
 
   private String getFilenameFromPath(String uriFilePath) {
+    if (uriFilePath == null) {
+      return "";
+    }
     String[] segments = uriFilePath.split("/");
     if (segments.length > 0) {
       return segments[segments.length - 1]; // get last element (aka filename)
