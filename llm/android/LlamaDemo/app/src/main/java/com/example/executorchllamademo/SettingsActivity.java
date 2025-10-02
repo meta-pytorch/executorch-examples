@@ -34,9 +34,11 @@ public class SettingsActivity extends AppCompatActivity {
 
   private String mModelFilePath = "";
   private String mTokenizerFilePath = "";
+  private String mDataPath = "";
   private TextView mBackendTextView;
   private TextView mModelTextView;
   private TextView mTokenizerTextView;
+  private TextView mDataPathTextView;
   private TextView mModelTypeTextView;
   private EditText mSystemPromptEditText;
   private EditText mUserPromptEditText;
@@ -75,10 +77,12 @@ public class SettingsActivity extends AppCompatActivity {
     mBackendTextView = requireViewById(R.id.backendTextView);
     mModelTextView = requireViewById(R.id.modelTextView);
     mTokenizerTextView = requireViewById(R.id.tokenizerTextView);
+    mDataPathTextView = requireViewById(R.id.dataPathTextView);
     mModelTypeTextView = requireViewById(R.id.modelTypeTextView);
     ImageButton backendImageButton = requireViewById(R.id.backendImageButton);
     ImageButton modelImageButton = requireViewById(R.id.modelImageButton);
     ImageButton tokenizerImageButton = requireViewById(R.id.tokenizerImageButton);
+    ImageButton dataPathImageButton = requireViewById(R.id.dataPathImageButton);
     ImageButton modelTypeImageButton = requireViewById(R.id.modelTypeImageButton);
     mSystemPromptEditText = requireViewById(R.id.systemPromptText);
     mUserPromptEditText = requireViewById(R.id.userPromptText);
@@ -97,6 +101,10 @@ public class SettingsActivity extends AppCompatActivity {
         view -> {
           setupTokenizerSelectorDialog();
         });
+    dataPathImageButton.setOnClickListener(
+        view -> {
+          setupDataPathSelectorDialog();
+        });
     modelTypeImageButton.setOnClickListener(
         view -> {
           setupModelTypeSelectorDialog();
@@ -108,6 +116,10 @@ public class SettingsActivity extends AppCompatActivity {
     mTokenizerFilePath = mSettingsFields.getTokenizerFilePath();
     if (!mTokenizerFilePath.isEmpty()) {
       mTokenizerTextView.setText(getFilenameFromPath(mTokenizerFilePath));
+    }
+    mDataPath = mSettingsFields.getDataPath();
+    if (mDataPath != null && !mDataPath.isEmpty()) {
+      mDataPathTextView.setText(getFilenameFromPath(mDataPath));
     }
     mModelType = mSettingsFields.getModelType();
     ETLogging.getInstance().log("mModelType from settings " + mModelType);
@@ -140,6 +152,8 @@ public class SettingsActivity extends AppCompatActivity {
                   android.R.string.yes,
                   new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
+                      // Save current UI selections to settings before loading
+                      saveSettings();
                       mSettingsFields.saveLoadModelAction(true);
                       mLoadModelButton.setEnabled(false);
                       onBackPressed();
@@ -272,8 +286,7 @@ public class SettingsActivity extends AppCompatActivity {
                   new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
                       // Clear the messageAdapter and sharedPreference
-                      mUserPromptEditText.setText(
-                          PromptFormat.getUserPromptTemplate(mModelType));
+                      mUserPromptEditText.setText(PromptFormat.getUserPromptTemplate(mModelType));
                     }
                   })
               .setNegativeButton(android.R.string.no, null)
@@ -341,6 +354,24 @@ public class SettingsActivity extends AppCompatActivity {
         });
 
     modelPathBuilder.create().show();
+  }
+
+  private void setupDataPathSelectorDialog() {
+    String[] dataPathFiles = listLocalFile("/data/local/tmp/llama/", new String[] {".ptd"});
+    AlertDialog.Builder dataPathBuilder = new AlertDialog.Builder(this);
+    dataPathBuilder.setTitle("Select data path");
+
+    dataPathBuilder.setSingleChoiceItems(
+        dataPathFiles,
+        -1,
+        (dialog, item) -> {
+          mDataPath = dataPathFiles[item];
+          mDataPathTextView.setText(getFilenameFromPath(mDataPath));
+          mLoadModelButton.setEnabled(true);
+          dialog.dismiss();
+        });
+
+    dataPathBuilder.create().show();
   }
 
   private static boolean fileHasExtension(String file, String[] suffix) {
@@ -412,9 +443,7 @@ public class SettingsActivity extends AppCompatActivity {
   }
 
   private void setBackendSettingMode() {
-    if (mBackendType.equals(BackendType.XNNPACK)
-        || mBackendType.equals(BackendType.QUALCOMM)
-        || mBackendType.equals(BackendType.VULKAN)) {
+    if (mBackendType.equals(BackendType.XNNPACK) || mBackendType.equals(BackendType.QUALCOMM)) {
       setXNNPACKSettingMode();
     } else if (mBackendType.equals(BackendType.MEDIATEK)) {
       setMediaTekSettingMode();
@@ -424,6 +453,7 @@ public class SettingsActivity extends AppCompatActivity {
   private void setXNNPACKSettingMode() {
     requireViewById(R.id.modelLayout).setVisibility(View.VISIBLE);
     requireViewById(R.id.tokenizerLayout).setVisibility(View.VISIBLE);
+    requireViewById(R.id.dataPathLayout).setVisibility(View.VISIBLE);
     requireViewById(R.id.parametersView).setVisibility(View.VISIBLE);
     requireViewById(R.id.temperatureLayout).setVisibility(View.VISIBLE);
   }
@@ -431,10 +461,16 @@ public class SettingsActivity extends AppCompatActivity {
   private void setMediaTekSettingMode() {
     requireViewById(R.id.modelLayout).setVisibility(View.GONE);
     requireViewById(R.id.tokenizerLayout).setVisibility(View.GONE);
+    requireViewById(R.id.dataPathLayout).setVisibility(View.GONE);
     requireViewById(R.id.parametersView).setVisibility(View.GONE);
     requireViewById(R.id.temperatureLayout).setVisibility(View.GONE);
-    mModelFilePath = "/in/mtk/llama/runner";
-    mTokenizerFilePath = "/in/mtk/llama/runner";
+    // For MediaTek, only set default paths if they're empty - preserve existing selections
+    if (mModelFilePath == null || mModelFilePath.isEmpty()) {
+      mModelFilePath = "/in/mtk/llama/runner";
+    }
+    if (mTokenizerFilePath == null || mTokenizerFilePath.isEmpty()) {
+      mTokenizerFilePath = "/in/mtk/llama/runner";
+    }
   }
 
   private void loadSettings() {
@@ -442,12 +478,28 @@ public class SettingsActivity extends AppCompatActivity {
     String settingsFieldsJSON = mDemoSharedPreferences.getSettings();
     if (!settingsFieldsJSON.isEmpty()) {
       mSettingsFields = gson.fromJson(settingsFieldsJSON, SettingsFields.class);
+
+      // Update local variables with loaded values for session persistence
+      mModelFilePath =
+          mSettingsFields.getModelFilePath() != null ? mSettingsFields.getModelFilePath() : "";
+      mTokenizerFilePath =
+          mSettingsFields.getTokenizerFilePath() != null
+              ? mSettingsFields.getTokenizerFilePath()
+              : "";
+      mDataPath = mSettingsFields.getDataPath(); // Can be null
+      mSetTemperature = mSettingsFields.getTemperature();
+      mSystemPrompt =
+          mSettingsFields.getSystemPrompt() != null ? mSettingsFields.getSystemPrompt() : "";
+      mUserPrompt = mSettingsFields.getUserPrompt() != null ? mSettingsFields.getUserPrompt() : "";
+      mModelType = mSettingsFields.getModelType();
+      mBackendType = mSettingsFields.getBackendType();
     }
   }
 
   private void saveSettings() {
     mSettingsFields.saveModelPath(mModelFilePath);
     mSettingsFields.saveTokenizerPath(mTokenizerFilePath);
+    mSettingsFields.saveDataPath(mDataPath);
     mSettingsFields.saveParameters(mSetTemperature);
     mSettingsFields.savePrompts(mSystemPrompt, mUserPrompt);
     mSettingsFields.saveModelType(mModelType);

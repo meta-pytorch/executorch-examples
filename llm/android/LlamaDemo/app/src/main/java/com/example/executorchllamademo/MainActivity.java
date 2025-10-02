@@ -81,6 +81,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
   private Runnable memoryUpdater;
   private boolean mThinkMode = false;
   private int promptID = 0;
+  private long startPos = 0;
   private static final int CONVERSATION_HISTORY_MESSAGE_LOOKBACK = 2;
   private Executor executor;
 
@@ -122,7 +123,8 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
         });
   }
 
-  private void setLocalModel(String modelPath, String tokenizerPath, float temperature) {
+  private void setLocalModel(
+      String modelPath, String tokenizerPath, String dataPath, float temperature) {
     Message modelLoadingMessage = new Message("Loading model...", false, MessageType.SYSTEM, 0);
     ETLogging.getInstance().log("Loading model " + modelPath + " with tokenizer " + tokenizerPath);
     runOnUiThread(
@@ -131,20 +133,18 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
           mMessageAdapter.add(modelLoadingMessage);
           mMessageAdapter.notifyDataSetChanged();
         });
-    if (mModule != null) {
-      ETLogging.getInstance().log("Start deallocating existing module instance");
-      mModule.resetNative();
-      mModule = null;
-      ETLogging.getInstance().log("Completed deallocating existing module instance");
-    }
+
     long runStartTime = System.currentTimeMillis();
+    // Create LlmModule with dataPath
     mModule =
         new LlmModule(
             ModelUtils.getModelCategory(
                 mCurrentSettingsFields.getModelType(), mCurrentSettingsFields.getBackendType()),
             modelPath,
             tokenizerPath,
-            temperature);
+            temperature,
+            dataPath);
+
     int loadResult = mModule.load();
     long loadDuration = System.currentTimeMillis() - runStartTime;
     String modelLoadError = "";
@@ -177,8 +177,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
 
       if (mCurrentSettingsFields.getModelType() == ModelType.LLAVA_1_5) {
         ETLogging.getInstance().log("Llava start prefill prompt");
-        mModule.resetContext();
-        mModule.prefillPrompt(PromptFormat.getLlavaPresetPrompt());
+        startPos = mModule.prefillPrompt(PromptFormat.getLlavaPresetPrompt());
         ETLogging.getInstance().log("Llava completes prefill prompt");
       }
     }
@@ -213,12 +212,12 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
   }
 
   private void loadLocalModelAndParameters(
-      String modelFilePath, String tokenizerFilePath, float temperature) {
+      String modelFilePath, String tokenizerFilePath, String dataPath, float temperature) {
     Runnable runnable =
         new Runnable() {
           @Override
           public void run() {
-            setLocalModel(modelFilePath, tokenizerFilePath, temperature);
+            setLocalModel(modelFilePath, tokenizerFilePath, dataPath, temperature);
           }
         };
     new Thread(runnable).start();
@@ -351,9 +350,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
   }
 
   private void setBackendMode(BackendType backendType) {
-    if (backendType.equals(BackendType.XNNPACK)
-        || backendType.equals(BackendType.QUALCOMM)
-        || backendType.equals(BackendType.VULKAN)) {
+    if (backendType.equals(BackendType.XNNPACK) || backendType.equals(BackendType.QUALCOMM)) {
       setXNNPACKMode();
     } else if (backendType.equals(BackendType.MEDIATEK)) {
       setMediaTekMode();
@@ -383,15 +380,18 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
     // TODO need to add 'load model' in settings and queue loading based on that
     String modelPath = updatedSettingsFields.getModelFilePath();
     String tokenizerPath = updatedSettingsFields.getTokenizerFilePath();
+    String dataPath = updatedSettingsFields.getDataPath();
     double temperature = updatedSettingsFields.getTemperature();
     if (!modelPath.isEmpty() && !tokenizerPath.isEmpty()) {
       if (updatedSettingsFields.getIsLoadModel()
           || !modelPath.equals(mCurrentSettingsFields.getModelFilePath())
           || !tokenizerPath.equals(mCurrentSettingsFields.getTokenizerFilePath())
+          || !dataPath.equals(mCurrentSettingsFields.getDataPath())
           || temperature != mCurrentSettingsFields.getTemperature()) {
         loadLocalModelAndParameters(
             updatedSettingsFields.getModelFilePath(),
             updatedSettingsFields.getTokenizerFilePath(),
+            updatedSettingsFields.getDataPath(),
             (float) updatedSettingsFields.getTemperature());
         updatedSettingsFields.saveLoadModelAction(false);
         mDemoSharedPreferences.addSettings(updatedSettingsFields);
@@ -581,6 +581,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
         view -> {
           Log.d("addMore", "clicked");
           mMediaPreviewConstraintLayout.setVisibility(View.GONE);
+          // Direct user to select type of input
           mGalleryButton.callOnClick();
         });
   }
@@ -647,11 +648,12 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
               ETLogging.getInstance().log("Starting runnable prefill image");
               ETImage img = processedImageList.get(0);
               ETLogging.getInstance().log("Llava start prefill image");
-              mModule.prefillImages(
-                  img.getInts(),
-                  img.getWidth(),
-                  img.getHeight(),
-                  ModelUtils.VISION_MODEL_IMAGE_CHANNELS);
+              startPos =
+                  mModule.prefillImages(
+                      img.getInts(),
+                      img.getWidth(),
+                      img.getHeight(),
+                      ModelUtils.VISION_MODEL_IMAGE_CHANNELS);
             };
         executor.execute(runnable);
       }
@@ -695,6 +697,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
           String rawPrompt = mEditTextMessage.getText().toString();
           String finalPrompt =
               mCurrentSettingsFields.getFormattedSystemAndUserPrompt(rawPrompt, mThinkMode);
+          mCurrentSettingsFields.getFormattedSystemAndUserPrompt(rawPrompt, mThinkMode);
           // We store raw prompt into message adapter, because we don't want to show the extra
           // tokens from system prompt
           mMessageAdapter.add(new Message(rawPrompt, true, MessageType.TEXT, promptID));
