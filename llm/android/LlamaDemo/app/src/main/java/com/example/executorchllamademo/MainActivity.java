@@ -177,7 +177,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
 
       if (mCurrentSettingsFields.getModelType() == ModelType.LLAVA_1_5) {
         ETLogging.getInstance().log("Llava start prefill prompt");
-        startPos = mModule.prefillPrompt(PromptFormat.getLlavaPresetPrompt(), 0, 1, 0);
+        startPos = mModule.prefillPrompt(PromptFormat.getLlavaPresetPrompt());
         ETLogging.getInstance().log("Llava completes prefill prompt");
       }
     }
@@ -653,8 +653,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
                       img.getInts(),
                       img.getWidth(),
                       img.getHeight(),
-                      ModelUtils.VISION_MODEL_IMAGE_CHANNELS,
-                      startPos);
+                      ModelUtils.VISION_MODEL_IMAGE_CHANNELS);
             };
         executor.execute(runnable);
       }
@@ -672,51 +671,6 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
       mMessageAdapter.add(new Message(imageURI.toString(), true, MessageType.IMAGE, 0));
     }
     mMessageAdapter.notifyDataSetChanged();
-  }
-
-  private String getConversationHistory() {
-    String conversationHistory = "";
-
-    ArrayList<Message> conversations =
-        mMessageAdapter.getRecentSavedTextMessages(CONVERSATION_HISTORY_MESSAGE_LOOKBACK);
-    if (conversations.isEmpty()) {
-      return conversationHistory;
-    }
-
-    int prevPromptID = conversations.get(0).getPromptID();
-    String conversationFormat =
-        PromptFormat.getConversationFormat(mCurrentSettingsFields.getModelType());
-    String format = conversationFormat;
-    for (int i = 0; i < conversations.size(); i++) {
-      Message conversation = conversations.get(i);
-      int currentPromptID = conversation.getPromptID();
-      if (currentPromptID != prevPromptID) {
-        conversationHistory = conversationHistory + format;
-        format = conversationFormat;
-        prevPromptID = currentPromptID;
-      }
-      if (conversation.getIsSent()) {
-        format =
-            format
-                .replace(PromptFormat.USER_PLACEHOLDER, conversation.getText())
-                .replace(PromptFormat.THINKING_MODE_PLACEHOLDER, "");
-      } else {
-        format = format.replace(PromptFormat.ASSISTANT_PLACEHOLDER, conversation.getText());
-      }
-    }
-    conversationHistory = conversationHistory + format;
-
-    return conversationHistory;
-  }
-
-  private String getTotalFormattedPrompt(String conversationHistory, String rawPrompt) {
-    if (conversationHistory.isEmpty()) {
-      return mCurrentSettingsFields.getFormattedSystemAndUserPrompt(rawPrompt, mThinkMode);
-    }
-
-    return mCurrentSettingsFields.getFormattedSystemPrompt()
-        + conversationHistory
-        + mCurrentSettingsFields.getFormattedUserPrompt(rawPrompt, mThinkMode);
   }
 
   private void onModelRunStarted() {
@@ -740,16 +694,10 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
             ETLogging.getInstance().log("Keyboard dismissal error: " + e.getMessage());
           }
           addSelectedImagesToChatThread(mSelectedImageUri);
-          String finalPrompt;
           String rawPrompt = mEditTextMessage.getText().toString();
-          if (ModelUtils.getModelCategory(
-                  mCurrentSettingsFields.getModelType(), mCurrentSettingsFields.getBackendType())
-              == ModelUtils.VISION_MODEL) {
-            finalPrompt =
-                mCurrentSettingsFields.getFormattedSystemAndUserPrompt(rawPrompt, mThinkMode);
-          } else {
-            finalPrompt = getTotalFormattedPrompt(getConversationHistory(), rawPrompt);
-          }
+          String finalPrompt =
+              mCurrentSettingsFields.getFormattedSystemAndUserPrompt(rawPrompt, mThinkMode);
+          mCurrentSettingsFields.getFormattedSystemAndUserPrompt(rawPrompt, mThinkMode);
           // We store raw prompt into message adapter, because we don't want to show the extra
           // tokens from system prompt
           mMessageAdapter.add(new Message(rawPrompt, true, MessageType.TEXT, promptID));
@@ -781,12 +729,8 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
                           mCurrentSettingsFields.getModelType(),
                           mCurrentSettingsFields.getBackendType())
                       == ModelUtils.VISION_MODEL) {
-                    mModule.generateFromPos(
-                        finalPrompt,
-                        ModelUtils.VISION_MODEL_SEQ_LEN,
-                        startPos,
-                        MainActivity.this,
-                        false);
+                    mModule.generate(
+                        finalPrompt, ModelUtils.VISION_MODEL_SEQ_LEN, MainActivity.this, false);
                   } else if (mCurrentSettingsFields.getModelType() == ModelType.LLAMA_GUARD_3) {
                     String llamaGuardPromptForClassification =
                         PromptFormat.getFormattedLlamaGuardPrompt(rawPrompt);
