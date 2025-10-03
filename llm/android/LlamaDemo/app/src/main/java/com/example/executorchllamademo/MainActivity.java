@@ -332,6 +332,10 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
       boolean isLoadModel = updatedSettingsFields.getIsLoadModel();
       setBackendMode(updatedSettingsFields.getBackendType());
       if (isUpdated) {
+        checkForClearChatHistory(updatedSettingsFields);
+        // Update current to point to the latest
+        mCurrentSettingsFields = new SettingsFields(updatedSettingsFields);
+
         if (isLoadModel) {
           // If users change the model file, but not pressing loadModelButton, we won't load the new
           // model
@@ -339,10 +343,6 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
         } else {
           askUserToSelectModel();
         }
-
-        checkForClearChatHistory(updatedSettingsFields);
-        // Update current to point to the latest
-        mCurrentSettingsFields = new SettingsFields(updatedSettingsFields);
       }
     } else {
       askUserToSelectModel();
