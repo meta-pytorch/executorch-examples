@@ -63,7 +63,8 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
   private ImageButton mCameraButton;
   private ListView mMessagesView;
   private MessageAdapter mMessageAdapter;
-  private LlmModule mModule = null;
+  private List<LlmModule> mLoadedModules = new ArrayList<>();
+  private LlmModule mActiveModule = null;
   private Message mResultMessage = null;
   private ImageButton mSettingsButton;
   private TextView mMemoryView;
@@ -136,7 +137,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
 
     long runStartTime = System.currentTimeMillis();
     // Create LlmModule with dataPath
-    mModule =
+    mActiveModule =
         new LlmModule(
             ModelUtils.getModelCategory(
                 mCurrentSettingsFields.getModelType(), mCurrentSettingsFields.getBackendType()),
@@ -144,8 +145,9 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
             tokenizerPath,
             temperature,
             dataPath);
+    mLoadedModules.add(mActiveModule);
 
-    int loadResult = mModule.load();
+    int loadResult = mActiveModule.load();
     long loadDuration = System.currentTimeMillis() - runStartTime;
     String modelLoadError = "";
     String modelInfo = "";
@@ -177,7 +179,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
 
       if (mCurrentSettingsFields.getModelType() == ModelType.LLAVA_1_5) {
         ETLogging.getInstance().log("Llava start prefill prompt");
-        startPos = mModule.prefillPrompt(PromptFormat.getLlavaPresetPrompt());
+        startPos = mActiveModule.prefillPrompt(PromptFormat.getLlavaPresetPrompt());
         ETLogging.getInstance().log("Llava completes prefill prompt");
       }
     }
@@ -649,7 +651,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
               ETImage img = processedImageList.get(0);
               ETLogging.getInstance().log("Llava start prefill image");
               startPos =
-                  mModule.prefillImages(
+                  mActiveModule.prefillImages(
                       img.getInts(),
                       img.getWidth(),
                       img.getHeight(),
@@ -678,7 +680,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
     mSendButton.setImageResource(R.drawable.baseline_stop_24);
     mSendButton.setOnClickListener(
         view -> {
-          mModule.stop();
+          mActiveModule.stop();
         });
   }
 
@@ -729,21 +731,21 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
                           mCurrentSettingsFields.getModelType(),
                           mCurrentSettingsFields.getBackendType())
                       == ModelUtils.VISION_MODEL) {
-                    mModule.generate(
+                    mActiveModule.generate(
                         finalPrompt, ModelUtils.VISION_MODEL_SEQ_LEN, MainActivity.this, false);
                   } else if (mCurrentSettingsFields.getModelType() == ModelType.LLAMA_GUARD_3) {
                     String llamaGuardPromptForClassification =
                         PromptFormat.getFormattedLlamaGuardPrompt(rawPrompt);
                     ETLogging.getInstance()
                         .log("Running inference.. prompt=" + llamaGuardPromptForClassification);
-                    mModule.generate(
+                    mActiveModule.generate(
                         llamaGuardPromptForClassification,
                         llamaGuardPromptForClassification.length() + 64,
                         MainActivity.this,
                         false);
                   } else {
                     ETLogging.getInstance().log("Running inference.. prompt=" + finalPrompt);
-                    mModule.generate(
+                    mActiveModule.generate(
                         finalPrompt,
                         (int) (finalPrompt.length() * 0.75) + 64,
                         MainActivity.this,
