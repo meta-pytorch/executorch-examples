@@ -31,8 +31,6 @@ public class ModelUtils {
         case LLAVA_1_5:
           return VISION_MODEL;
         case LLAMA_3:
-        case LLAMA_3_1:
-        case LLAMA_3_2:
         case QWEN_3:
         default:
           return TEXT_MODEL;
