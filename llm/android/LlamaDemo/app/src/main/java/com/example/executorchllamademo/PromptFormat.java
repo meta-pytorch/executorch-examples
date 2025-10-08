@@ -21,8 +21,6 @@ public class PromptFormat {
       case GEMMA_3:
         return SYSTEM_PLACEHOLDER;
       case LLAMA_3:
-      case LLAMA_3_1:
-      case LLAMA_3_2:
         return "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n"
             + SYSTEM_PLACEHOLDER
             + "<|eot_id|>";
@@ -40,8 +38,6 @@ public class PromptFormat {
       case GEMMA_3:
         return "<start_of_turn>user\n" + USER_PLACEHOLDER + "<end_of_turn>\n<start_of_turn>model";
       case LLAMA_3:
-      case LLAMA_3_1:
-      case LLAMA_3_2:
       case LLAMA_GUARD_3:
         return "<|start_header_id|>user<|end_header_id|>\n"
             + USER_PLACEHOLDER
@@ -65,8 +61,6 @@ public class PromptFormat {
       case GEMMA_3:
         return "<end_of_turn>";
       case LLAMA_3:
-      case LLAMA_3_1:
-      case LLAMA_3_2:
       case LLAMA_GUARD_3:
         return "<|eot_id|>";
       case LLAVA_1_5:
