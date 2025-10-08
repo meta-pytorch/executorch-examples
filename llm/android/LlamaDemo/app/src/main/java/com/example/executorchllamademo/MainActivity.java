@@ -85,6 +85,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
   private long startPos = 0;
   private static final int CONVERSATION_HISTORY_MESSAGE_LOOKBACK = 2;
   private Executor executor;
+  private boolean sawStartHeaderId = false;
 
   @Override
   public void onResult(String result) {
@@ -92,12 +93,20 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
       return;
     }
     result = PromptFormat.replaceSpecialToken(mCurrentSettingsFields.getModelType(), result);
-    if (result.equals("\n\n") || result.equals("\n")) {
-      if (!mResultMessage.getText().isEmpty()) {
-        mResultMessage.appendText(result);
-        run();
-      }
-    } else {
+
+    if (mCurrentSettingsFields.getModelType() == ModelType.LLAMA_3 && result.equals("<|start_header_id|>")) {
+      sawStartHeaderId = true;
+    }
+    if (mCurrentSettingsFields.getModelType() == ModelType.LLAMA_3 && result.equals("<|end_header_id|>")) {
+      sawStartHeaderId = false;
+      return;
+    }
+    if (sawStartHeaderId) {
+      return;
+    }
+
+    boolean keepResult = !(result.equals("\n") || result.equals("\n\n")) || !mResultMessage.getText().isEmpty();
+    if (keepResult) {
       mResultMessage.appendText(result);
       run();
     }

@@ -39,6 +39,8 @@ Run the following adb command to push the model.
 adb push dl3_xnnpack_fp32.pte /data/local/tmp/dl3_xnnpack_fp32.pte
 ```
 
+Note: If you want to use a QNN lowered model, you mush modify the maven executorch dependency to [executorch-qnn](https://mvnrepository.com/artifact/org.pytorch/executorch-android-qnn) and rebuild the app.
+
 ## Step 5: Load and Test Custom Images (No APK Rebuild Needed)
 You can now test image segmentation on your own images (supported formats: .jpg, .jpeg, .png) without rebuilding the APK. The app supports loading .jpg, .jpeg, and .png images from the /sdcard/Pictures/ directory, with user-granted permissions.
 
