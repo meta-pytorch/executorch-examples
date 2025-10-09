@@ -14,5 +14,18 @@ public enum ModelType {
   LLAVA_1_5,
   LLAMA_GUARD_3,
   QWEN_3,
-  VOXTRAL,
+  VOXTRAL;
+
+  @Override
+  public String toString() {
+    // Replace underscores with spaces, capitalize words, and handle special cases
+    String pretty = name().replace('_', ' ').toLowerCase();
+    // Optionally, handle special capitalization
+    pretty = pretty.replace("llava 1 5", "LLaVA 1.5");
+    // Capitalize the first letter if needed
+    if (!pretty.isEmpty()) {
+      pretty = pretty.substring(0, 1).toUpperCase() + pretty.substring(1);
+    }
+    return pretty;
+  }
 }
