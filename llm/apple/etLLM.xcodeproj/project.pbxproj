@@ -17,6 +17,7 @@
 		0324D6922BAACB6900DEF36F /* ResourceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0324D6872BAACB6900DEF36F /* ResourceManager.swift */; };
 		0324D6932BAACB6900DEF36F /* ResourceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0324D6882BAACB6900DEF36F /* ResourceMonitor.swift */; };
 		0324D6962BAACB7000DEF36F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0324D6942BAACB7000DEF36F /* Assets.xcassets */; };
+		03252DFF2E9F432700FEBBD4 /* voxtral_input_features.bin in Resources */ = {isa = PBXBuildFile; fileRef = 03252DFD2E9F432700FEBBD4 /* voxtral_input_features.bin */; };
 		03F546242E70906E0040AE84 /* backend_coreml in Frameworks */ = {isa = PBXBuildFile; productRef = 03F546232E70906E0040AE84 /* backend_coreml */; };
 		03F546262E70906E0040AE84 /* backend_mps in Frameworks */ = {isa = PBXBuildFile; productRef = 03F546252E70906E0040AE84 /* backend_mps */; };
 		03F546282E70906E0040AE84 /* backend_xnnpack in Frameworks */ = {isa = PBXBuildFile; productRef = 03F546272E70906E0040AE84 /* backend_xnnpack */; };
@@ -55,6 +56,7 @@
 		0324D6872BAACB6900DEF36F /* ResourceManager.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ResourceManager.swift; sourceTree = "<group>"; };
 		0324D6882BAACB6900DEF36F /* ResourceMonitor.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ResourceMonitor.swift; sourceTree = "<group>"; };
 		0324D6942BAACB7000DEF36F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		03252DFD2E9F432700FEBBD4 /* voxtral_input_features.bin */ = {isa = PBXFileReference; lastKnownFileType = archive.macbinary; path = voxtral_input_features.bin; sourceTree = "<group>"; };
 		035A5E942BB4B523001E0553 /* App.entitlements */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.entitlements; path = App.entitlements; sourceTree = "<group>"; };
 		03603F932E70B5A70030CD9B /* etLLM.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = etLLM.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		26A6A4272C8A3769005A761E /* ImagePicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePicker.swift; sourceTree = "<group>"; };
@@ -115,14 +117,24 @@
 			path = Assets;
 			sourceTree = "<group>";
 		};
+		03252DFE2E9F432700FEBBD4 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				03252DFD2E9F432700FEBBD4 /* voxtral_input_features.bin */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
 		032C01662AC228E5002955E1 = {
 			isa = PBXGroup;
 			children = (
 				0324D6892BAACB6900DEF36F /* Application */,
+				03252DFE2E9F432700FEBBD4 /* Resources */,
 				0324D6952BAACB7000DEF36F /* Assets */,
 				035A5E952BB4B523001E0553 /* Entitlements */,
 				0320439E2BB4AC6600050211 /* SupportingFiles */,
 				03603F932E70B5A70030CD9B /* etLLM.app */,
+				037C9A6C2E9857F30060B5FA /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -132,6 +144,13 @@
 				035A5E942BB4B523001E0553 /* App.entitlements */,
 			);
 			path = Entitlements;
+			sourceTree = "<group>";
+		};
+		037C9A6C2E9857F30060B5FA /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -207,6 +226,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				03252DFF2E9F432700FEBBD4 /* voxtral_input_features.bin in Resources */,
 				0324D6962BAACB7000DEF36F /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
