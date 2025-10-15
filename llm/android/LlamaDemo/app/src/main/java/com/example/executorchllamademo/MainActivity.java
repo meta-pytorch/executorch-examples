@@ -135,7 +135,14 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
   private void setLocalModel(
       String modelPath, String tokenizerPath, String dataPath, float temperature) {
     Message modelLoadingMessage = new Message("Loading model...", false, MessageType.SYSTEM, 0);
-    ETLogging.getInstance().log("Loading model " + modelPath + " with tokenizer " + tokenizerPath);
+    ETLogging.getInstance()
+        .log(
+            "Loading model "
+                + modelPath
+                + " with tokenizer "
+                + tokenizerPath
+                + " data path "
+                + dataPath);
     runOnUiThread(
         () -> {
           mSendButton.setEnabled(false);
@@ -145,15 +152,24 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
 
     long runStartTime = System.currentTimeMillis();
     // Create LlmModule with dataPath
-    mModule =
-        new LlmModule(
-            ModelUtils.getModelCategory(
-                mCurrentSettingsFields.getModelType(), mCurrentSettingsFields.getBackendType()),
-            modelPath,
-            tokenizerPath,
-            temperature,
-            dataPath);
-
+    if (dataPath.isEmpty()) {
+      mModule =
+          new LlmModule(
+              ModelUtils.getModelCategory(
+                  mCurrentSettingsFields.getModelType(), mCurrentSettingsFields.getBackendType()),
+              modelPath,
+              tokenizerPath,
+              temperature);
+    } else {
+      mModule =
+          new LlmModule(
+              ModelUtils.getModelCategory(
+                  mCurrentSettingsFields.getModelType(), mCurrentSettingsFields.getBackendType()),
+              modelPath,
+              tokenizerPath,
+              temperature,
+              dataPath);
+    }
     int loadResult = mModule.load();
     long loadDuration = System.currentTimeMillis() - runStartTime;
     String modelLoadError = "";
