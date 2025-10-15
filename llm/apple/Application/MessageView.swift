@@ -12,6 +12,15 @@ struct MessageView: View {
   let message: Message
 
   var body: some View {
+    let isAssistant = {
+      switch message.type {
+      case .llamagenerated, .llavagenerated, .qwengenerated, .phi4generated, .gemma3generated, .voxtralgenerated:
+        return true
+      default:
+        return false
+      }
+    }()
+
     VStack(alignment: .center) {
       if message.type == .info {
         Text(message.text)
@@ -19,15 +28,25 @@ struct MessageView: View {
           .foregroundColor(.secondary)
           .padding([.leading, .trailing], 10)
       } else {
-        VStack(alignment: message.type == .llamagenerated || message.type == .llavagenerated ? .leading : .trailing) {
-          if message.type == .llamagenerated || message.type == .llavagenerated || message.type == .prompted {
-            Text(message.type == .llamagenerated ? "Llama" : (message.type == .llavagenerated ? "Llava" : "Prompt"))
+        VStack(alignment: isAssistant ? .leading : .trailing) {
+          if isAssistant || message.type == .prompted {
+            Text({
+              switch message.type {
+              case .llamagenerated: return "LLaMA"
+              case .qwengenerated: return "Qwen 3"
+              case .phi4generated: return "Phi-4"
+              case .gemma3generated: return "Gemma 3"
+              case .llavagenerated: return "LLaVA"
+              case .voxtralgenerated: return "Voxtral"
+              default: return "Prompt"
+              }
+            }())
               .font(.caption)
               .foregroundColor(.secondary)
-              .padding(message.type == .llamagenerated || message.type == .llavagenerated ? .trailing : .leading, 20)
+              .padding(isAssistant ? .trailing : .leading, 20)
           }
           HStack {
-            if message.type != .llamagenerated && message.type != .llavagenerated { Spacer() }
+            if !isAssistant { Spacer() }
             if message.text.isEmpty {
               if let img = message.image {
                 Image(uiImage: img)
@@ -45,8 +64,8 @@ struct MessageView: View {
             } else {
               Text(message.text)
                 .padding(10)
-                .foregroundColor(message.type == .llamagenerated || message.type == .llavagenerated ? .primary : .white)
-                .background(message.type == .llamagenerated || message.type == .llavagenerated ? Color(UIColor.secondarySystemBackground) : Color.blue)
+                .foregroundColor(isAssistant ? .primary : .white)
+                .background(isAssistant ? Color(UIColor.secondarySystemBackground) : Color.blue)
                 .cornerRadius(20)
                 .contextMenu {
                   Button(action: {
@@ -57,16 +76,18 @@ struct MessageView: View {
                   }
                 }
             }
-            if message.type == .llamagenerated || message.type == .llavagenerated { Spacer() }
+            if isAssistant { Spacer() }
           }
+          .frame(maxWidth: .infinity)
           let elapsedTime = message.dateUpdated.timeIntervalSince(message.dateCreated)
           if elapsedTime > 0 && message.type != .info {
             Text(String(format: "%.1f t/s", Double(message.tokenCount) / elapsedTime))
               .font(.caption)
               .foregroundColor(.secondary)
-              .padding(message.type == .llamagenerated || message.type == .llavagenerated ? .trailing : .leading, 20)
+              .padding(isAssistant ? .trailing : .leading, 20)
           }
-        }.padding([.leading, .trailing], message.type == .info ? 0 : 10)
+        }
+        .padding([.leading, .trailing], message.type == .info ? 0 : 10)
       }
     }
   }
