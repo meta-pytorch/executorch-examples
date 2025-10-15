@@ -186,7 +186,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
 
       if (mCurrentSettingsFields.getModelType() == ModelType.LLAVA_1_5) {
         ETLogging.getInstance().log("Llava start prefill prompt");
-        startPos = mModule.prefillPrompt(PromptFormat.getLlavaPresetPrompt());
+        mActiveModule.prefillPrompt(PromptFormat.getLlavaPresetPrompt());
         ETLogging.getInstance().log("Llava completes prefill prompt");
       }
     }
@@ -645,7 +645,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
 
     // For LLava, we want to call prefill_image as soon as an image is selected
     // Llava only support 1 image for now
-    if (mCurrentSettingsFields.getModelType() == ModelType.LLAVA_1_5) {
+    if (mCurrentSettingsFields.getModelType() == ModelType.LLAVA_1_5 || mCurrentSettingsFields.getModelType() == ModelType.GEMMA_3) {
       List<ETImage> processedImageList = getProcessedImagesForModel(mSelectedImageUri);
       if (!processedImageList.isEmpty()) {
         mMessageAdapter.add(
