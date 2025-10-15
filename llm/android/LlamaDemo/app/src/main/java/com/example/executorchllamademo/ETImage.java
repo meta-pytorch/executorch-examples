@@ -56,6 +56,14 @@ public class ETImage {
     return intArray;
   }
 
+  public float[] getFloats() {
+    float[] floatArray = new float[bytes.length];
+    for (int i = 0; i < bytes.length; i++) {
+      floatArray[i] = (((bytes[i++] & 0xFF) / 255.0f) - 0.5f) / 0.5f;
+    }
+    return floatArray;
+  }
+
   private byte[] getBytesFromImageURI(Uri uri) {
     try {
       int RESIZED_IMAGE_WIDTH = 336;

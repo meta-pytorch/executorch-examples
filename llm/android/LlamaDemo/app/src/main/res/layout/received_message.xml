@@ -13,7 +13,7 @@
         android:layout_height="wrap_content"
         android:layout_marginLeft="15dp"
         android:paddingBottom="4dp"
-        android:text="Llama"
+        android:text="Assistant"
         android:textColor="#FFFFFF" />
 
     <TextView
