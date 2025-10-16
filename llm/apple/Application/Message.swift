@@ -15,6 +15,7 @@ enum MessageType {
   case phi4generated
   case gemma3generated
   case llavagenerated
+  case smollm3generated
   case voxtralgenerated
   case info
 }
