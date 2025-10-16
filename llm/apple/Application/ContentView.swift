@@ -112,16 +112,19 @@ struct ContentView: View {
   }
 
   enum ModelType {
+    case gemma3
     case llama
     case llava
     case qwen3
     case phi4
-    case gemma3
+    case smollm3
     case voxtral
 
     static func fromPath(_ path: String) -> ModelType {
       let filename = (path as NSString).lastPathComponent.lowercased()
-      if filename.hasPrefix("llama") {
+      if filename.hasPrefix("gemma3") {
+        return .gemma3
+      } else if filename.hasPrefix("llama") {
         return .llama
       } else if filename.hasPrefix("llava") {
         return .llava
@@ -129,8 +132,8 @@ struct ContentView: View {
         return .qwen3
       } else if filename.hasPrefix("phi4") {
         return .phi4
-      } else if filename.hasPrefix("gemma3") {
-        return .gemma3
+      } else if filename.contains("smollm3") {
+        return .smollm3
       } else if filename.hasPrefix("voxtral") {
         return .voxtral
       }
@@ -377,11 +380,12 @@ struct ContentView: View {
     messages.append(Message(text: text))
     let outputType: MessageType = {
       switch modelType {
-      case .llama: return .llamagenerated
-      case .qwen3: return .qwengenerated
-      case .phi4: return .phi4generated
       case .gemma3: return .gemma3generated
+      case .llama: return .llamagenerated
       case .llava: return .llavagenerated
+      case .phi4: return .phi4generated
+      case .qwen3: return .qwengenerated
+      case .smollm3: return .smollm3generated
       case .voxtral: return .voxtralgenerated
       }
     }()
@@ -573,17 +577,19 @@ struct ContentView: View {
         } else {
           let formattedPrompt: String
           switch modelType {
-          case .qwen3:
-            let basePrompt = String(format: Constants.qwen3PromptTemplate, text)
-            formattedPrompt = thinkingMode ? basePrompt.replacingOccurrences(of: "<think>\n\n</think>\n\n\n", with: "") : basePrompt
+          case .gemma3:
+            formattedPrompt = String(format: Constants.gemma3PromptTemplate, text)
           case .llama:
             formattedPrompt = String(format: Constants.llama3PromptTemplate, text)
           case .llava:
             formattedPrompt = String(format: Constants.llavaPromptTemplate, text)
           case .phi4:
             formattedPrompt = String(format: Constants.phi4PromptTemplate, text)
-          case .gemma3:
-            formattedPrompt = String(format: Constants.gemma3PromptTemplate, text)
+          case .qwen3:
+            let basePrompt = String(format: Constants.qwen3PromptTemplate, text)
+            formattedPrompt = thinkingMode ? basePrompt.replacingOccurrences(of: "<think>\n\n</think>\n\n\n", with: "") : basePrompt
+          case .smollm3:
+            formattedPrompt = String(format: Constants.smolLm3PromptTemplate, text)
           case .voxtral:
             formattedPrompt = String(format: Constants.voxtralPromptTemplate, text)
           }
@@ -594,17 +600,17 @@ struct ContentView: View {
               shouldStopGenerating = true
               runnerHolder.textRunner?.stop()
             }
-            if modelType == .phi4 && token == "<|end|>" {
-              shouldStopGenerating = true
-              runnerHolder.textRunner?.stop()
-              return
-            }
             if modelType == .llama && (token == "<|eot_id|>" || token == "<|end_of_text|>") {
               shouldStopGenerating = true
               runnerHolder.textRunner?.stop()
               return
             }
-            if modelType == .qwen3 && token == "<|im_end|>" {
+            if modelType == .phi4 && token == "<|end|>" {
+              shouldStopGenerating = true
+              runnerHolder.textRunner?.stop()
+              return
+            }
+            if (modelType == .qwen3 || modelType == .smollm3) && token == "<|im_end|>" {
               shouldStopGenerating = true
               runnerHolder.textRunner?.stop()
               return
@@ -754,7 +760,7 @@ extension ContentView {
           "<|python_tag|>"
         ] + (2..<256).map { "<|reserved_special_token_\($0)|>" }
       )
-    case .qwen3, .phi4:
+    case .qwen3, .phi4, .smollm3:
       runnerHolder.textRunner = runnerHolder.textRunner ?? TextRunner(
         modelPath: modelPath,
         tokenizerPath: tokenizerPath
@@ -766,7 +772,7 @@ extension ContentView {
       )
     }
 
-    if (modelType == .llama || modelType == .qwen3 || modelType == .phi4),
+    if (modelType == .llama || modelType == .qwen3 || modelType == .phi4 || modelType == .smollm3),
        let runner = runnerHolder.textRunner, !runner.isLoaded() {
       var err: Error?
       let start = Date()
@@ -786,11 +792,12 @@ extension ContentView {
             if err == nil {
               let outputType: MessageType = {
                 switch modelType {
-                case .llama: return .llamagenerated
-                case .qwen3: return .qwengenerated
-                case .phi4: return .phi4generated
                 case .gemma3: return .gemma3generated
+                case .llama: return .llamagenerated
                 case .llava: return .llavagenerated
+                case .phi4: return .phi4generated
+                case .qwen3: return .qwengenerated
+                case .smollm3: return .smollm3generated
                 case .voxtral: return .voxtralgenerated
                 }
               }()
@@ -818,11 +825,12 @@ extension ContentView {
             if err == nil {
               let outputType: MessageType = {
                 switch modelType {
-                case .llama: return .llamagenerated
-                case .qwen3: return .qwengenerated
-                case .phi4: return .phi4generated
                 case .gemma3: return .gemma3generated
+                case .llama: return .llamagenerated
                 case .llava: return .llavagenerated
+                case .phi4: return .phi4generated
+                case .qwen3: return .qwengenerated
+                case .smollm3: return .smollm3generated
                 case .voxtral: return .voxtralgenerated
                 }
               }()
