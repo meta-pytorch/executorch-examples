@@ -12,6 +12,7 @@ plugins {
 }
 
 val qnnVersion: String? = project.findProperty("qnnVersion") as? String
+val useLocalAar: Boolean? = (project.findProperty("useLocalAar") as? String)?.toBoolean()
 
 android {
   namespace = "com.example.executorchllamademo"
@@ -59,7 +60,11 @@ dependencies {
   implementation("androidx.constraintlayout:constraintlayout:2.2.0-alpha12")
   implementation("com.facebook.fbjni:fbjni:0.5.1")
   implementation("com.google.code.gson:gson:2.8.6")
-  implementation("org.pytorch:executorch-android:1.0.0-rc1")
+  if (useLocalAar == true) {
+    implementation(files("libs/executorch.aar"))
+  } else {
+    implementation("org.pytorch:executorch-android:1.0.0-rc1")
+  }
   implementation("com.google.android.material:material:1.12.0")
   implementation("androidx.activity:activity:1.9.0")
   implementation("org.json:json:20250107")
