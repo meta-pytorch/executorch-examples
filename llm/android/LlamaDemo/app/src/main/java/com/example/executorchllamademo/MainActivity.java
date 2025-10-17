@@ -94,10 +94,12 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
     }
     result = PromptFormat.replaceSpecialToken(mCurrentSettingsFields.getModelType(), result);
 
-    if (mCurrentSettingsFields.getModelType() == ModelType.LLAMA_3 && result.equals("<|start_header_id|>")) {
+    if (mCurrentSettingsFields.getModelType() == ModelType.LLAMA_3
+        && result.equals("<|start_header_id|>")) {
       sawStartHeaderId = true;
     }
-    if (mCurrentSettingsFields.getModelType() == ModelType.LLAMA_3 && result.equals("<|end_header_id|>")) {
+    if (mCurrentSettingsFields.getModelType() == ModelType.LLAMA_3
+        && result.equals("<|end_header_id|>")) {
       sawStartHeaderId = false;
       return;
     }
@@ -105,7 +107,8 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
       return;
     }
 
-    boolean keepResult = !(result.equals("\n") || result.equals("\n\n")) || !mResultMessage.getText().isEmpty();
+    boolean keepResult =
+        !(result.equals("\n") || result.equals("\n\n")) || !mResultMessage.getText().isEmpty();
     if (keepResult) {
       mResultMessage.appendText(result);
       run();
@@ -146,15 +149,24 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
 
     long runStartTime = System.currentTimeMillis();
     // Create LlmModule with dataPath
-    mModule =
-        new LlmModule(
-            ModelUtils.getModelCategory(
-                mCurrentSettingsFields.getModelType(), mCurrentSettingsFields.getBackendType()),
-            modelPath,
-            tokenizerPath,
-            temperature,
-            dataPath);
-
+    if (dataPath.isEmpty()) {
+      mModule =
+          new LlmModule(
+              ModelUtils.getModelCategory(
+                  mCurrentSettingsFields.getModelType(), mCurrentSettingsFields.getBackendType()),
+              modelPath,
+              tokenizerPath,
+              temperature);
+    } else {
+      mModule =
+          new LlmModule(
+              ModelUtils.getModelCategory(
+                  mCurrentSettingsFields.getModelType(), mCurrentSettingsFields.getBackendType()),
+              modelPath,
+              tokenizerPath,
+              temperature,
+              dataPath);
+    }
     int loadResult = mModule.load();
     long loadDuration = System.currentTimeMillis() - runStartTime;
     String modelLoadError = "";
@@ -453,33 +465,36 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
         });
     mAudioButton = requireViewById(R.id.audioButton);
     mAudioButton.setOnClickListener(
-            view -> {
-              Log.e("MAIN", "PREFI1LL!!");
-              if (mModule != null && mCurrentSettingsFields.getModelType() == ModelType.VOXTRAL) {
-                try {
-                  byte[] byteData = java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("/data/local/tmp/llama/audio_features.bin"));
-                  java.nio.ByteBuffer buffer = java.nio.ByteBuffer.wrap(byteData).order(ByteOrder.LITTLE_ENDIAN);
-                  int floatCount = byteData.length / Float.BYTES;
-                  float[] floats = new float[floatCount];
+        view -> {
+          Log.e("MAIN", "PREFI1LL!!");
+          if (mModule != null && mCurrentSettingsFields.getModelType() == ModelType.VOXTRAL) {
+            try {
+              byte[] byteData =
+                  java.nio.file.Files.readAllBytes(
+                      java.nio.file.Paths.get("/data/local/tmp/llama/audio_features.bin"));
+              java.nio.ByteBuffer buffer =
+                  java.nio.ByteBuffer.wrap(byteData).order(ByteOrder.LITTLE_ENDIAN);
+              int floatCount = byteData.length / Float.BYTES;
+              float[] floats = new float[floatCount];
 
-                  // Read floats from the buffer
-                  for (int i = 0; i < floatCount; i++) {
-                    floats[i] = buffer.getFloat();
-                  }
-                  int bins = 128;
-                  int frames = 3000;
-                  int batchSize = floatCount / (bins * frames);
-                  mModule.prefillPrompt("<s>[INST][BEGIN_AUDIO]");
-                  mModule.prefillAudio(floats, batchSize, bins, frames);
-                  mModule.prefillPrompt("What can you tell me about this audio?[/INST]");
-                  Log.e("MAIN", "PREFILL!!");
-
-                } catch (Exception e) {
-
-                }
+              // Read floats from the buffer
+              for (int i = 0; i < floatCount; i++) {
+                floats[i] = buffer.getFloat();
               }
-              mAddMediaLayout.setVisibility(View.GONE);
-            });
+              int bins = 128;
+              int frames = 3000;
+              int batchSize = floatCount / (bins * frames);
+              mModule.prefillPrompt("<s>[INST][BEGIN_AUDIO]");
+              mModule.prefillAudio(floats, batchSize, bins, frames);
+              mModule.prefillPrompt("What can you tell me about this audio?[/INST]");
+              Log.e("MAIN", "PREFILL!!");
+
+            } catch (Exception e) {
+
+            }
+          }
+          mAddMediaLayout.setVisibility(View.GONE);
+        });
     mCameraButton = requireViewById(R.id.cameraButton);
     mCameraButton.setOnClickListener(
         view -> {
@@ -687,11 +702,11 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
               ETLogging.getInstance().log("Starting runnable prefill image");
               ETImage img = processedImageList.get(0);
               ETLogging.getInstance().log("Llava start prefill image");
-                  mModule.prefillImages(
-                      img.getInts(),
-                      img.getWidth(),
-                      img.getHeight(),
-                      ModelUtils.VISION_MODEL_IMAGE_CHANNELS);
+              mModule.prefillImages(
+                  img.getInts(),
+                  img.getWidth(),
+                  img.getHeight(),
+                  ModelUtils.VISION_MODEL_IMAGE_CHANNELS);
             };
         executor.execute(runnable);
       }
@@ -766,8 +781,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
                           mCurrentSettingsFields.getModelType(),
                           mCurrentSettingsFields.getBackendType())
                       == ModelUtils.VISION_MODEL) {
-                    mModule.generate(
-                        finalPrompt, 2048, MainActivity.this, false);
+                    mModule.generate(finalPrompt, 2048, MainActivity.this, false);
                   } else if (mCurrentSettingsFields.getModelType() == ModelType.LLAMA_GUARD_3) {
                     String llamaGuardPromptForClassification =
                         PromptFormat.getFormattedLlamaGuardPrompt(rawPrompt);
