@@ -29,6 +29,7 @@ public class ModelUtils {
       switch (modelType) {
         case GEMMA_3:
         case LLAVA_1_5:
+        case VOXTRAL:
           return VISION_MODEL;
         case LLAMA_3:
         case QWEN_3:

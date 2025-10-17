@@ -234,6 +234,15 @@
                     android:layout_marginStart="40dp"
                     android:background="@drawable/custom_button_round"
                     android:src="@drawable/outline_image_48" />
+
+                <ImageButton
+                    android:id="@+id/audioButton"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:layout_marginStart="40dp"
+                    android:background="@drawable/custom_button_round"
+                    android:src="@drawable/baseline_audio_file_48" />
+
             </LinearLayout>
         </LinearLayout>
 

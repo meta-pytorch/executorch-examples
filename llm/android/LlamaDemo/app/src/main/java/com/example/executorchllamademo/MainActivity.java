@@ -46,6 +46,7 @@ import androidx.core.content.res.ResourcesCompat;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -61,6 +62,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
   private ImageButton mSendButton;
   private ImageButton mGalleryButton;
   private ImageButton mCameraButton;
+  private ImageButton mAudioButton;
   private ListView mMessagesView;
   private MessageAdapter mMessageAdapter;
   private LlmModule mModule = null;
@@ -88,6 +90,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
 
   @Override
   public void onResult(String result) {
+    Log.e("MAIN", "RESULT" + result);
     if (result.equals(PromptFormat.getStopToken(mCurrentSettingsFields.getModelType()))) {
       return;
     }
@@ -466,6 +469,32 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
                   .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE)
                   .build());
         });
+    mAudioButton = requireViewById(R.id.audioButton);
+    mAudioButton.setOnClickListener(
+            view -> {
+              if (mModule != null && mCurrentSettingsFields.getModelType() == ModelType.VOXTRAL) {
+                try {
+                  byte[] byteData = java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("/data/local/tmp/llama/audio_features.bin"));
+                  java.nio.ByteBuffer buffer = java.nio.ByteBuffer.wrap(byteData).order(ByteOrder.LITTLE_ENDIAN);
+                  int floatCount = byteData.length / Float.BYTES;
+                  float[] floats = new float[floatCount];
+
+                  // Read floats from the buffer
+                  for (int i = 0; i < floatCount; i++) {
+                    floats[i] = buffer.getFloat();
+                  }
+                  int bins = 128;
+                  int frames = 3000;
+                  int batchSize = floatCount / (bins * frames);
+
+                  mModule.prefillAudio(floats, batchSize, bins, frames);
+
+                } catch (Exception e) {
+
+                }
+              }
+              mAddMediaLayout.setVisibility(View.GONE);
+            });
     mCameraButton = requireViewById(R.id.cameraButton);
     mCameraButton.setOnClickListener(
         view -> {
