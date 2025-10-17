@@ -23,6 +23,7 @@ print(path)
 cp "${DOWNLOADED_PATH}/tokenizer.model" .
 
 # Export a non-LoRA model with program-data separated.
+DIR="models/"
 MODEL="llama_3_2_1B"
 python -m executorch.extension.llm.export.export_llm \
     base.checkpoint="${DOWNLOADED_PATH}/consolidated.00.pth" \
@@ -33,8 +34,8 @@ python -m executorch.extension.llm.export.export_llm \
     model.dtype_override="fp32" \
     backend.xnnpack.enabled=true \
     backend.xnnpack.extended_ops=true \
-    export.output_name="${MODEL}.pte" \
-    export.foundation_weights_file="${MODEL}.ptd"
+    export.output_name="${DIR}/${MODEL}.pte" \
+    export.foundation_weights_file="${DIR}/${MODEL}.ptd"
 
 # Export a LoRA model, with program and data separated.
 LORA_MODEL="llama_3_2_1B_lora"
@@ -49,5 +50,5 @@ python -m executorch.extension.llm.export.export_llm \
     model.dtype_override="fp32" \
     backend.xnnpack.enabled=true \
     backend.xnnpack.extended_ops=true \
-    export.output_name="${LORA_MODEL}.pte" \
-    export.foundation_weights_file="foundation.ptd"
+    export.output_name="${DIR}/${LORA_MODEL}.pte" \
+    export.foundation_weights_file="${DIR}/foundation.ptd"
