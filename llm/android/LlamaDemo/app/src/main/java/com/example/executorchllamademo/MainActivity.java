@@ -45,7 +45,6 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-
 import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
@@ -483,23 +482,24 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
     mAudioButton = requireViewById(R.id.audioButton);
     mAudioButton.setOnClickListener(
         view -> {
-           // TODO(hsz): set audio path
+          // TODO(hsz): set audio path
           mAddMediaLayout.setVisibility(View.GONE);
-          String[] audioFiles = SettingsActivity.listLocalFile("/data/local/tmp/audio/", new String[] {".bin"});
+          String[] audioFiles =
+              SettingsActivity.listLocalFile("/data/local/tmp/audio/", new String[] {".bin"});
           AlertDialog.Builder audioFilePathBuilder = new AlertDialog.Builder(this);
           audioFilePathBuilder.setTitle("Select audio feature path");
           audioFilePathBuilder.setSingleChoiceItems(
-                  audioFiles,
-                  -1,
-                  (dialog, item) -> {
-
-          mAudioFileToPrefill = audioFiles[item];
-          mMessageAdapter.add(new Message("Selected audio: " + mAudioFileToPrefill, false, MessageType.SYSTEM, 0));
-          mMessageAdapter.notifyDataSetChanged();
-                    dialog.dismiss();
-                  });
+              audioFiles,
+              -1,
+              (dialog, item) -> {
+                mAudioFileToPrefill = audioFiles[item];
+                mMessageAdapter.add(
+                    new Message(
+                        "Selected audio: " + mAudioFileToPrefill, false, MessageType.SYSTEM, 0));
+                mMessageAdapter.notifyDataSetChanged();
+                dialog.dismiss();
+              });
           audioFilePathBuilder.create().show();
-
         });
     mCameraButton = requireViewById(R.id.cameraButton);
     mCameraButton.setOnClickListener(
@@ -796,12 +796,15 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
                           mCurrentSettingsFields.getModelType(),
                           mCurrentSettingsFields.getBackendType())
                       == ModelUtils.VISION_MODEL) {
-                    if (mCurrentSettingsFields.getModelType() == ModelType.VOXTRAL && mAudioFileToPrefill != null) {
+                    if (mCurrentSettingsFields.getModelType() == ModelType.VOXTRAL
+                        && mAudioFileToPrefill != null) {
                       prefillVoxtralAudio(mAudioFileToPrefill, finalPrompt);
                       mAudioFileToPrefill = null;
-                      mModule.generate("", ModelUtils.VISION_MODEL_SEQ_LEN, MainActivity.this, false);
+                      mModule.generate(
+                          "", ModelUtils.VISION_MODEL_SEQ_LEN, MainActivity.this, false);
                     } else {
-                      mModule.generate(finalPrompt, ModelUtils.VISION_MODEL_SEQ_LEN, MainActivity.this, false);
+                      mModule.generate(
+                          finalPrompt, ModelUtils.VISION_MODEL_SEQ_LEN, MainActivity.this, false);
                     }
                   } else if (mCurrentSettingsFields.getModelType() == ModelType.LLAMA_GUARD_3) {
                     String llamaGuardPromptForClassification =
