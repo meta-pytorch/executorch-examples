@@ -61,6 +61,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
   private ImageButton mSendButton;
   private ImageButton mGalleryButton;
   private ImageButton mCameraButton;
+  private ImageButton mAudioButton;
   private ListView mMessagesView;
   private MessageAdapter mMessageAdapter;
   private LlmModule mModule = null;
@@ -81,22 +82,27 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
   private Runnable memoryUpdater;
   private boolean mThinkMode = false;
   private int promptID = 0;
-  private long startPos = 0;
-  private static final int CONVERSATION_HISTORY_MESSAGE_LOOKBACK = 2;
   private Executor executor;
   private boolean sawStartHeaderId = false;
 
   @Override
   public void onResult(String result) {
     if (result.equals(PromptFormat.getStopToken(mCurrentSettingsFields.getModelType()))) {
+      // For gemma and llava, we need to call stop() explicitly
+      if (mCurrentSettingsFields.getModelType() == ModelType.GEMMA_3
+          || mCurrentSettingsFields.getModelType() == ModelType.LLAVA_1_5) {
+        mModule.stop();
+      }
       return;
     }
     result = PromptFormat.replaceSpecialToken(mCurrentSettingsFields.getModelType(), result);
 
-    if (mCurrentSettingsFields.getModelType() == ModelType.LLAMA_3 && result.equals("<|start_header_id|>")) {
+    if (mCurrentSettingsFields.getModelType() == ModelType.LLAMA_3
+        && result.equals("<|start_header_id|>")) {
       sawStartHeaderId = true;
     }
-    if (mCurrentSettingsFields.getModelType() == ModelType.LLAMA_3 && result.equals("<|end_header_id|>")) {
+    if (mCurrentSettingsFields.getModelType() == ModelType.LLAMA_3
+        && result.equals("<|end_header_id|>")) {
       sawStartHeaderId = false;
       return;
     }
@@ -104,7 +110,8 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
       return;
     }
 
-    boolean keepResult = !(result.equals("\n") || result.equals("\n\n")) || !mResultMessage.getText().isEmpty();
+    boolean keepResult =
+        !(result.equals("\n") || result.equals("\n\n")) || !mResultMessage.getText().isEmpty();
     if (keepResult) {
       mResultMessage.appendText(result);
       run();
@@ -466,6 +473,11 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
                   .setMediaType(ActivityResultContracts.PickVisualMedia.ImageOnly.INSTANCE)
                   .build());
         });
+    mAudioButton = requireViewById(R.id.audioButton);
+    mAudioButton.setOnClickListener(
+        view -> {
+          mAddMediaLayout.setVisibility(View.GONE);
+        });
     mCameraButton = requireViewById(R.id.cameraButton);
     mCameraButton.setOnClickListener(
         view -> {
@@ -661,7 +673,8 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
 
     // For LLava, we want to call prefill_image as soon as an image is selected
     // Llava only support 1 image for now
-    if (mCurrentSettingsFields.getModelType() == ModelType.LLAVA_1_5 || mCurrentSettingsFields.getModelType() == ModelType.GEMMA_3) {
+    if (mCurrentSettingsFields.getModelType() == ModelType.LLAVA_1_5
+        || mCurrentSettingsFields.getModelType() == ModelType.GEMMA_3) {
       List<ETImage> processedImageList = getProcessedImagesForModel(mSelectedImageUri);
       if (!processedImageList.isEmpty()) {
         mMessageAdapter.add(
@@ -673,12 +686,19 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
               ETLogging.getInstance().log("Starting runnable prefill image");
               ETImage img = processedImageList.get(0);
               ETLogging.getInstance().log("Llava start prefill image");
-              startPos =
-                  mModule.prefillImages(
-                      img.getInts(),
-                      img.getWidth(),
-                      img.getHeight(),
-                      ModelUtils.VISION_MODEL_IMAGE_CHANNELS);
+              if (mCurrentSettingsFields.getModelType() == ModelType.LLAVA_1_5) {
+                mModule.prefillImages(
+                    img.getInts(),
+                    img.getWidth(),
+                    img.getHeight(),
+                    ModelUtils.VISION_MODEL_IMAGE_CHANNELS);
+              } else if (mCurrentSettingsFields.getModelType() == ModelType.GEMMA_3) {
+                mModule.prefillImages(
+                    img.getFloats(),
+                    img.getWidth(),
+                    img.getHeight(),
+                    ModelUtils.VISION_MODEL_IMAGE_CHANNELS);
+              }
             };
         executor.execute(runnable);
       }
@@ -722,7 +742,6 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
           String rawPrompt = mEditTextMessage.getText().toString();
           String finalPrompt =
               mCurrentSettingsFields.getFormattedSystemAndUserPrompt(rawPrompt, mThinkMode);
-          mCurrentSettingsFields.getFormattedSystemAndUserPrompt(rawPrompt, mThinkMode);
           // We store raw prompt into message adapter, because we don't want to show the extra
           // tokens from system prompt
           mMessageAdapter.add(new Message(rawPrompt, true, MessageType.TEXT, promptID));
@@ -769,10 +788,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
                   } else {
                     ETLogging.getInstance().log("Running inference.. prompt=" + finalPrompt);
                     mModule.generate(
-                        finalPrompt,
-                        (int) (finalPrompt.length() * 0.75) + 64,
-                        MainActivity.this,
-                        false);
+                        finalPrompt, ModelUtils.TEXT_MODEL_SEQ_LEN, MainActivity.this, false);
                   }
 
                   long generateDuration = System.currentTimeMillis() - generateStartTime;
