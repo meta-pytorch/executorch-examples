@@ -46,7 +46,6 @@ import androidx.core.content.res.ResourcesCompat;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -88,8 +87,12 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
 
   @Override
   public void onResult(String result) {
-    Log.e("MAIN", "RESULT" + result);
     if (result.equals(PromptFormat.getStopToken(mCurrentSettingsFields.getModelType()))) {
+      // For gemma and llava, we need to call stop() explicitly
+      if (mCurrentSettingsFields.getModelType() == ModelType.GEMMA_3
+          || mCurrentSettingsFields.getModelType() == ModelType.LLAVA_1_5) {
+        mModule.stop();
+      }
       return;
     }
     result = PromptFormat.replaceSpecialToken(mCurrentSettingsFields.getModelType(), result);
@@ -473,33 +476,6 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
     mAudioButton = requireViewById(R.id.audioButton);
     mAudioButton.setOnClickListener(
         view -> {
-          Log.e("MAIN", "PREFI1LL!!");
-          if (mModule != null && mCurrentSettingsFields.getModelType() == ModelType.VOXTRAL) {
-            try {
-              byte[] byteData =
-                  java.nio.file.Files.readAllBytes(
-                      java.nio.file.Paths.get("/data/local/tmp/llama/audio_features.bin"));
-              java.nio.ByteBuffer buffer =
-                  java.nio.ByteBuffer.wrap(byteData).order(ByteOrder.LITTLE_ENDIAN);
-              int floatCount = byteData.length / Float.BYTES;
-              float[] floats = new float[floatCount];
-
-              // Read floats from the buffer
-              for (int i = 0; i < floatCount; i++) {
-                floats[i] = buffer.getFloat();
-              }
-              int bins = 128;
-              int frames = 3000;
-              int batchSize = floatCount / (bins * frames);
-              mModule.prefillPrompt("<s>[INST][BEGIN_AUDIO]");
-              mModule.prefillAudio(floats, batchSize, bins, frames);
-              mModule.prefillPrompt("What can you tell me about this audio?[/INST]");
-              Log.e("MAIN", "PREFILL!!");
-
-            } catch (Exception e) {
-
-            }
-          }
           mAddMediaLayout.setVisibility(View.GONE);
         });
     mCameraButton = requireViewById(R.id.cameraButton);
@@ -797,7 +773,8 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
                           mCurrentSettingsFields.getModelType(),
                           mCurrentSettingsFields.getBackendType())
                       == ModelUtils.VISION_MODEL) {
-                    mModule.generate(finalPrompt, 2048, MainActivity.this, false);
+                    mModule.generate(
+                        finalPrompt, ModelUtils.VISION_MODEL_SEQ_LEN, MainActivity.this, false);
                   } else if (mCurrentSettingsFields.getModelType() == ModelType.LLAMA_GUARD_3) {
                     String llamaGuardPromptForClassification =
                         PromptFormat.getFormattedLlamaGuardPrompt(rawPrompt);
@@ -811,10 +788,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
                   } else {
                     ETLogging.getInstance().log("Running inference.. prompt=" + finalPrompt);
                     mModule.generate(
-                        finalPrompt,
-                        (int) (finalPrompt.length() * 0.75) + 64,
-                        MainActivity.this,
-                        false);
+                        finalPrompt, ModelUtils.TEXT_MODEL_SEQ_LEN, MainActivity.this, false);
                   }
 
                   long generateDuration = System.currentTimeMillis() - generateStartTime;

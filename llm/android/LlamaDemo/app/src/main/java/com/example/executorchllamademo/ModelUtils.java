@@ -15,8 +15,8 @@ public class ModelUtils {
   // XNNPACK or Vulkan
   static final int VISION_MODEL = 2;
   static final int VISION_MODEL_IMAGE_CHANNELS = 3;
-  static final int VISION_MODEL_SEQ_LEN = 768;
-  static final int TEXT_MODEL_SEQ_LEN = 256;
+  static final int VISION_MODEL_SEQ_LEN = 2048;
+  static final int TEXT_MODEL_SEQ_LEN = 768;
 
   // MediaTek
   static final int MEDIATEK_TEXT_MODEL = 3;
