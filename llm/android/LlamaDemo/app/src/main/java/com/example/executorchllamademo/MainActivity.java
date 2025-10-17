@@ -90,6 +90,11 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
   public void onResult(String result) {
     Log.e("MAIN", "RESULT" + result);
     if (result.equals(PromptFormat.getStopToken(mCurrentSettingsFields.getModelType()))) {
+      // For gemma and llava, we need to call stop() explicitly
+      if (mCurrentSettingsFields.getModelType() == ModelType.GEMMA_3
+          || mCurrentSettingsFields.getModelType() == ModelType.LLAVA_1_5) {
+        mModule.stop();
+      }
       return;
     }
     result = PromptFormat.replaceSpecialToken(mCurrentSettingsFields.getModelType(), result);
@@ -500,7 +505,6 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
 
             }
           }
-          mAddMediaLayout.setVisibility(View.GONE);
         });
     mCameraButton = requireViewById(R.id.cameraButton);
     mCameraButton.setOnClickListener(
@@ -811,10 +815,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
                   } else {
                     ETLogging.getInstance().log("Running inference.. prompt=" + finalPrompt);
                     mModule.generate(
-                        finalPrompt,
-                        (int) (finalPrompt.length() * 0.75) + 64,
-                        MainActivity.this,
-                        false);
+                        finalPrompt, ModelUtils.TEXT_MODEL_SEQ_LEN, MainActivity.this, false);
                   }
 
                   long generateDuration = System.currentTimeMillis() - generateStartTime;

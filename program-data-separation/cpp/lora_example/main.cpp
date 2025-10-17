@@ -18,22 +18,22 @@
 #include <executorch/extension/llm/runner/text_llm_runner.h>
 #include <executorch/extension/llm/runner/text_prefiller.h>
 #include <executorch/extension/llm/runner/text_token_generator.h>
-
+#include <pytorch/tokenizers/hf_tokenizer.h>
 #if defined(ET_USE_THREADPOOL)
 #include <executorch/extension/threadpool/cpuinfo_utils.h>
 #include <executorch/extension/threadpool/threadpool.h>
 #endif
 
-DEFINE_string(lora_model_path, "llama_3_2_1B_lora.pte",
-              "LoRA model serialized in flatbuffer format.");
-DEFINE_string(llama_model_path, "llama_3_2_1B.pte",
-              "Model serialized in flatbuffer format.");
-DEFINE_string(foundation_weights_path, "foundation.ptd",
-              "Foundation weights serialized in flatbuffer format.");
+DEFINE_string(model1, "llama_3_2_1B_lora.pte",
+              "First model, a PTE file.");
+DEFINE_string(model2, "llama_3_2_1B.pte",
+              "Second model, a PTE file.");
+DEFINE_string(weights, "foundation.ptd",
+              "Shared weights, a PTD file.");
 
-DEFINE_string(tokenizer_path, "tokenizer.model", "Tokenizer stuff.");
+DEFINE_string(tokenizer_path, "tokenizer.model", "Tokenizer.");
 
-DEFINE_string(prompt, "The answer to the ultimate question is", "Prompt.");
+DEFINE_string(prompt, "What is the meaning of life?", "Prompt.");
 
 DEFINE_double(temperature, 0,
               "Temperature; Default is 0. 0 = greedy argmax sampling "
@@ -44,6 +44,10 @@ DEFINE_int32(
     "Total number of tokens to generate (prompt + output). Defaults to "
     "max_seq_len. If the number of input tokens + seq_len > max_seq_len, the "
     "output will be truncated to max_seq_len tokens.");
+
+DEFINE_bool(
+  apply_chat_template, false,
+  "Apply a LLAMA-style chat template to the prompt. Defaults to false.");
 
 using executorch::extension::Module;
 using executorch::runtime::Error;
@@ -75,9 +79,9 @@ int main(int argc, char *argv[]) {
 
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  const char *lora_model_path = FLAGS_lora_model_path.c_str();
-  const char *llama_model_path = FLAGS_llama_model_path.c_str();
-  const char *foundation_weights_path = FLAGS_foundation_weights_path.c_str();
+  const char *model1 = FLAGS_model1.c_str();
+  const char *model2 = FLAGS_model2.c_str();
+  const char *weights = FLAGS_weights.c_str();
 
   const char *tokenizer_path = FLAGS_tokenizer_path.c_str();
   const char *prompt = FLAGS_prompt.c_str();
@@ -93,35 +97,52 @@ int main(int argc, char *argv[]) {
 
   if (tokenizer1 == nullptr || tokenizer2 == nullptr) {
     ET_LOG(Info,
-           "Failed to load %s as a Tiktoken, Sentencepiece or Llama2.c "
+           "Failed to load %s as a Tiktoken, Sentencepiece, Llama2.c or HFTokenizer "
            "tokenizer, make sure the artifact is one of these types",
            tokenizer_path);
     return 1;
   }
 
   // Create runners.
-  std::unique_ptr<llm::TextLLMRunner> llama_runner =
-      llm::create_text_llm_runner(llama_model_path, std::move(tokenizer1),
-                                  foundation_weights_path, temperature);
-  std::unique_ptr<llm::TextLLMRunner> lora_runner =
-      llm::create_text_llm_runner(lora_model_path, std::move(tokenizer2),
-                                  foundation_weights_path, temperature);
+  std::unique_ptr<llm::TextLLMRunner> runner1 =
+      llm::create_text_llm_runner(model1, std::move(tokenizer1),
+                                  weights, temperature);
+  std::unique_ptr<llm::TextLLMRunner> runner2 =
+      llm::create_text_llm_runner(model1, std::move(tokenizer2),
+                                  weights, temperature);
 
-  // Generate.
-  llm::GenerationConfig config{.seq_len = seq_len, .temperature = temperature};
+  llm::GenerationConfig config{
+      .echo = false,
+      .seq_len = seq_len,
+      .temperature = temperature};
 
-  ET_LOG(Info, "Generating with llama...");
-  auto error = llama_runner->generate(prompt, config);
+  std::string formatted_prompt = std::string();
+  if (FLAGS_apply_chat_template) {
+    // System Prompt.
+    formatted_prompt += "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n";
+    formatted_prompt += "You are a helpful assistant.<|eot_id|>";
+    // User prompt.
+    formatted_prompt += "<|start_header_id|>user<|end_header_id|>\n";
+    formatted_prompt += prompt;
+    formatted_prompt += "<|eot_id|><|start_header_id|>assistant<|end_header_id|>";
+  } else {
+    formatted_prompt += prompt;
+  }
+
+  ET_LOG(Info, "Generating with model %s...", model1);
+  ET_LOG(Info, "Formatted prompt: %s", formatted_prompt.c_str());
+  auto error = runner1->generate(formatted_prompt, config);
   if (error != Error::Ok) {
-    ET_LOG(Error, "Failed to generate with llama_runner, error code %zu.",
-           error);
+    ET_LOG(Error, "Failed to generate with model %s, error code %zu.",
+           model1, error);
     return 1;
   }
 
-  error = lora_runner->generate(prompt, config);
+  ET_LOG(Info, "Generating with model %s...", model2);
+  error = runner2->generate(formatted_prompt, config);
   if (error != Error::Ok) {
-    ET_LOG(Error, "Failed to generate with lora_runner, error code %zu.",
-           error);
+    ET_LOG(Error, "Failed to generate with model %s, error code %zu.",
+           model2, error);
     return 1;
   }
 
