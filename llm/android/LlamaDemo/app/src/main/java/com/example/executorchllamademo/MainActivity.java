@@ -472,6 +472,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
     mAudioButton = requireViewById(R.id.audioButton);
     mAudioButton.setOnClickListener(
             view -> {
+              Log.e("MAIN", "PREFI1LL!!");
               if (mModule != null && mCurrentSettingsFields.getModelType() == ModelType.VOXTRAL) {
                 try {
                   byte[] byteData = java.nio.file.Files.readAllBytes(java.nio.file.Paths.get("/data/local/tmp/llama/audio_features.bin"));
@@ -486,8 +487,10 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
                   int bins = 128;
                   int frames = 3000;
                   int batchSize = floatCount / (bins * frames);
-
+                  mModule.prefillPrompt("<s>[INST][BEGIN_AUDIO]");
                   mModule.prefillAudio(floats, batchSize, bins, frames);
+                  mModule.prefillPrompt("What can you tell me about this audio?[/INST]");
+                  Log.e("MAIN", "PREFILL!!");
 
                 } catch (Exception e) {
 
@@ -784,7 +787,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
                           mCurrentSettingsFields.getBackendType())
                       == ModelUtils.VISION_MODEL) {
                     mModule.generate(
-                        finalPrompt, ModelUtils.VISION_MODEL_SEQ_LEN, MainActivity.this, false);
+                        finalPrompt, 2048, MainActivity.this, false);
                   } else if (mCurrentSettingsFields.getModelType() == ModelType.LLAMA_GUARD_3) {
                     String llamaGuardPromptForClassification =
                         PromptFormat.getFormattedLlamaGuardPrompt(rawPrompt);
