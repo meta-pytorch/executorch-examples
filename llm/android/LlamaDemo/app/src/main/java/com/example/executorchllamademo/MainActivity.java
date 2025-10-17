@@ -139,7 +139,14 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
   private void setLocalModel(
       String modelPath, String tokenizerPath, String dataPath, float temperature) {
     Message modelLoadingMessage = new Message("Loading model...", false, MessageType.SYSTEM, 0);
-    ETLogging.getInstance().log("Loading model " + modelPath + " with tokenizer " + tokenizerPath);
+    ETLogging.getInstance()
+        .log(
+            "Loading model "
+                + modelPath
+                + " with tokenizer "
+                + tokenizerPath
+                + " data path "
+                + dataPath);
     runOnUiThread(
         () -> {
           mSendButton.setEnabled(false);
@@ -690,7 +697,8 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
 
     // For LLava, we want to call prefill_image as soon as an image is selected
     // Llava only support 1 image for now
-    if (mCurrentSettingsFields.getModelType() == ModelType.LLAVA_1_5) {
+    if (mCurrentSettingsFields.getModelType() == ModelType.LLAVA_1_5
+        || mCurrentSettingsFields.getModelType() == ModelType.GEMMA_3) {
       List<ETImage> processedImageList = getProcessedImagesForModel(mSelectedImageUri);
       if (!processedImageList.isEmpty()) {
         mMessageAdapter.add(
@@ -702,11 +710,19 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
               ETLogging.getInstance().log("Starting runnable prefill image");
               ETImage img = processedImageList.get(0);
               ETLogging.getInstance().log("Llava start prefill image");
-              mModule.prefillImages(
-                  img.getInts(),
-                  img.getWidth(),
-                  img.getHeight(),
-                  ModelUtils.VISION_MODEL_IMAGE_CHANNELS);
+              if (mCurrentSettingsFields.getModelType() == ModelType.LLAVA_1_5) {
+                mModule.prefillImages(
+                    img.getInts(),
+                    img.getWidth(),
+                    img.getHeight(),
+                    ModelUtils.VISION_MODEL_IMAGE_CHANNELS);
+              } else if (mCurrentSettingsFields.getModelType() == ModelType.GEMMA_3) {
+                mModule.prefillImages(
+                    img.getFloats(),
+                    img.getWidth(),
+                    img.getHeight(),
+                    ModelUtils.VISION_MODEL_IMAGE_CHANNELS);
+              }
             };
         executor.execute(runnable);
       }
