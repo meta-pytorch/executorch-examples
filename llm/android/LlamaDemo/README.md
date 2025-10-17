@@ -30,7 +30,7 @@ First it’s important to note that by default, the app depends on [ExecuTorch l
 
 No modification is needed if you want to use the default ExecuTorch library.
 
-However, you can build your own ExecuTorch Android library (an AAR file). In app/build.gradle.kts file, replace `org.pytorch:executorch-android:x.y.z` with `files("path-to-aar")`.
+However, you can build your own ExecuTorch Android library (an AAR file). Copy the file to app/libs/executorch.aar. In gradle.properties file, add a line `useLocalAar=true` so that gradle uses that file.
 
 [This page](https://github.com/pytorch/executorch/blob/main/extension/android/README.md) contains the documentation for building the ExecuTorch Android library.
 
