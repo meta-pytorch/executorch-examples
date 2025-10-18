@@ -45,7 +45,12 @@ import androidx.core.content.ContextCompat;
 import androidx.core.content.res.ResourcesCompat;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import java.io.IOException;
 import java.lang.reflect.Type;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -84,6 +89,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
   private int promptID = 0;
   private Executor executor;
   private boolean sawStartHeaderId = false;
+  private String mAudioFileToPrefill;
 
   @Override
   public void onResult(String result) {
@@ -477,6 +483,22 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
     mAudioButton.setOnClickListener(
         view -> {
           mAddMediaLayout.setVisibility(View.GONE);
+          String[] audioFiles =
+              SettingsActivity.listLocalFile("/data/local/tmp/audio/", new String[] {".bin"});
+          AlertDialog.Builder audioFilePathBuilder = new AlertDialog.Builder(this);
+          audioFilePathBuilder.setTitle("Select audio feature path");
+          audioFilePathBuilder.setSingleChoiceItems(
+              audioFiles,
+              -1,
+              (dialog, item) -> {
+                mAudioFileToPrefill = audioFiles[item];
+                mMessageAdapter.add(
+                    new Message(
+                        "Selected audio: " + mAudioFileToPrefill, false, MessageType.SYSTEM, 0));
+                mMessageAdapter.notifyDataSetChanged();
+                dialog.dismiss();
+              });
+          audioFilePathBuilder.create().show();
         });
     mCameraButton = requireViewById(R.id.cameraButton);
     mCameraButton.setOnClickListener(
@@ -773,8 +795,16 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
                           mCurrentSettingsFields.getModelType(),
                           mCurrentSettingsFields.getBackendType())
                       == ModelUtils.VISION_MODEL) {
-                    mModule.generate(
-                        finalPrompt, ModelUtils.VISION_MODEL_SEQ_LEN, MainActivity.this, false);
+                    if (mCurrentSettingsFields.getModelType() == ModelType.VOXTRAL
+                        && mAudioFileToPrefill != null) {
+                      prefillVoxtralAudio(mAudioFileToPrefill, finalPrompt);
+                      mAudioFileToPrefill = null;
+                      mModule.generate(
+                          "", ModelUtils.VISION_MODEL_SEQ_LEN, MainActivity.this, false);
+                    } else {
+                      mModule.generate(
+                          finalPrompt, ModelUtils.VISION_MODEL_SEQ_LEN, MainActivity.this, false);
+                    }
                   } else if (mCurrentSettingsFields.getModelType() == ModelType.LLAMA_GUARD_3) {
                     String llamaGuardPromptForClassification =
                         PromptFormat.getFormattedLlamaGuardPrompt(rawPrompt);
@@ -806,6 +836,28 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
           executor.execute(runnable);
         });
     mMessageAdapter.notifyDataSetChanged();
+  }
+
+  private void prefillVoxtralAudio(String audioFeaturePath, String textPrompt) {
+    try {
+      byte[] byteData = Files.readAllBytes(Paths.get(audioFeaturePath));
+      ByteBuffer buffer = ByteBuffer.wrap(byteData).order(ByteOrder.LITTLE_ENDIAN);
+      int floatCount = byteData.length / Float.BYTES;
+      float[] floats = new float[floatCount];
+
+      // Read floats from the buffer
+      for (int i = 0; i < floatCount; i++) {
+        floats[i] = buffer.getFloat();
+      }
+      int bins = 128;
+      int frames = 3000;
+      int batchSize = floatCount / (bins * frames);
+      mModule.prefillPrompt("<s>[INST][BEGIN_AUDIO]");
+      mModule.prefillAudio(floats, batchSize, bins, frames);
+      mModule.prefillPrompt(textPrompt + "[/INST]");
+    } catch (IOException e) {
+      Log.e("AudioPrefill", "Audio file error");
+    }
   }
 
   @Override
