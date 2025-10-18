@@ -482,7 +482,6 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
     mAudioButton = requireViewById(R.id.audioButton);
     mAudioButton.setOnClickListener(
         view -> {
-          // TODO(hsz): set audio path
           mAddMediaLayout.setVisibility(View.GONE);
           String[] audioFiles =
               SettingsActivity.listLocalFile("/data/local/tmp/audio/", new String[] {".bin"});

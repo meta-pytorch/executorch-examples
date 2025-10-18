@@ -129,6 +129,6 @@ public class ETImage {
       finalWidth = Math.round(maxLength / aspectRatio);
     }
 
-    return Bitmap.createScaledBitmap(bitmap, 896, 896, false);
+    return Bitmap.createScaledBitmap(bitmap, finalWidth, finalHeight, false);
   }
 }
