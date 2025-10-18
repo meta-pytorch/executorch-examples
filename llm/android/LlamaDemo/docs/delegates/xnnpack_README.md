@@ -166,7 +166,7 @@ This is running the shell script which configures the required core ExecuTorch, 
 ### Alternative: Use prebuilt AAR library
 Simply add ExecuTorch to your gradle dependency:
 ```
-implementation("org.pytorch:executorch-android:1.0.0-rc1")
+implementation("org.pytorch:executorch-android:1.0.0")
 ```
 
 ## Run the Android Demo App
