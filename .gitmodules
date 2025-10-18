@@ -1,21 +1,9 @@
-[submodule "efficient_sam/wasm/executorch"]
-	path = efficient_sam/wasm/executorch
+[submodule "third-party/executorch"]
+	path = third-party/executorch
 	url = https://github.com/pytorch/executorch.git
-
-[submodule "mv2/cpp/executorch"]
-	path = mv2/cpp/executorch
-	url = https://github.com/pytorch/executorch.git
-	branch = release/0.6
-
-[submodule "mv2/wasm/executorch"]
-	path = mv2/wasm/executorch
-	url = https://github.com/pytorch/executorch.git
+	branch = release/1.0
 
 [submodule "program-data-separation/cpp/executorch"]
 	path = program-data-separation/cpp/executorch
 	url = https://github.com/pytorch/executorch.git
 	branch = release/0.7
-
-[submodule "stories110M/wasm/executorch"]
-	path = stories110M/wasm/executorch
-	url = https://github.com/pytorch/executorch.git

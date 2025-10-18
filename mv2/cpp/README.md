@@ -6,7 +6,7 @@ This is a simple C++ demo application that uses the ExecuTorch library for Mobil
 
 0. Export the model. See [mv2/python/README.md](../python/README.md)
 
-1. The ExecuTorch repository is already configured as a git submodule at `~/executorch-examples/mv2/cpp/executorch/`. To initialize it:
+1. The ExecuTorch repository is configured as a git submodule at `~/executorch-examples/third-party/executorch/`, with `mv2/cpp/executorch` being a symlink to it. To initialize:
    ```bash
     cd ~/executorch-examples/
     git submodule sync
@@ -36,7 +36,7 @@ This is a simple C++ demo application that uses the ExecuTorch library for Mobil
 
 - CMake 3.18 or higher
 - C++17 compatible compiler
-- ExecuTorch library (release/0.6)
+- ExecuTorch library (release/1.0)
 
 ## Notes
 

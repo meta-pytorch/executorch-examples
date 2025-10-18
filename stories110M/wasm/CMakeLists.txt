@@ -8,6 +8,9 @@
 # cmake-format -i CMakeLists.txt
 # ~~~
 
+cmake_minimum_required(VERSION 3.19)
+project(stories110M_wasm_demo)
+
 add_subdirectory("executorch")
 
 # Tokenizer

@@ -14,6 +14,6 @@ echo '{"dim": 768, "multiple_of": 32, "n_heads": 12, "n_layers": 12, "norm_eps":
 
 cd executorch
 
-python3 -m extension.llm.export.export_llm base.checkpoint="$temp_pt" base.params="$temp_params" backend.xnnpack.enabled=True model.use_kv_cache=True export.output_name=../stories110M.pte
+python -m extension.llm.export.export_llm base.checkpoint="$temp_pt" base.params="$temp_params" backend.xnnpack.enabled=True model.use_kv_cache=True export.output_name=../stories110M.pte
 
 rm "$temp_pt" "$temp_params"

@@ -7,7 +7,7 @@
 
 cd executorch
 
-python3 -c "
+python -c "
 from examples.models.model_factory import EagerModelFactory
 from executorch.backends.xnnpack.partition.xnnpack_partitioner import XnnpackPartitioner
 from executorch.exir import to_edge_transform_and_lower
