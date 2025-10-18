@@ -24,10 +24,10 @@ public class ETImage {
   private final Uri uri;
   private final ContentResolver contentResolver;
 
-  ETImage(ContentResolver contentResolver, Uri uri) {
+  ETImage(ContentResolver contentResolver, Uri uri, int sideSize) {
     this.contentResolver = contentResolver;
     this.uri = uri;
-    bytes = getBytesFromImageURI(uri);
+    bytes = getBytesFromImageURI(uri, sideSize);
   }
 
   public int getWidth() {
@@ -64,10 +64,9 @@ public class ETImage {
     return floatArray;
   }
 
-  private byte[] getBytesFromImageURI(Uri uri) {
+  private byte[] getBytesFromImageURI(Uri uri, int sideSize) {
     try {
-      int RESIZED_IMAGE_WIDTH = 336;
-      Bitmap bitmap = resizeImage(uri, RESIZED_IMAGE_WIDTH);
+      Bitmap bitmap = resizeImage(uri, sideSize);
 
       if (bitmap == null) {
         ETLogging.getInstance().log("Unable to get bytes from Image URI. Bitmap is null");
@@ -102,7 +101,7 @@ public class ETImage {
   }
 
   @Nullable
-  private Bitmap resizeImage(Uri uri, int maxLength) throws FileNotFoundException {
+  private Bitmap resizeImage(Uri uri, int sideSize) throws FileNotFoundException {
     InputStream inputStream = contentResolver.openInputStream(uri);
     if (inputStream == null) {
       ETLogging.getInstance().log("Unable to resize image, input streams is null");
@@ -114,21 +113,6 @@ public class ETImage {
       return null;
     }
 
-    float aspectRatio;
-    int finalWidth, finalHeight;
-
-    if (bitmap.getWidth() > bitmap.getHeight()) {
-      // width > height --> width = maxLength, height scale with aspect ratio
-      aspectRatio = bitmap.getWidth() / (float) bitmap.getHeight();
-      finalWidth = maxLength;
-      finalHeight = Math.round(maxLength / aspectRatio);
-    } else {
-      // height >= width --> height = maxLength, width scale with aspect ratio
-      aspectRatio = bitmap.getHeight() / (float) bitmap.getWidth();
-      finalHeight = maxLength;
-      finalWidth = Math.round(maxLength / aspectRatio);
-    }
-
-    return Bitmap.createScaledBitmap(bitmap, finalWidth, finalHeight, false);
+    return Bitmap.createScaledBitmap(bitmap, sideSize, sideSize, false);
   }
 }
