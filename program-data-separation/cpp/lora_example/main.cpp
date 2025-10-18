@@ -130,7 +130,6 @@ int main(int argc, char *argv[]) {
   }
 
   ET_LOG(Info, "Generating with model %s...", model1);
-  ET_LOG(Info, "Formatted prompt: %s", formatted_prompt.c_str());
   auto error = runner1->generate(formatted_prompt, config);
   if (error != Error::Ok) {
     ET_LOG(Error, "Failed to generate with model %s, error code %zu.",
