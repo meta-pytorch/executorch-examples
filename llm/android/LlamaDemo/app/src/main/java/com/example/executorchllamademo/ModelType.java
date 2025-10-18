@@ -20,12 +20,12 @@ public enum ModelType {
   public String toString() {
     // Replace underscores with spaces, capitalize words, and handle special cases
     String pretty = name().replace('_', ' ').toLowerCase();
-    // Optionally, handle special capitalization
-    pretty = pretty.replace("llava 1 5", "LLaVA 1.5");
     // Capitalize the first letter if needed
     if (!pretty.isEmpty()) {
       pretty = pretty.substring(0, 1).toUpperCase() + pretty.substring(1);
     }
+    // Optionally, handle special capitalization
+    pretty = pretty.replace("Llava 1 5", "LLaVA 1.5");
     return pretty;
   }
 }
