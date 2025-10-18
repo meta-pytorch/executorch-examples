@@ -652,7 +652,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
       case GEMMA_3:
         return 896;
       default:
-        return 0;
+        throw new IllegalArgumentException("Unsupported model type: " + mCurrentSettingsFields.getModelType());
     }
   }
 
