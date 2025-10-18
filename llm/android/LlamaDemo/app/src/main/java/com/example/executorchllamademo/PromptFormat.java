@@ -67,6 +67,8 @@ public class PromptFormat {
         return "</s>";
       case QWEN_3:
         return "<|endoftext|>";
+      case VOXTRAL:
+        return "</s>";
       default:
         return "";
     }
