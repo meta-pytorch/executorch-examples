@@ -9,7 +9,7 @@ python3 -m venv .venv && source .venv/bin/activate && pip install --upgrade pip
 ```
 Or alternatively, [install conda on your machine](https://conda.io/projects/conda/en/latest/user-guide/install/index.html)
 ```bash
-conda create -yn executorch-ptd python=3.10.0 && conda activate executorch-ptd
+conda create -yn executorch-lora python=3.10.0 && conda activate executorch-lora
 ```
 
 ## Install executorch
@@ -18,8 +18,7 @@ Please install executorch. If you are using your own trained adapter (not the ex
 ```
 pip install executorch==1.0.0
 ```
-
-You can also install from the nightly build.
+You can also install from a recent nightly build.
 ```
 pip install executorch==1.1.0.devYYYYMMDD --extra-index-url https://download.pytorch.org/whl/nightly/cpu
 ```
@@ -118,9 +117,9 @@ RSS after loading model: 7941.667969 MiB
 RSS after prompt prefill: 7941.667969 MiB
 RSS after finishing text generation: 7941.667969 MiB
 ```
-There is about ~1.4GB memory increase between running the two models.
-~1GB comes from embeddings that are not lowered to XNNPACK (and currently are not shared). This can be alleviated by quantizing the embeddings by adding the config `quantization.embedding_quantize=\'4,32\'` to the export command.
-~40MB comes from running the non-lora model, to running the lora model.
+There is about ~1GB memory increase between running the two models.
+Most of that comes from embeddings that are not lowered to XNNPACK (and currently are not shared). This can be alleviated by quantizing the embeddings by adding the config `quantization.embedding_quantize=\'4,32\'` to the export command.
+~40MB comes from the adapter weights of the lora model.
 
 You can see the difference without weight-sharing by removing the flag `-DEXECUTORCH_XNNPACK_ENABLE_WEIGHT_CACHE=True` from `build_example.sh`. Expect to see almost double the memory usage, ie. ~14-15GB instead of ~8GB.
 

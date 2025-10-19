@@ -4,16 +4,15 @@ This directory contains the C++ code for the LoRA demo.
 
 You'll learn how to:
 1. Export LoRA PTE files that share a single foundation weight file.
-2. Load and run the LoRA PTE files, and notice that the runtime memory is not doubled as the foundation weights are shared.
+2. Load and run the LoRA PTE files, and notice that the runtime memory increases by the LoRA adapter size (small) and not the foundation weight size (large), because the foundation weights are shared.
 
 Note:
 - Weight-sharing is supported with the XNNPACK backend.
-- Quantization (outside of embedding quantization) is not supported when weight-sharing.
+- Quantization (outside of embedding quantization) is currently not supported when weight-sharing.
 - There are many ways to fine-tune LoRA adapters. We will go through a few examples to create a demo.
 
 ## Size savings.
 
-Size results will vary depending on the model and LoRA config. For this demo, we save ~5GB of disk space by storing weights in a separate, sharable file and ~5GB runtime memory by sharing weights at runtime through the XNNPACK weight cache. Detailed results are below.
 Size results will vary depending on the model and LoRA config. For this demo, we save ~5GB of disk space by storing weights in a separate, sharable file and ~5GB runtime memory by sharing weights at runtime through the XNNPACK weight cache. Detailed results are below.
 
 ### XNNPACK weight sharing.
@@ -24,19 +23,18 @@ The XNNPACK backend is a singleton. Weight sharing is implemented via the XNNPAC
 Download pre-trained dummy adapter to export and run along with a regular Llama-3-2-1B model.
 
 ## Fine-tune from scratch with Unsloth and Llama-3-2-1B.
-We can use [Unsloth](https://unsloth.ai/), a popular tool to finetune and train LLMs, to create our LoRA adapters. Unsloth provides a [colab notebook](https://docs.unsloth.ai/get-started/fine-tuning-llms-guide/datasets-guide#synthetic-dataset-notebook) that showcases how to generate data using the Meta Synthetic Data Kit.
-
-The training notebook takes a few shortcuts to reduce the latency/compute. You can change these settings for better results.
-1. Play around with the chunk sizes and overlap to see what works best for your dataset.
-2. The notebook trains on the last three data files generated; increase this for better coverage of your dataset.
-3. At the training step, the notebook uses max_steps=60 to speed things up. Setting num_train_epochs=1 (or greater) for a full run and max_steps=None has better results.
+[Unsloth](https://unsloth.ai/) provides a [colab notebook](https://docs.unsloth.ai/get-started/fine-tuning-llms-guide/datasets-guide#synthetic-dataset-notebook) that showcases how to generate data using the Meta Synthetic Data Kit, and then fine-tune it to create a LoRA adapter.
 
 For this demo, we trained on two datasets:
-1. executorch/docs/source: an adapter with domain knowledge of executorch. Using Meta Synthetic Data Kit, you can generate qa pairs based on the executorch documentation.
-2. Recent Nobel prize winners (2024-2025): an adapter with knowledge beyond the cutoff date of Llama-3-2-1B. This data was taken from [Wikipedia](https://en.wikipedia.org/wiki/List_of_Nobel_laureates).
+1. executorch/docs/source/: an adapter with domain knowledge of executorch. This used Meta Synthetic Data Kit to generate qa pairs based on the documentation.
+2. Recent Nobel prize winners (2024-2025): an adapter with knowledge beyond the cutoff date of Llama-3-2-1B. This data was taken from [Wikipedia](https://en.wikipedia.org/wiki/List_of_Nobel_laureates), and formatted into the chat template for training.
+
+The training notebook takes a few shortcuts to reduce the latency/compute. You can change these settings for better results.
+1. When generating data, play around with the chunk sizes and overlap to see what works best for your dataset.
+2. At the training step, the notebook uses max_steps=60 to speed things up. Setting num_train_epochs=1 (or greater) for a full run and max_steps=None has better results.
 
 Unsloth will output the adapter artifacts to the specified directory (in the colab notebook, 'lora_model/'). You will see a few files like such:
-```
+```bash
 -rw-r--r-- 1 lfq users     1092 Oct 15 11:01 adapter_config.json
 -rw-r--r-- 1 lfq users 45118424 Oct 15 11:01 adapter_model.safetensors
 -rw-r--r-- 1 lfq users     3827 Oct 15 11:01 chat_template.jinja
@@ -57,27 +55,29 @@ python3 -m venv .venv && source .venv/bin/activate && pip install --upgrade pip
 ```
 Or alternatively, [install conda on your machine](https://conda.io/projects/conda/en/latest/user-guide/install/index.html)
 ```bash
-conda create -yn executorch-ptd python=3.10.0 && conda activate executorch-ptd
+conda create -yn executorch-lora python=3.10.0 && conda activate executorch-lora
 ```
 
 ## Install executorch
-
-You can also install from the nightly build.
-```
-pip install executorch==1.1.0.devYYYYMMDD --extra-index-url https://download.pytorch.org/whl/nightly/cpu
-```
-
-Or [install from source](https://docs.pytorch.org/executorch/stable/using-executorch-building-from-source.html#install-executorch-pip-package-from-source).
+[Install from source](https://docs.pytorch.org/executorch/stable/using-executorch-building-from-source.html#install-executorch-pip-package-from-source).
 
 ```
-# Clone the ExecuTorch repo from GitHub.
-git clone https://github.com/pytorch/executorch.git && cd executorch
+# Move to the executorch subdirectory
+cd ~/executorch-examples/program-data-separation/cpp/executorch
+
+# Update to recent main.
+git pull origin/main
 
 # Install ExecuTorch pip package.
 ./install_executorch.sh --editable
 ```
 
-NOTE: some features are not available in executorch==1.0.0, use main or a recent nightly.
+You can also install from a recent nightly build.
+```
+pip install executorch==1.1.0.devYYYYMMDD --extra-index-url https://download.pytorch.org/whl/nightly/cpu
+```
+
+NOTE: use main or a recent nightly, as some features are not available in executorch==1.0.0.
 
 ## Download base model
 We're using https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct.
@@ -115,16 +115,19 @@ python -m executorch.extension.llm.export.export_llm \
     export.foundation_weights_file="foundation.ptd"
 ```
 
-Expect to see two files: '<model_name>.pte' and 'foundation.ptd'. Run the command again to generate more adapter PTE files. For example:
+Expect to see two files: '<model_name>.pte' and 'foundation.ptd'. Run the command again to generate more adapter PTE files. The generated `foundation.ptd` files should all be the same (we are using the same base model) and you only need to keep one of them.
 
-```
+Example files, trained on executorch/docs/source/ and recent Nobel prize winners.
+```bash
+# executorch docs trained adapter model.
 -rw-r--r-- 1 lfq users   45555712 Oct 17 18:05 et.pte
+# foundation weight file
 -rw-r--r-- 1 lfq users 5994013600 Oct 17 18:05 foundation.ptd
+# Nobel prize winners trained adapter model.
 -rw-r--r-- 1 lfq users   45555712 Oct 17 18:00 nobel.pte
 ```
 
-The `foundation.ptd` file should be the same regardless of the adapter.
-Notice the adapter PTE files about the size of the adapter_model.safetensors file generated during training. The PTE contains the adapter weights (which are not shared) and the program.
+Notice the adapter PTE files are about the same size as the `adapter_model.safetensors` file generated during training. The PTE contains the adapter weights (which are not shared) and the program.
 
 ## Install runtime dependencies.
 The ExecuTorch repository is configured as a git submodule at `~/executorch-examples/program-data-separation/cpp/executorch`.  To initialize it:
@@ -132,9 +135,12 @@ The ExecuTorch repository is configured as a git submodule at `~/executorch-exam
 cd ~/executorch-examples/
 git submodule sync
 git submodule update --init --recursive
-```
-Install dev requirements for ExecuTorch:
 
+# To update to the remote main branch.
+git submodule update --remote program-data-separation/cpp/executorch
+```
+
+Install dev requirements for ExecuTorch:
 ```bash
 cd ~/executorch-examples/program-data-separation/cpp/executorch
 pip install -r requirements-dev.txt
@@ -157,7 +163,7 @@ sh build_example.sh
 ```bash
 cd ~/executorch-examples/program-data-separation/cpp/lora_example
 
-DOWNLOADED_PATH=Llama-3.2-1B-Instruct
+DOWNLOADED_PATH=~/path/to/Llama-3.2-1B-Instruct/
 ./build/bin/executorch_program_data_separation \
     --tokenizer_path="${DOWNLOADED_PATH}" \
     --model1="et.pte" \
@@ -166,19 +172,68 @@ DOWNLOADED_PATH=Llama-3.2-1B-Instruct
     --prompt="Who were the winners of the Nobel Prize in Physics in 2025?" \
     --apply_chat_template
 ```
-Set `apply_chat_template` to true as this was trained as a chatbot.
+Passing in the `DOWNLOADED_PATH` as the tokenizer directory will invoke the HFTokenizer, and parse additional tokenizers files: `tokenizer_config.json` and `special_tokens_map.json`. `special_tokens_map.json` tells us which bos/eos token to use, especially if there are multiple.
+
+`apply_chat_template` formats the prompt according to the LLAMA chat template, which is what the adapter was trained on.
 
 Sample output:
+```
+I 00:00:00.538779 executorch:main.cpp:133] Generating with model et.pte..
+...
+I 00:00:06.999737 executorch:text_llm_runner.cpp:182] RSS after prompt prefill: 6941.296875 MiB (0 if unsupported)
+I don't have information on the winners of the Nobel Prize in Physics in 2025.<|eot_id|>
+...
+I 00:00:11.635379 executorch:main.cpp:141] Generating with model nobel.pte...
+...
+I 00:00:14.109447 executorch:text_llm_runner.cpp:182] RSS after prompt prefill: 8041.632812 MiB (0 if unsupported)
+John Clarke, Michel H. Devoret, John M. Martinis<|eot_id|>
+```
+We can see that the ExecuTorch-trained adapter model does not have knowledge of the recent Nobel Prize winners, as neither the base model or adapter was trained on it. Meanwhile, the Nobel-prize adapter model can answer well.
 
-
+There is about ~1.1GB memory increase between running the two models.
+Most of that (about ~1GB) comes from embeddings that are not lowered to XNNPACK (and currently are not shared). This can be alleviated by quantizing the embeddings by adding the config `quantization.embedding_quantize=\'4,32\'` to the export command.
+~50MB comes from the adapter model, which is also shared.
 
 Let's try with an executorch-specific prompt.
-```
-DOWNLOADED_PATH=Llama-3.2-1B-Instruct
+```bash
+cd ~/executorch-examples/program-data-separation/cpp/lora_example
+
+DOWNLOADED_PATH=~/path/to/Llama-3.2-1B-Instruct/
 ./build/bin/executorch_program_data_separation \
     --tokenizer_path="${DOWNLOADED_PATH}" \
-    --model1="adapter_model1.pte" \
-    --model2="adapter_model2.pte"  \
+    --model1="et.pte" \
+    --model2="nobel.pte"  \
     --weights="foundation.ptd" \
-    --prompt="Help me get started with ExecuTorch"
+    --prompt="Help me get started with ExecuTorch in 3 steps" \
+    --apply_chat_template
 ```
+
+Sample output:
+```
+...
+I 00:00:00.554048 executorch:main.cpp:133] Generating with model et.pte...
+...
+Here are 3 steps to get started with ExecuTorch:
+
+ Step 1: Install ExecuTorch dependencies. This includes installing Python 3.8+ library, PyTorch library, and the ExecuTorch runtime.
+
+ Step 2: Set up a Python environment with pip and a virtual environment (e.g., conda) to isolate ExecuTorch dependencies.
+
+ Step 3: Clone the Execu
+I 00:00:27.243400 executorch:text_llm_runner.cpp:206] RSS after finishing text generation: 6940.410156 MiB (0 if unsupported)
+...
+I 00:00:27.243504 executorch:main.cpp:141] Generating with model nobel.pte...
+...
+Here are the 3 steps to get started with Excetorch:
+
+**Step 1: Install Node.js and npm**
+
+Excetorch is a JavaScript compiler, so you'll need Node.js and npm (the Node Package Manager) installed on your computer. You can download Node.js from the official website and npm from the npm website. Follow the installation instructions for your operating system.
+
+**Step 2: Install Excetorch**
+
+
+I 00:00:50.189743 executorch:text_llm_runner.cpp:206] RSS after finishing text generation: 8039.152344 MiB (0 if unsupported)
+```
+
+The ExecuTorch-trained adapter model has domain knowledge of ExecuTorch codebase, whereas the Nobel-prize trained adapter model does not.

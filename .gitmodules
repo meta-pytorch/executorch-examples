@@ -6,4 +6,4 @@
 [submodule "program-data-separation/cpp/executorch"]
 	path = program-data-separation/cpp/executorch
 	url = https://github.com/pytorch/executorch.git
-	branch = release/0.7
+	branch = main
