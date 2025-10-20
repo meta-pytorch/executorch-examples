@@ -4,25 +4,30 @@ This directory contains the C++ code for the LoRA demo.
 
 You'll learn how to:
 1. Export LoRA PTE files that share a single foundation weight file.
-2. Load and run the LoRA PTE files, and notice that the runtime memory increases by the LoRA adapter size (small) and not the foundation weight size (large), because the foundation weights are shared.
+2. Load and run multiple LoRA PTE files at the same, and notice that the runtime memory increases by the LoRA adapter size (small) and not the foundation weight size (large), because the foundation weights are shared.
 
 Note:
 - Weight-sharing is supported with the XNNPACK backend.
 - Quantization (outside of embedding quantization) is currently not supported when weight-sharing.
 - There are many ways to fine-tune LoRA adapters. We will go through a few examples to create a demo.
 
-## Size savings.
+## Table of Contents
+- [Size Savings](#size-savings)
+- [Fine-tuning](#finetune-from-scratch-with-unsloth-and-llama)
+- [Installation](#install-executorch)
+- [Export models](#export-models)
+- [Run models](#install-runtime-dependencies)
+- [Demo video](#demo-video)
+
+## Size savings
 
 Size results will vary depending on the model and LoRA config. For this demo, we save ~5GB of disk space by storing weights in a separate, sharable file and ~5GB runtime memory by sharing weights at runtime through the XNNPACK weight cache. Detailed results are below.
 
-### XNNPACK weight sharing.
+### XNNPACK weight sharing
 
 The XNNPACK backend is a singleton. Weight sharing is implemented via the XNNPACK weight cache. At delegate init time, XNNPACK checks the weight cache for the weights it needs. If they don't exist, XNNPACK will fetch weights from the NamedDataMap (the API that exposes weights in a PTD file), pack them, store them in the weight cache and free the original. This means we won't keep around multiple copies of the same weights.
 
-## [Quick Start](quick_start.md)
-Download pre-trained dummy adapter to export and run along with a regular Llama-3-2-1B model.
-
-## Fine-tune from scratch with Unsloth and Llama-3-2-1B.
+## Finetune from scratch with Unsloth and Llama
 [Unsloth](https://unsloth.ai/) provides a [colab notebook](https://docs.unsloth.ai/get-started/fine-tuning-llms-guide/datasets-guide#synthetic-dataset-notebook) that showcases how to generate data using the Meta Synthetic Data Kit, and then fine-tune it to create a LoRA adapter.
 
 For this demo, we trained on two datasets:
@@ -48,16 +53,6 @@ The files we want are:
 - adapter_config.json
 - adapter_model.safetensors
 
-## Virtual environment setup.
-Create and activate a Python virtual environment:
-```bash
-python3 -m venv .venv && source .venv/bin/activate && pip install --upgrade pip
-```
-Or alternatively, [install conda on your machine](https://conda.io/projects/conda/en/latest/user-guide/install/index.html)
-```bash
-conda create -yn executorch-lora python=3.10.0 && conda activate executorch-lora
-```
-
 ## Install executorch
 [Install from source](https://docs.pytorch.org/executorch/stable/using-executorch-building-from-source.html#install-executorch-pip-package-from-source).
 
@@ -66,7 +61,10 @@ conda create -yn executorch-lora python=3.10.0 && conda activate executorch-lora
 cd ~/executorch-examples/program-data-separation/cpp/executorch
 
 # Update to recent main.
-git pull origin/main
+git pull origin main
+
+git submodule sync
+git submodule update --init --recursive
 
 # Install ExecuTorch pip package.
 ./install_executorch.sh --editable
@@ -77,10 +75,11 @@ You can also install from a recent nightly build.
 pip install executorch==1.1.0.devYYYYMMDD --extra-index-url https://download.pytorch.org/whl/nightly/cpu
 ```
 
-NOTE: use main or a recent nightly, as some features are not available in executorch==1.0.0.
+Use main or a recent nightly, as some features are not available in executorch==1.0.0.
 
-## Download base model
-We're using https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct.
+## Export models
+
+1. Download the base model. We're using https://huggingface.co/meta-llama/Llama-3.2-1B-Instruct.
 ```
 pip install huggingface_hub
 
@@ -89,16 +88,14 @@ huggingface-cli login
 huggingface-cli download meta-llama/Llama-3.2-1B-Instruct --local-dir ./Llama-3.2-1B-Instruct
 ```
 
-## Export the adapter models.
-
-Set your paths and the model name.
+2. Set your paths and the model name.
 ```
 DOWNLOADED_PATH=Llama-3.2-1B-Instruct
 ADAPTER_PATH=lora_model
 MODEL_NAME=<model_name>
 ```
 
-Export command. Run this with different MODEL_NAMEs for each adapter.
+3. Export command. Run this with different MODEL_NAMEs for each adapter.
 ```
 python -m executorch.extension.llm.export.export_llm \
     base.checkpoint="${DOWNLOADED_PATH}/original/consolidated.00.pth" \
@@ -115,7 +112,9 @@ python -m executorch.extension.llm.export.export_llm \
     export.foundation_weights_file="foundation.ptd"
 ```
 
-Expect to see two files: '<model_name>.pte' and 'foundation.ptd'. Run the command again to generate more adapter PTE files. The generated `foundation.ptd` files should all be the same (we are using the same base model) and you only need to keep one of them.
+Expect to see two files: '<model_name>.pte' and 'foundation.ptd'. Run the command again to generate more adapter PTE files. You only need to keep one `foundation.ptd` file.
+
+You can also run `~/executorch-examples/program-data-separation/export_lora.sh`. This will export the dummy lora model and the base Llama-3-2-1B model PTE files.
 
 Example files, trained on executorch/docs/source/ and recent Nobel prize winners.
 ```bash
@@ -123,21 +122,23 @@ Example files, trained on executorch/docs/source/ and recent Nobel prize winners
 -rw-r--r-- 1 lfq users   45555712 Oct 17 18:05 et.pte
 # foundation weight file
 -rw-r--r-- 1 lfq users 5994013600 Oct 17 18:05 foundation.ptd
+# dummy lora model.
+-rw-r--r-- 1 lfq users   27628928 Oct 17 14:31 llama_3_2_1B_lora.pte
 # Nobel prize winners trained adapter model.
 -rw-r--r-- 1 lfq users   45555712 Oct 17 18:00 nobel.pte
 ```
 
-Notice the adapter PTE files are about the same size as the `adapter_model.safetensors` file generated during training. The PTE contains the adapter weights (which are not shared) and the program.
+Notice the adapter PTE files are about the same size as the `adapter_model.safetensors`/`adapter_model.pt` files generated during training. The PTE contains the adapter weights (which are not shared) and the program.
 
-## Install runtime dependencies.
+## Install runtime dependencies
 The ExecuTorch repository is configured as a git submodule at `~/executorch-examples/program-data-separation/cpp/executorch`.  To initialize it:
 ```bash
 cd ~/executorch-examples/
+
+# Update to the remote main branch.
+git submodule update --remote program-data-separation/cpp/executorch
 git submodule sync
 git submodule update --init --recursive
-
-# To update to the remote main branch.
-git submodule update --remote program-data-separation/cpp/executorch
 ```
 
 Install dev requirements for ExecuTorch:
@@ -146,7 +147,7 @@ cd ~/executorch-examples/program-data-separation/cpp/executorch
 pip install -r requirements-dev.txt
 ```
 
-## Build the runtime.
+## Build the runtime
 Install some dependencies:
 ```bash
 cd ~/executorch-examples/program-data-separation/cpp/executorch
@@ -159,7 +160,7 @@ cd ~/executorch-examples/program-data-separation/cpp/lora_example
 sh build_example.sh
 ```
 
-## Run the executable.
+## Run the executable
 ```bash
 cd ~/executorch-examples/program-data-separation/cpp/lora_example
 
@@ -192,7 +193,7 @@ We can see that the ExecuTorch-trained adapter model does not have knowledge of 
 
 There is about ~1.1GB memory increase between running the two models.
 Most of that (about ~1GB) comes from embeddings that are not lowered to XNNPACK (and currently are not shared). This can be alleviated by quantizing the embeddings by adding the config `quantization.embedding_quantize=\'4,32\'` to the export command.
-~50MB comes from the adapter model, which is also shared.
+~50MB comes from the adapter model, which is not shared.
 
 Let's try with an executorch-specific prompt.
 ```bash
@@ -237,3 +238,6 @@ I 00:00:50.189743 executorch:text_llm_runner.cpp:206] RSS after finishing text g
 ```
 
 The ExecuTorch-trained adapter model has domain knowledge of ExecuTorch codebase, whereas the Nobel-prize trained adapter model does not.
+
+## Demo video
+https://github.com/user-attachments/assets/34f5488d-c1e3-4613-953f-f53745c9b01e
