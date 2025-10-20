@@ -18,14 +18,10 @@ public class PromptFormat {
 
   public static String getSystemPromptTemplate(ModelType modelType) {
     switch (modelType) {
-      case GEMMA_3:
-        return SYSTEM_PLACEHOLDER;
       case LLAMA_3:
         return "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n"
             + SYSTEM_PLACEHOLDER
             + "<|eot_id|>";
-      case LLAVA_1_5:
-        return "USER: ";
       case QWEN_3:
         return "<|im_start|>system\n" + "You are a helpful assistant.\n" + "<|im_end|>\n";
       default:
@@ -51,6 +47,7 @@ public class PromptFormat {
             + "<|im_start|>assistant\n"
             + THINKING_MODE_PLACEHOLDER;
       case LLAVA_1_5:
+        return "User: " + USER_PLACEHOLDER;
       default:
         return USER_PLACEHOLDER;
     }
