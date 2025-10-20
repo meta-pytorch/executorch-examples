@@ -38,10 +38,6 @@ public class SettingsFields {
     return userPrompt;
   }
 
-  public String getFormattedSystemAndUserPrompt(String prompt, boolean thinkingMode) {
-    return getFormattedSystemPrompt() + getFormattedUserPrompt(prompt, thinkingMode);
-  }
-
   public String getFormattedSystemPrompt() {
     return PromptFormat.getSystemPromptTemplate(modelType)
         .replace(PromptFormat.SYSTEM_PLACEHOLDER, systemPrompt);

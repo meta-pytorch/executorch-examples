@@ -90,6 +90,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
   private Executor executor;
   private boolean sawStartHeaderId = false;
   private String mAudioFileToPrefill;
+  private boolean shouldAddSystemPrompt = true;
 
   @Override
   public void onResult(String result) {
@@ -652,7 +653,8 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
       case GEMMA_3:
         return 896;
       default:
-        throw new IllegalArgumentException("Unsupported model type: " + mCurrentSettingsFields.getModelType());
+        throw new IllegalArgumentException(
+            "Unsupported model type: " + mCurrentSettingsFields.getModelType());
     }
   }
 
@@ -774,7 +776,9 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
           addSelectedImagesToChatThread(mSelectedImageUri);
           String rawPrompt = mEditTextMessage.getText().toString();
           String finalPrompt =
-              mCurrentSettingsFields.getFormattedSystemAndUserPrompt(rawPrompt, mThinkMode);
+              (shouldAddSystemPrompt ? mCurrentSettingsFields.getFormattedSystemPrompt() : "")
+                  + mCurrentSettingsFields.getFormattedUserPrompt(rawPrompt, mThinkMode);
+          shouldAddSystemPrompt = false;
           // We store raw prompt into message adapter, because we don't want to show the extra
           // tokens from system prompt
           mMessageAdapter.add(new Message(rawPrompt, true, MessageType.TEXT, promptID));
