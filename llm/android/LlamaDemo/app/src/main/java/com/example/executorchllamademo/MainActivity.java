@@ -645,12 +645,23 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
         });
   }
 
+  private int getInputImageSideSize() {
+    switch (mCurrentSettingsFields.getModelType()) {
+      case LLAVA_1_5:
+        return 336;
+      case GEMMA_3:
+        return 896;
+      default:
+        throw new IllegalArgumentException("Unsupported model type: " + mCurrentSettingsFields.getModelType());
+    }
+  }
+
   private List<ETImage> getProcessedImagesForModel(List<Uri> uris) {
     List<ETImage> imageList = new ArrayList<>();
     if (uris != null) {
       uris.forEach(
           (uri) -> {
-            imageList.add(new ETImage(this.getContentResolver(), uri));
+            imageList.add(new ETImage(this.getContentResolver(), uri, getInputImageSideSize()));
           });
     }
     return imageList;
