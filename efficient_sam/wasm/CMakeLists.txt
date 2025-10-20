@@ -8,6 +8,9 @@
 # cmake-format -i CMakeLists.txt
 # ~~~
 
+cmake_minimum_required(VERSION 3.19)
+project(efficient_sam_wasm_demo)
+
 add_subdirectory("executorch")
 
 add_executable(executorch_wasm_demo_lib)
