@@ -137,11 +137,27 @@ To show completion of the follow-up question, here is the complete detailed resp
 
 #### Llama 3.2 1B
 
+
+https://github.com/user-attachments/assets/b28530a1-bec4-45a4-8e46-ee4eed39b5bb
+
+
 #### Llava - Llama 2 7b
+
+
+https://github.com/user-attachments/assets/161929b9-2b71-411a-9193-0b9eae7170a1
+
 
 #### Gemma 3 4B
 
+
+https://github.com/user-attachments/assets/5a57af00-22f7-473e-abdb-5aa9bb708b57
+
+
 #### Voxtral Mini 3B
+
+
+https://github.com/user-attachments/assets/9ce361ce-9a59-4f32-b29a-2b24cc1cb2f7
+
 
 #### ExecuTorch App API
 
