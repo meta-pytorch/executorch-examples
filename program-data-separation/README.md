@@ -2,7 +2,7 @@
 
 This directory provides an example of the Program Data Separation APIs in ExecuTorch.
 1. Program data separation examples using a linear model with the portable operators and XNNPACK.
-2. LoRA inference example with a LoRA and non-LoRA model sharing foundation weights.
+2. LoRA inference example with multiple LoRA models sharing a single foundation weight file.
 
 ## Program Data Separation
 
@@ -16,7 +16,7 @@ PTD files are used to store data outside of the PTE file. Some use-cases:
 For more information on the PTD data format, please see the [flat_tensor](https://github.com/pytorch/executorch/blob/main/extension/flat_tensor/README.md) directory.
 
 ## Linear example
-For a demo of the program-data separation APIs using a linear model, please see [program-data-separation/cpp/linear_example](linear_example/). This example generates and runs a program-data separated linear model, with weights and bias in a separate .ptd file.
+For a demo of the program-data separation APIs using a linear model, please see [program-data-separation/cpp/linear_example](cpp/linear_example/README.md). This example generates and runs a program-data separated linear model, with program in a pte file and weights and bias in a separate .ptd file.
 
 ## LoRA example
 A major use-case that program-data separation enables is inference with multiple LoRA adapters. LoRA is a fine-tuning technique introduced in [LoRA: Low-Rank Adaptation of Large Language Models](https://arxiv.org/abs/2106.09685). LoRA fine-tuning produces lightweight 'adapter' weights that can be applied to an existing model to adapt it to a new task. LoRA adapters are typically small in comparison to LLM foundation weights, on the order of KB-MB depending on the finetuning setup and model size.
@@ -27,4 +27,4 @@ To enable LoRA, we generate:
 
 Multiple LoRA-adapted PTE files can share the same foundation weights and adding a model adapted to a new task incurs minimal binary size and runtime memory overhead.
 
-Please take a look at [program-data-separation/cpp/lora_example](lora_example/) for a demo of the program-data separation APIs with LoRA. This example generates and runs a LoRA and a non-LoRA model that share foundation weights. At runtime, we see that memory usage does not double.
+Please take a look at [program-data-separation/cpp/lora_example](cpp/lora_example/README.md) for a demo of the program-data separation APIs with LoRA. This example shows how to generate and run multiple LoRA adapter PTEs with a shared foundation weight file.

@@ -12,11 +12,11 @@ Note:
 - There are many ways to fine-tune LoRA adapters. We will go through a few examples to create a demo.
 
 ## Table of Contents
-- [Size Savings](#size-savings)
-- [Fine-tuning](#finetune-from-scratch-with-unsloth-and-llama)
-- [Installation](#install-executorch)
-- [Export models](#export-models)
-- [Run models](#install-runtime-dependencies)
+- [Size savings](#size-savings)
+- [Finetune lora adapters from scratch with unsloth and Llama](#finetune-from-scratch-with-unsloth-and-llama)
+- [Install executorch](#install-executorch)
+- [Export lora models](#export-models)
+- [Run lora models](#install-runtime-dependencies)
 - [Demo video](#demo-video)
 
 ## Size savings
@@ -118,14 +118,10 @@ You can also run `~/executorch-examples/program-data-separation/export_lora.sh`.
 
 Example files, trained on executorch/docs/source/ and recent Nobel prize winners.
 ```bash
-# executorch docs trained adapter model.
--rw-r--r-- 1 lfq users   45555712 Oct 17 18:05 et.pte
-# foundation weight file
--rw-r--r-- 1 lfq users 5994013600 Oct 17 18:05 foundation.ptd
-# dummy lora model.
--rw-r--r-- 1 lfq users   27628928 Oct 17 14:31 llama_3_2_1B_lora.pte
-# Nobel prize winners trained adapter model.
--rw-r--r-- 1 lfq users   45555712 Oct 17 18:00 nobel.pte
+-rw-r--r-- 1 lfq users   45555712 Oct 17 18:05 executorch_lora.pte # executorch docs lora model.
+-rw-r--r-- 1 lfq users 5994013600 Oct 17 18:05 foundation.ptd # foundation weight file
+-rw-r--r-- 1 lfq users   27628928 Oct 17 14:31 llama_3_2_1B_lora.pte # dummy lora model.
+-rw-r--r-- 1 lfq users   45555712 Oct 17 18:00 nobel_lora.pte # Nobel prize winners lora model.
 ```
 
 Notice the adapter PTE files are about the same size as the `adapter_model.safetensors`/`adapter_model.pt` files generated during training. The PTE contains the adapter weights (which are not shared) and the program.
@@ -167,15 +163,15 @@ cd ~/executorch-examples/program-data-separation/cpp/lora_example
 DOWNLOADED_PATH=~/path/to/Llama-3.2-1B-Instruct/
 ./build/bin/executorch_program_data_separation \
     --tokenizer_path="${DOWNLOADED_PATH}" \
-    --model1="et.pte" \
-    --model2="nobel.pte"  \
+    --model1="executorch_lora.pte" \
+    --model2="nobel_lora.pte"  \
     --weights="foundation.ptd" \
     --prompt="Who were the winners of the Nobel Prize in Physics in 2025?" \
     --apply_chat_template
 ```
 Passing in the `DOWNLOADED_PATH` as the tokenizer directory will invoke the HFTokenizer, and parse additional tokenizers files: `tokenizer_config.json` and `special_tokens_map.json`. `special_tokens_map.json` tells us which bos/eos token to use, especially if there are multiple.
 
-`apply_chat_template` formats the prompt according to the LLAMA chat template, which is what the adapter was trained on.
+`apply_chat_template` formats the prompt according to the LLAMA chat template.
 
 Sample output:
 ```
@@ -202,8 +198,8 @@ cd ~/executorch-examples/program-data-separation/cpp/lora_example
 DOWNLOADED_PATH=~/path/to/Llama-3.2-1B-Instruct/
 ./build/bin/executorch_program_data_separation \
     --tokenizer_path="${DOWNLOADED_PATH}" \
-    --model1="et.pte" \
-    --model2="nobel.pte"  \
+    --model1="executorch_lora.pte" \
+    --model2="nobel_lora.pte"  \
     --weights="foundation.ptd" \
     --prompt="Help me get started with ExecuTorch in 3 steps" \
     --apply_chat_template
