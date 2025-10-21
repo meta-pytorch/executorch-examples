@@ -108,7 +108,7 @@ int main(int argc, char *argv[]) {
       llm::create_text_llm_runner(model1, std::move(tokenizer1),
                                   weights, temperature);
   std::unique_ptr<llm::TextLLMRunner> runner2 =
-      llm::create_text_llm_runner(model1, std::move(tokenizer2),
+      llm::create_text_llm_runner(model2, std::move(tokenizer2),
                                   weights, temperature);
 
   llm::GenerationConfig config{
@@ -118,10 +118,11 @@ int main(int argc, char *argv[]) {
 
   std::string formatted_prompt = std::string();
   if (FLAGS_apply_chat_template) {
+    ET_LOG(Info, "Applying chat template...");
     // System Prompt.
     formatted_prompt += "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n";
+    // User Prompt.
     formatted_prompt += "You are a helpful assistant.<|eot_id|>";
-    // User prompt.
     formatted_prompt += "<|start_header_id|>user<|end_header_id|>\n";
     formatted_prompt += prompt;
     formatted_prompt += "<|eot_id|><|start_header_id|>assistant<|end_header_id|>";
@@ -130,7 +131,6 @@ int main(int argc, char *argv[]) {
   }
 
   ET_LOG(Info, "Generating with model %s...", model1);
-  ET_LOG(Info, "Formatted prompt: %s", formatted_prompt.c_str());
   auto error = runner1->generate(formatted_prompt, config);
   if (error != Error::Ok) {
     ET_LOG(Error, "Failed to generate with model %s, error code %zu.",
@@ -145,6 +145,5 @@ int main(int argc, char *argv[]) {
            model2, error);
     return 1;
   }
-
   return 0;
 }
