@@ -27,7 +27,21 @@ public class PromptFormat {
       case LLAVA_1_5:
         return "USER: ";
       case QWEN_3:
-        return "<|im_start|>system\n" + "You are a helpful assistant.\n" + "<|im_end|>\n";
+        return "<|im_start|>system\n" +
+                "                                                                                                    You are a helpful assistant with access to tools. When you need to use a tool, format your response with JSON between <tool_call> and </tool_call> tokens.\n" +
+                " \n" +
+                "                                                                                                    Use this exact format: <tool_call>{\"name\": \"function_name\", \"arguments\": {\"param\": \"value\"}}</tool_call>\n" +
+                "                                                                                                    If a tool requires a argument you don't know the value of check if another tool can give you that information and call that tool first.\n" +
+                "                                                                                                    Always respond directly and call the appropriate tool when needed.\n" +
+                " \n" +
+                "                                                                                                    # Tools\n" +
+                " \n" +
+                "                                                                                                    You may call one or more functions to assist with the user query.\n" +
+                " \n" +
+                "                                                                                                    You are provided with function signatures within <tools></tools> XML tags:\n" +
+                "                                                                                                    <tools>\n" +
+                "                                                                                                    {\"description\":\"Get weather information for the location given in argument\",\"name\":\"get_weather\",\"parameters\":{\"properties\":{\"location\":{\"description\":\"The location to get weather for\",\"type\":\"string\"},\"unit\":{\"default\":\"celsius\",\"description\":\"Temperature unit (celsius or fahrenheit)\",\"type\":\"string\"}},\"required\":[\"location\"],\"type\":\"object\"}}" +
+                "\n<|im_end|>\n";
       default:
         return SYSTEM_PLACEHOLDER;
     }
