@@ -1,4 +1,4 @@
-# ExecuTorch Llama Android Demo App
+# ExecuTorch LLM Android Demo App
 
 This app serves as a valuable resource to inspire your creativity and provide foundational code that you can customize and adapt for your particular use case.
 
@@ -23,24 +23,26 @@ As a whole, the models that this app supports are (varies by delegate):
 * Llama 2 7B
 * LLaVA-1.5 vision model (only XNNPACK)
 * Qwen 3 0.6B, 1.7B, and 4B
-
+* Voxtral Mini 3B
+* Gemma 3 4B
 
 ## Building the APK
 First it’s important to note that by default, the app depends on [ExecuTorch library](https://central.sonatype.com/artifact/org.pytorch/executorch-android) on Maven Central. It uses the latest `org.pytorch:executorch-android` package, which comes with all the default kernel libraries (portable, quantized, optimized), LLM customized libraries, and XNNPACK backend.
 
-No modification is needed if you want to use the default ExecuTorch library.
+No modification is needed if you want to use the pre-built ExecuTorch library.
 
-However, you can build your own ExecuTorch Android library (an AAR file). Copy the file to app/libs/executorch.aar. In gradle.properties file, add a line `useLocalAar=true` so that gradle uses that file.
+However, you can build your own ExecuTorch Android library (an AAR file). Copy the file to `app/libs/executorch.aar`. In `gradle.properties` file, add a line `useLocalAar=true` so that gradle uses the local AAR file.
 
 [This page](https://github.com/pytorch/executorch/blob/main/extension/android/README.md) contains the documentation for building the ExecuTorch Android library.
 
-Currently ExecuTorch provides support across 3 delegates. Once you identify the delegate of your choice, select the README link to get a complete end-to-end instructions for environment set-up to exporting the models to build ExecuTorch libraries and apps to run on device:
+Currently ExecuTorch provides support across 4 delegates. Once you identify the delegate of your choice, select the README link to get a complete end-to-end instructions for environment set-up to exporting the models to build ExecuTorch libraries and apps to run on device:
 
 | Delegate      | Resource |
 | ------------- | ------------- |
 | XNNPACK (CPU-based library)  | [link](https://github.com/meta-pytorch/executorch-examples/blob/main/llm/android/LlamaDemo/docs/delegates/xnnpack_README.md) |
 | QNN (Qualcomm AI Accelerators)  | [link](https://github.com/meta-pytorch/executorch-examples/blob/main/llm/android/LlamaDemo/docs/delegates/qualcomm_README.md) |
 | MediaTek (MediaTek AI Accelerators)  | [link](https://github.com/meta-pytorch/executorch-examples/blob/main/llm/android/LlamaDemo/docs/delegates/mediatek_README.md)  |
+| Vulkan | [link](https://github.com/pytorch/executorch/blob/main/examples/vulkan/README.md) |
 
 
 ## How to Use the App
@@ -73,7 +75,7 @@ Once you've selected the model, tokenizer, and model type you are ready to click
 
 Optional Parameters:
 * Temperature: Defaulted to 0, you can adjust the temperature for the model as well. The model will reload upon any adjustments.
-* System Prompt: Without any formatting, you can enter in a system prompt. For example, "you are a travel assistant" or "give me a response in a few sentences".
+* System Prompt: More for the advanced user, without any formatting, you can enter in a system prompt. For example, "you are a travel assistant" or "give me a response in a few sentences".
 * User Prompt: More for the advanced user, if you would like to manually input a prompt then you can do so by modifying the `{{user prompt}}`. You can also modify the special tokens as well. Once changed then go back to the main Chat activity to send.
 
 #### ExecuTorch App API
@@ -84,7 +86,8 @@ mModule = new LlmModule(
             ModelUtils.getModelCategory(mCurrentSettingsFields.getModelType()),
             modelPath,
             tokenizerPath,
-            temperature);
+            temperature,
+            dataPath);
 int loadResult = mModule.load();
 ```
 
@@ -92,6 +95,7 @@ int loadResult = mModule.load();
 * `modePath`: path to the .pte file
 * `tokenizerPath`: path to the tokenizer file
 * `temperature`: model parameter to adjust the randomness of the model’s output
+* `dataPath`: path to one or a list of .ptd files
 
 
 ### User Prompt
@@ -129,6 +133,16 @@ To show completion of the follow-up question, here is the complete detailed resp
 <img src="https://raw.githubusercontent.com/pytorch/executorch/refs/heads/main/docs/source/_static/img/chat_response.png" style="width:300px">
 </p>
 
+### Example Output
+
+#### Llama 3.2 1B
+
+#### Llava - Llama 2 7b
+
+#### Gemma 3 4B
+
+#### Voxtral Mini 3B
+
 #### ExecuTorch App API
 
 Ensure you have the following functions in your callback class that you provided in the `mModule.generate()`. For this example, it is `MainActivity.this`.
@@ -163,7 +177,7 @@ python -m pytorch_tokenizers.tools.llama2c.convert -t tokenizer.model -o tokeniz
 ```
 ### Push model
 ```sh
-adb mkdir -p /data/local/tmp/llama
+adb shell mkdir -p /data/local/tmp/llama
 adb push stories110m_h.pte /data/local/tmp/llama
 adb push tokenizer.bin /data/local/tmp/llama
 ```
