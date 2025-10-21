@@ -4,7 +4,7 @@ This app runs the Whisper model with the Qualcomm backend in ExecuTorch. The mod
 
 ### Build the ExecuTorch Android library
 
-Checkout [Whisper JNI Bindings](https://github.com/pytorch/executorch/pull/13525) (if it is not merged already). Build the [ExecuTorch Android library with QNN backend](https://github.com/pytorch/executorch/blob/main/examples/demo-apps/android/LlamaDemo/docs/delegates/qualcomm_README.md).
+Build the [ExecuTorch Android library with QNN backend](https://github.com/pytorch/executorch/blob/main/examples/demo-apps/android/LlamaDemo/docs/delegates/qualcomm_README.md).
 
 ### Export the audio processing and model .pte files
 
