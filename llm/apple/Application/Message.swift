@@ -28,4 +28,6 @@ struct Message: Identifiable, Equatable {
   var text = ""
   var tokenCount = 0
   var image: UIImage?
+  var tokensPerSecond: Double = 0
+  var lastSpeedMeasurementAt: Date?
 }
