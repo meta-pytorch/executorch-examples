@@ -1,3 +1,11 @@
+/*
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 import ExecuTorchLLM
 import SwiftUI
 import UniformTypeIdentifiers
@@ -314,7 +322,7 @@ struct ContentView: View {
             Menu {
               Section(header: Text("Memory")) {
                 Text("Used: \(resourceMonitor.usedMemory) Mb")
-                Text("Available: \(resourceMonitor.usedMemory) Mb")
+                Text("Available: \(resourceMonitor.availableMemory) Mb")
               }
             } label: {
               Text("\(resourceMonitor.usedMemory) Mb")
@@ -462,9 +470,17 @@ struct ContentView: View {
               tokens = []
               DispatchQueue.main.async {
                 var message = messages.removeLast()
+                let now = Date()
+                if let last = message.lastSpeedMeasurementAt {
+                  let elapsedSeconds = now.timeIntervalSince(last)
+                  if elapsedSeconds > 0 {
+                    message.tokensPerSecond = Double(streamedCount) / elapsedSeconds
+                  }
+                }
+                message.lastSpeedMeasurementAt = now
                 message.text += streamedText
                 message.tokenCount += streamedCount
-                message.dateUpdated = Date()
+                message.dateUpdated = now
                 messages.append(message)
               }
             }
@@ -515,9 +531,17 @@ struct ContentView: View {
               tokens = []
               DispatchQueue.main.async {
                 var message = messages.removeLast()
+                let now = Date()
+                if let last = message.lastSpeedMeasurementAt {
+                  let elapsedSeconds = now.timeIntervalSince(last)
+                  if elapsedSeconds > 0 {
+                    message.tokensPerSecond = Double(streamedCount) / elapsedSeconds
+                  }
+                }
+                message.lastSpeedMeasurementAt = now
                 message.text += streamedText
                 message.tokenCount += streamedCount
-                message.dateUpdated = Date()
+                message.dateUpdated = now
                 messages.append(message)
               }
             }
@@ -564,9 +588,17 @@ struct ContentView: View {
               tokens = []
               DispatchQueue.main.async {
                 var message = messages.removeLast()
+                let now = Date()
+                if let last = message.lastSpeedMeasurementAt {
+                  let elapsedSeconds = now.timeIntervalSince(last)
+                  if elapsedSeconds > 0 {
+                    message.tokensPerSecond = Double(streamedCount) / elapsedSeconds
+                  }
+                }
+                message.lastSpeedMeasurementAt = now
                 message.text += streamedText
                 message.tokenCount += streamedCount
-                message.dateUpdated = Date()
+                message.dateUpdated = now
                 messages.append(message)
               }
             }
@@ -625,10 +657,18 @@ struct ContentView: View {
                 tokens = []
                 DispatchQueue.main.async {
                   var message = messages.removeLast()
+                  let now = Date()
+                  if let last = message.lastSpeedMeasurementAt {
+                    let elapsedSeconds = now.timeIntervalSince(last)
+                    if elapsedSeconds > 0 {
+                      message.tokensPerSecond = Double(flushedCount) / elapsedSeconds
+                    }
+                  }
+                  message.lastSpeedMeasurementAt = now
                   message.text += flushedText
                   message.text += message.text.isEmpty ? "Thinking...\n\n" : "\n\nThinking...\n\n"
                   message.tokenCount += flushedCount + 1
-                  message.dateUpdated = Date()
+                  message.dateUpdated = now
                   messages.append(message)
                 }
               } else if token == "</think>" {
@@ -637,10 +677,18 @@ struct ContentView: View {
                 tokens = []
                 DispatchQueue.main.async {
                   var message = messages.removeLast()
+                  let now = Date()
+                  if let last = message.lastSpeedMeasurementAt {
+                    let elapsedSeconds = now.timeIntervalSince(last)
+                    if elapsedSeconds > 0 {
+                      message.tokensPerSecond = Double(flushedCount) / elapsedSeconds
+                    }
+                  }
+                  message.lastSpeedMeasurementAt = now
                   message.text += flushedText
                   message.text += "\n\nFinished thinking.\n\n"
                   message.tokenCount += flushedCount + 1
-                  message.dateUpdated = Date()
+                  message.dateUpdated = now
                   messages.append(message)
                 }
               } else {
@@ -651,9 +699,17 @@ struct ContentView: View {
                   tokens = []
                   DispatchQueue.main.async {
                     var message = messages.removeLast()
+                    let now = Date()
+                    if let last = message.lastSpeedMeasurementAt {
+                      let elapsedSeconds = now.timeIntervalSince(last)
+                      if elapsedSeconds > 0 {
+                        message.tokensPerSecond = Double(streamedCount) / elapsedSeconds
+                      }
+                    }
+                    message.lastSpeedMeasurementAt = now
                     message.text += streamedText
                     message.tokenCount += streamedCount
-                    message.dateUpdated = Date()
+                    message.dateUpdated = now
                     messages.append(message)
                   }
                 }

@@ -80,9 +80,8 @@ struct MessageView: View {
             if isAssistant { Spacer() }
           }
           .frame(maxWidth: .infinity)
-          let elapsedTime = message.dateUpdated.timeIntervalSince(message.dateCreated)
-          if elapsedTime > 0 && message.type != .info {
-            Text(String(format: "%.1f t/s", Double(message.tokenCount) / elapsedTime))
+          if message.tokensPerSecond > 0 && message.type != .info {
+            Text(String(format: "%.1f t/s", message.tokensPerSecond))
               .font(.caption)
               .foregroundColor(.secondary)
               .padding(isAssistant ? .trailing : .leading, 20)
