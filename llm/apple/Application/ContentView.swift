@@ -123,6 +123,7 @@ struct ContentView: View {
     case gemma3
     case llama
     case llava
+    case qwen2
     case qwen3
     case phi4
     case smollm3
@@ -134,6 +135,8 @@ struct ContentView: View {
         return .gemma3
       } else if filename.hasPrefix("llama") {
         return .llama
+      } else if filename.hasPrefix("qwen2") {
+        return .qwen2
       } else if filename.hasPrefix("llava") {
         return .llava
       } else if filename.hasPrefix("qwen3") {
@@ -392,6 +395,7 @@ struct ContentView: View {
       case .llama: return .llamagenerated
       case .llava: return .llavagenerated
       case .phi4: return .phi4generated
+      case .qwen2: return .qwengenerated
       case .qwen3: return .qwengenerated
       case .smollm3: return .smollm3generated
       case .voxtral: return .voxtralgenerated
@@ -617,6 +621,8 @@ struct ContentView: View {
             formattedPrompt = String(format: Constants.llavaPromptTemplate, text)
           case .phi4:
             formattedPrompt = String(format: Constants.phi4PromptTemplate, text)
+          case .qwen2:
+            formattedPrompt = String(format: Constants.llama3PromptTemplate, text)
           case .qwen3:
             let basePrompt = String(format: Constants.qwen3PromptTemplate, text)
             formattedPrompt = thinkingMode ? basePrompt.replacingOccurrences(of: "<think>\n\n</think>\n\n\n", with: "") : basePrompt
