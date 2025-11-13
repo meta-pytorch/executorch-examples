@@ -23,6 +23,18 @@ fi
 
 mkdir -p "$ARTIFACT_DIR"
 
+echo "Exporting model: $MODEL_NAME"
+
+# Determine feature_size based on model name
+# large-v3 and large-v3-turbo use 128 mel features, all others use 80
+if [[ "$MODEL_NAME" == *"large-v3"* ]]; then
+    FEATURE_SIZE=128
+    echo "Using feature_size=128 for large-v3/large-v3-turbo model"
+else
+    FEATURE_SIZE=80
+    echo "Using feature_size=80 for standard Whisper model"
+fi
+
 optimum-cli export executorch \
             --model "$MODEL_NAME" \
             --task "automatic-speech-recognition" \
@@ -31,7 +43,7 @@ optimum-cli export executorch \
             --output_dir "$ARTIFACT_DIR"
 
 python -m executorch.extension.audio.mel_spectrogram \
-            --feature_size 128 \
+            --feature_size $FEATURE_SIZE \
             --stack_output \
             --max_audio_len 300 \
             --output_file "$ARTIFACT_DIR"/whisper_preprocessor.pte
