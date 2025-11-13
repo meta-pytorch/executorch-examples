@@ -18,6 +18,7 @@ EXECUTORCH_PATH=""
 ARTIFACT_DIR=""
 ENV_NAME=""
 AUDIO_PATH=""
+MODEL_NAME="openai/whisper-large-v3-turbo"
 
 echo "Current script path: $(realpath "$0")"
 SCRIPT_DIR="$(realpath "$(dirname "$(realpath "$0")")")"
@@ -37,6 +38,7 @@ usage() {
   echo "  --create-env           Create the Python environment"
   echo "  --setup-env            Set up the Python environment"
   echo "  --export               Export the Whisper model"
+  echo "  --model-name NAME      HuggingFace model name (optional, default: openai/whisper-large-v3-turbo)"
   echo "  --build                Build the Whisper runner"
   echo "  --audio-path PATH      Path to the input audio file"
   echo "  --run                  Run the Whisper model"
@@ -44,6 +46,7 @@ usage() {
   echo ""
   echo "Example:"
   echo "  $0 --env-name metal-backend --setup-env --export --build --audio-path audio.wav --run"
+  echo "  $0 --env-name metal-backend --export --model-name openai/whisper-small --build --audio-path audio.wav --run"
   exit 1
 }
 
@@ -77,6 +80,10 @@ while [[ $# -gt 0 ]]; do
     --export)
       EXPORT=true
       shift
+      ;;
+    --model-name)
+      MODEL_NAME="$2"
+      shift 2
       ;;
     --build)
       BUILD=true
@@ -160,8 +167,9 @@ fi
 # Execute export
 if [ "$EXPORT" = true ]; then
   echo "Exporting Whisper model to $ARTIFACT_DIR ..."
+  echo " - Model: $MODEL_NAME"
   echo " - Script: $SCRIPT_DIR/export.sh"
-  conda run -n "$ENV_NAME" "$SCRIPT_DIR/export.sh" "$ARTIFACT_DIR"
+  conda run -n "$ENV_NAME" "$SCRIPT_DIR/export.sh" "$ARTIFACT_DIR" "$MODEL_NAME"
 fi
 
 # Execute build
