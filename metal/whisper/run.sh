@@ -45,5 +45,4 @@ done
       --tokenizer_path "$ARTIFACT_DIR"/ \
       --audio_path "$INPUT_AUDIO_PATH" \
       --processor_path "$ARTIFACT_DIR"/whisper_preprocessor.pte \
-      --model_name "large-v3-turbo" \
       --temperature 0
