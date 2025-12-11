@@ -775,9 +775,17 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
           }
           addSelectedImagesToChatThread(mSelectedImageUri);
           String rawPrompt = mEditTextMessage.getText().toString();
-          String finalPrompt =
-              (shouldAddSystemPrompt ? mCurrentSettingsFields.getFormattedSystemPrompt() : "")
-                  + mCurrentSettingsFields.getFormattedUserPrompt(rawPrompt, mThinkMode);
+          String finalPrompt;
+          // For LLaVA, the first turn uses a special template since the preset prompt
+          // already ends with "USER: "
+          if (mCurrentSettingsFields.getModelType() == ModelType.LLAVA_1_5 && shouldAddSystemPrompt) {
+            finalPrompt = PromptFormat.getLlavaFirstTurnUserPrompt()
+                .replace(PromptFormat.USER_PLACEHOLDER, rawPrompt);
+          } else {
+            finalPrompt =
+                (shouldAddSystemPrompt ? mCurrentSettingsFields.getFormattedSystemPrompt() : "")
+                    + mCurrentSettingsFields.getFormattedUserPrompt(rawPrompt, mThinkMode);
+          }
           shouldAddSystemPrompt = false;
           // We store raw prompt into message adapter, because we don't want to show the extra
           // tokens from system prompt

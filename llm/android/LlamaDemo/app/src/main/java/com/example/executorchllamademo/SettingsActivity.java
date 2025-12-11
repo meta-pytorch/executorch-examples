@@ -93,22 +93,51 @@ public class SettingsActivity extends AppCompatActivity {
         view -> {
           setupBackendSelectorDialog();
         });
+    requireViewById(R.id.backendLayout)
+        .setOnClickListener(
+            view -> {
+              setupBackendSelectorDialog();
+            });
+
     modelImageButton.setOnClickListener(
         view -> {
           setupModelSelectorDialog();
         });
+    requireViewById(R.id.modelLayout)
+        .setOnClickListener(
+            view -> {
+              setupModelSelectorDialog();
+            });
+
     tokenizerImageButton.setOnClickListener(
         view -> {
           setupTokenizerSelectorDialog();
         });
+    requireViewById(R.id.tokenizerLayout)
+        .setOnClickListener(
+            view -> {
+              setupTokenizerSelectorDialog();
+            });
+
     dataPathImageButton.setOnClickListener(
         view -> {
           setupDataPathSelectorDialog();
         });
+    requireViewById(R.id.dataPathLayout)
+        .setOnClickListener(
+            view -> {
+              setupDataPathSelectorDialog();
+            });
+
     modelTypeImageButton.setOnClickListener(
         view -> {
           setupModelTypeSelectorDialog();
         });
+    requireViewById(R.id.modelTypeLayout)
+        .setOnClickListener(
+            view -> {
+              setupModelTypeSelectorDialog();
+            });
     mModelFilePath = mSettingsFields.getModelFilePath();
     if (!mModelFilePath.isEmpty()) {
       mModelTextView.setText(getFilenameFromPath(mModelFilePath));
@@ -357,14 +386,13 @@ public class SettingsActivity extends AppCompatActivity {
   }
 
   private void setupDataPathSelectorDialog() {
-    String[] dataPathFiles = listLocalFile("/data/local/tmp/llama/", new String[] {".ptd"});
+    String[] dataPathFiles =
+        listLocalFile("/data/local/tmp/llama/", new String[] {".ptd"});
     AlertDialog.Builder dataPathBuilder = new AlertDialog.Builder(this);
     dataPathBuilder.setTitle("Select data path");
 
     String[] dataPathOptions = new String[dataPathFiles.length + 1];
-    for (int i = 0; i < dataPathFiles.length; i++) {
-      dataPathOptions[i] = dataPathFiles[i];
-    }
+    System.arraycopy(dataPathFiles, 0, dataPathOptions, 0, dataPathFiles.length);
     dataPathOptions[dataPathOptions.length - 1] = "(unused)";
 
     dataPathBuilder.setSingleChoiceItems(
@@ -393,7 +421,7 @@ public class SettingsActivity extends AppCompatActivity {
     File directory = new File(path);
     if (directory.exists() && directory.isDirectory()) {
       File[] files = directory.listFiles((dir, name) -> (fileHasExtension(name, suffix)));
-      String[] result = new String[files.length];
+        String[] result = new String[files.length];
       for (int i = 0; i < files.length; i++) {
         if (files[i].isFile() && fileHasExtension(files[i].getName(), suffix)) {
           result[i] = files[i].getAbsolutePath();
