@@ -57,6 +57,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.pytorch.executorch.ExecutorchRuntimeException;
 import org.pytorch.executorch.extension.llm.LlmCallback;
 import org.pytorch.executorch.extension.llm.LlmModule;
 
@@ -184,45 +185,46 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
               temperature,
               dataPath);
     }
-    int loadResult = mModule.load();
+    int loadResult = 0;
     long loadDuration = System.currentTimeMillis() - runStartTime;
     String modelLoadError = "";
     String modelInfo = "";
-    if (loadResult != 0) {
-      // TODO: Map the error code to a reason to let the user know why model loading failed
-      modelInfo = "*Model could not load (Error Code: " + loadResult + ")*" + "\n";
-      loadDuration = 0;
-      AlertDialog.Builder builder = new AlertDialog.Builder(this);
-      builder.setTitle("Load failed: " + loadResult);
-      runOnUiThread(
-          () -> {
-            AlertDialog alert = builder.create();
-            alert.show();
-          });
-    } else {
+    try {
+      loadResult = mModule.load();
       String[] segments = modelPath.split("/");
       String pteName = segments[segments.length - 1];
       segments = tokenizerPath.split("/");
       String tokenizerName = segments[segments.length - 1];
       modelInfo =
-          "Successfully loaded model. "
-              + pteName
-              + " and tokenizer "
-              + tokenizerName
-              + " in "
-              + (float) loadDuration / 1000
-              + " sec."
-              + " You can send text or image for inference";
+              "Successfully loaded model. "
+                      + pteName
+                      + " and tokenizer "
+                      + tokenizerName
+                      + " in "
+                      + (float) loadDuration / 1000
+                      + " sec."
+                      + " You can send text or image for inference";
 
       if (mCurrentSettingsFields.getModelType() == ModelType.LLAVA_1_5) {
         ETLogging.getInstance().log("Llava start prefill prompt");
         mModule.prefillPrompt(PromptFormat.getLlavaPresetPrompt());
         ETLogging.getInstance().log("Llava completes prefill prompt");
       }
+    } catch (ExecutorchRuntimeException e) {
+      modelInfo = e.getMessage() + "\n";
+      String errorLog = e.getDetailedError();
+      ETLogging.getInstance().log("Error while loading model " + errorLog);
+
+      loadDuration = 0;
+      AlertDialog.Builder builder = new AlertDialog.Builder(this);
+      builder.setTitle("Model Load failure: " + modelInfo);
+      runOnUiThread(
+              () -> {
+                AlertDialog alert = builder.create();
+                alert.show();
+              });
     }
-
     Message modelLoadedMessage = new Message(modelInfo, false, MessageType.SYSTEM, 0);
-
     String modelLoggingInfo =
         modelLoadError
             + "Model path: "
