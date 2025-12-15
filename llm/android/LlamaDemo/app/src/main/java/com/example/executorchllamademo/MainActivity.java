@@ -414,6 +414,9 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
       // changing to false since chat history has been cleared.
       updatedSettingsFields.saveIsClearChatHistory(false);
       mDemoSharedPreferences.addSettings(updatedSettingsFields);
+      if (mModule != null) {
+        mModule.resetContext();
+      }
     }
   }
 
