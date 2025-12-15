@@ -212,8 +212,8 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
       }
     } catch (ExecutorchRuntimeException e) {
       modelInfo = e.getMessage() + "\n";
-      String errorLog = e.getDetailedError();
-      ETLogging.getInstance().log("Error while loading model " + errorLog);
+//      String errorLog = e.getDetailedError();
+//      ETLogging.getInstance().log("Error while loading model " + errorLog);
 
       loadDuration = 0;
       AlertDialog.Builder builder = new AlertDialog.Builder(this);
