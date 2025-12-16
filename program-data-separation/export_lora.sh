@@ -7,48 +7,65 @@
 
 set -exu
 
-python -m pip install torchtune==0.7.0.dev20250730  --extra-index-url https://download.pytorch.org/whl/nightly/cpu
+# Parse command line arguments.
+QUANTIZE=false
+while getopts "q" opt; do
+    case ${opt} in
+        q)
+            QUANTIZE=true
+            ;;
+        *)
+            echo "Usage: $0 [-q]"
+            echo "  -q  Enable quantization (8da4w, group_size=32)"
+            exit 1
+            ;;
+    esac
+done
 
-# Download model artifacts from HF.
-DOWNLOADED_PATH=$(python -c "
-from huggingface_hub import snapshot_download
-path=snapshot_download(
-    repo_id=\"lucylq/llama3_1B_lora\",
-)
-import os
-print(path)
-")
+# Install huggingface_hub for downloading model artifacts.
+python -m pip install -q huggingface_hub
 
-# Copy over tokenizer, for use at runtime.
-cp "${DOWNLOADED_PATH}/tokenizer.model" .
+# Download LoRA adapter and config.
+HF_ADAPTER_REPO="lucylq/qwen3_06B_lora_math"
+HF_ADAPTER_PATH=$(python -c "from huggingface_hub import snapshot_download; print(snapshot_download('${HF_ADAPTER_REPO}'))")
+echo "LoRA adapter downloaded to: $HF_ADAPTER_PATH"
 
-# Export a non-LoRA model with program-data separated.
-DIR="models/"
-MODEL="llama_3_2_1B"
+# Download Qwen3-0.6B model.
+HF_QWEN_PATH=$(python -c "from huggingface_hub import snapshot_download; print(snapshot_download('unsloth/Qwen3-0.6B'))")
+echo "Model downloaded to: $HF_QWEN_PATH"
+
+# Output directory.
+DIR="models"
+mkdir -p "${DIR}"
+
+# Set model names and quantization args based on -q flag.
+SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"
+CONFIG="${SCRIPT_DIR}/config/qwen3_xnnpack.yaml"
+if [ "$QUANTIZE" = true ]; then
+    MODEL="qwen3_06B_q"
+    LORA_MODEL="qwen3_06B_lora_q"
+    FOUNDATION_WEIGHTS="qwen3_06B_q"
+    QUANT_ARGS=("+quantization.qmode=8da4w" "+quantization.group_size=32" "+quantization.embedding_quantize=\"8,0\"")
+else
+    MODEL="qwen3_06B"
+    LORA_MODEL="qwen3_06B_lora"
+    FOUNDATION_WEIGHTS="qwen3_06B"
+    QUANT_ARGS=()
+fi
+
+# Export a non-LoRA Qwen model with program-data separated.
 python -m executorch.extension.llm.export.export_llm \
-    base.checkpoint="${DOWNLOADED_PATH}/consolidated.00.pth" \
-    base.params="${DOWNLOADED_PATH}/params.json" \
-    base.tokenizer_path="${DOWNLOADED_PATH}/tokenizer.model" \
-    model.use_kv_cache=true \
-    model.use_sdpa_with_kv_cache=true \
-    model.dtype_override="fp32" \
-    backend.xnnpack.enabled=true \
-    backend.xnnpack.extended_ops=true \
-    export.output_name="${DIR}/${MODEL}.pte" \
-    export.foundation_weights_file="${DIR}/${MODEL}.ptd"
+    --config "${CONFIG}" \
+    +export.output_name="${DIR}/${MODEL}.pte" \
+    +export.foundation_weights_file="${DIR}/${FOUNDATION_WEIGHTS}.ptd" \
+    "${QUANT_ARGS[@]}"
 
-# Export a LoRA model, with program and data separated.
-LORA_MODEL="llama_3_2_1B_lora"
+# Export a LoRA Qwen model with program-data separated.
 python -m executorch.extension.llm.export.export_llm \
-    base.checkpoint="${DOWNLOADED_PATH}/consolidated.00.pth" \
-    base.params="${DOWNLOADED_PATH}/params.json" \
-    base.adapter_checkpoint="${DOWNLOADED_PATH}/adapter_model.pt" \
-    base.adapter_config="${DOWNLOADED_PATH}/adapter_config.json" \
-    base.tokenizer_path="${DOWNLOADED_PATH}/tokenizer.model" \
-    model.use_kv_cache=true \
-    model.use_sdpa_with_kv_cache=true \
-    model.dtype_override="fp32" \
-    backend.xnnpack.enabled=true \
-    backend.xnnpack.extended_ops=true \
-    export.output_name="${DIR}/${LORA_MODEL}.pte" \
-    export.foundation_weights_file="${DIR}/foundation.ptd"
+    --config "${CONFIG}" \
+    +base.adapter_checkpoint="${HF_ADAPTER_PATH}/adapter_model.safetensors" \
+    +base.adapter_config="${HF_ADAPTER_PATH}/adapter_config.json" \
+    +export.output_name="${DIR}/${LORA_MODEL}.pte" \
+    +export.foundation_weights_file="${DIR}/${FOUNDATION_WEIGHTS}.ptd" \
+    +export.lora_weights_file="${DIR}/${LORA_MODEL}.ptd" \
+    "${QUANT_ARGS[@]}"
