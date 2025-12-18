@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base application theme -->
+    <style name="Theme.DeepLabV3Demo" parent="Theme.AppCompat.Light.NoActionBar">
+        <!-- Customize your theme here -->
+        <item name="colorPrimary">@android:color/holo_blue_bright</item>
+        <item name="colorPrimaryDark">@android:color/holo_blue_dark</item>
+        <item name="colorAccent">@android:color/holo_blue_bright</item>
+    </style>
+    <string name="app_name">YOLO Bird Detection</string>
+</resources>
