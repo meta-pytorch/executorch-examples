@@ -1,0 +1,66 @@
+
+# BirdDetection App: High-Level Flow (YOLO + Android + Species Recognition)
+
+[1] Android Camera Frame
+      |
+      v
+[2] Convert Camera Image (YUV/NV21) --> RGB Bitmap
+      |
+      v
+[3] Preprocess Bitmap for YOLO (resize, normalize)
+      |
+      v
+[4] YOLO Model Inference (ExecuTorch)
+      |
+      v
+[5] YOLO Output: List of Detections
+      |    - Each detection: [center_x, center_y, width, height, class scores...]
+      |    - For birds: class 14 (COCO) has highest score
+      |
+      v
+[6] Parse YOLO Output
+      |    - For each detection:
+      |        - If class == bird and confidence > threshold
+      |        - Convert [center_x, center_y, width, height] to [left, top, right, bottom]
+      |        - Scale coordinates to match actual image size
+      |
+      v
+[7] Non-Maximum Suppression (NMS)
+      |    - Remove overlapping boxes (keep highest confidence)
+      |
+      v
+[8] For Each Bird Bounding Box:
+      |    - Crop region from original Bitmap
+      |    - Preprocess crop for classifier (resize, normalize)
+      |    - Run Bird Species Classifier (ExecuTorch)
+      |    - Get species name and classifier confidence
+      |
+      v
+[9] Display Results in Android UI
+      |    - Draw bounding boxes and species labels on overlay
+      |    - Log sightings (thumbnail, species, confidence, timestamp)
+      |
+      v
+[10] User Interactions
+      |    - Start/End session
+      |    - View log of detected birds
+
+## Summary of Each Step
+
+- Camera Frame: Android captures a live image from the camera.
+- Image Conversion: Converts raw camera format (YUV/NV21) to RGB Bitmap for ML processing.
+- Preprocessing: Resizes and normalizes the bitmap to match YOLO model input requirements.
+- YOLO Inference: Runs the YOLO model using ExecuTorch to get object detections.
+- YOLO Output: Produces a list of bounding boxes and class scores for each detected object.
+- Parsing: Filters detections for birds, converts coordinates, and scales to image size.
+- NMS: Removes duplicate/overlapping detections.
+- Species Recognition: Crops each bird region, runs a classifier to identify species.
+- UI Display: Shows bounding boxes and species names, logs each sighting.
+- User Actions: Allows session management and viewing of bird logs.
+
+
+### Design flow gist
+
+- YOLO finds birds in the camera image.
+- Android handles image conversion, UI, and session management.
+- The classifier identifies the bird species for each detected bird.
