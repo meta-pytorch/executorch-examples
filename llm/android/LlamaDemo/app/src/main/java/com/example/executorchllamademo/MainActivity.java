@@ -858,6 +858,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
                           onModelRunStopped();
                         }
                       });
+                  mModule.resetContext();
                   ETLogging.getInstance().log("Inference completed");
                 }
               };
