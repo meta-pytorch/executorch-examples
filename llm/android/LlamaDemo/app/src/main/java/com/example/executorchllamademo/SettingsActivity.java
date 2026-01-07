@@ -513,8 +513,8 @@ public class SettingsActivity extends AppCompatActivity {
     boolean modelChanged = !currentModelPath.equals(mInitialModelFilePath);
     boolean tokenizerChanged = !currentTokenizerPath.equals(mInitialTokenizerFilePath);
     boolean dataPathChanged = !currentDataPath.equals(mInitialDataPath);
-    boolean backendChanged = mBackendType != mInitialBackendType;
-    boolean modelTypeChanged = mModelType != mInitialModelType;
+    boolean backendChanged = !java.util.Objects.equals(mBackendType, mInitialBackendType);
+    boolean modelTypeChanged = !java.util.Objects.equals(mModelType, mInitialModelType);
 
     return modelChanged || tokenizerChanged || dataPathChanged || backendChanged || modelTypeChanged;
   }
