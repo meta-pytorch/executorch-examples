@@ -63,6 +63,8 @@ jobs:
             path: llm/android/LlamaDemo
     env:
       API_LEVEL: 34
+      ARCH: x86_64
+      EMULATOR_OPTIONS: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
 
     name: Instrumentation Test ${{ matrix.name }}
     steps:
@@ -91,16 +93,16 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-${{ env.API_LEVEL }}
+          key: avd-${{ env.API_LEVEL }}-${{ env.ARCH }}
 
       - name: Create AVD and generate snapshot for caching
         if: steps.avd-cache.outputs.cache-hit != 'true'
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ env.API_LEVEL }}
-          arch: x86_64
+          arch: ${{ env.ARCH }}
           force-avd-creation: false
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          emulator-options: ${{ env.EMULATOR_OPTIONS }}
           disable-animations: false
           working-directory: ${{ matrix.path }}
           script: echo "Generated AVD snapshot for caching."
@@ -109,9 +111,9 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ env.API_LEVEL }}
-          arch: x86_64
+          arch: ${{ env.ARCH }}
           force-avd-creation: false
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          emulator-options: -no-snapshot-save ${{ env.EMULATOR_OPTIONS }}
           disable-animations: true
           working-directory: ${{ matrix.path }}
           script: ./gradlew connectedCheck
