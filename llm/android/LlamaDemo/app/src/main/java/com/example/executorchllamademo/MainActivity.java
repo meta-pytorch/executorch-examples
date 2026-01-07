@@ -454,6 +454,16 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
         () -> {
           mMessageAdapter.add(askLoadModelMessage);
           mMessageAdapter.notifyDataSetChanged();
+          new AlertDialog.Builder(this)
+              .setTitle("No Model Selected")
+              .setMessage(
+                  "Please select a model and tokenizer from the settings (top right corner) to get started.")
+              .setPositiveButton(
+                  android.R.string.ok,
+                  (dialog, which) -> {
+                    dialog.dismiss();
+                  })
+              .show();
         });
   }
 
