@@ -1,12 +1,12 @@
-# Guide to set up Java/SDK/NDK for Android
+# Guide to Set Up Java/SDK/NDK for Android
 
-Follow this doc if you haven't set up Java/SDK/NDK for Android development
+Follow this guide if you haven't set up Java/SDK/NDK for Android development
 already.
-This doc provides a CLI tutorial to set them up. Otherwise, you can do the same
-thing with Android Studio GUI.
+This guide provides a CLI tutorial to set them up. Alternatively, you can do the same
+thing with the Android Studio GUI.
 
-## Set up Java 17
-1. Download the archive from Oracle website.
+## Set Up Java 17
+1. Download the archive from the Oracle website.
 Make sure you have read and agree with the terms and conditions from the website before downloading.
 ```bash
 export DEV_HOME=<path-to-dev>
@@ -40,14 +40,14 @@ export PATH="$JAVA_HOME/bin:$PATH"
 Note: Oracle has tutorials for installing Java on
 [Linux](https://docs.oracle.com/en/java/javase/17/install/installation-jdk-linux-platforms.html#GUID-4A6BD592-1840-4BB4-A758-4CD49E9EE88B)
 and [macOS](https://docs.oracle.com/en/java/javase/17/install/installation-jdk-macos.html#GUID-E8A251B6-D9A9-4276-ABC8-CC0DAD62EA33).
-Some Linux distributions has JDK package in package manager. For example, Debian users can install
-openjdk-17-jdk package.
+Some Linux distributions have a JDK package in the package manager. For example, Debian users can install
+the openjdk-17-jdk package.
 
-## Set up Android SDK/NDK
-Android has a command line tool [sdkmanager](https://developer.android.com/tools/sdkmanager) which
-helps users managing SDK and other tools related to Android development.
+## Set Up Android SDK/NDK
+Android has a command-line tool [sdkmanager](https://developer.android.com/tools/sdkmanager) which
+helps users manage SDK and other tools related to Android development.
 
-1. Go to https://developer.android.com/studio and download the archive from "Command line tools
+1. Go to https://developer.android.com/studio and download the archive from the "Command line tools
 only" section. Make sure you have read and agree with the terms and conditions from the website.
 
 Linux:
@@ -58,7 +58,7 @@ macOS:
 ```bash
 curl https://dl.google.com/android/repository/commandlinetools-mac-11076708_latest.zip -o commandlinetools.zip
 ```
-2. Unzip.
+2. Unzip:
 ```bash
 unzip commandlinetools.zip
 ```
@@ -80,7 +80,7 @@ If you want to use Android Studio and never set up Java/SDK/NDK before, or if
 you use the newly installed ones, follow these steps to set Android Studio to use
 them.
 
-Copy these output paths to be used by Android Studio
+Copy these output paths to be used by Android Studio:
 ```bash
 echo $ANDROID_HOME
 echo $ANDROID_NDK
