@@ -64,6 +64,18 @@ Select the settings widget to get started with picking a model, its parameters a
 
 
 
+### Push Model and Tokenizer Files to Device
+
+Before selecting a model and tokenizer in the app, you need to push these files to your Android device. Use the following commands to copy the model (`.pte`) and tokenizer files to the device:
+
+```sh
+adb shell mkdir -p /data/local/tmp/llama
+adb push <your_model>.pte /data/local/tmp/llama
+adb push <your_tokenizer> /data/local/tmp/llama
+```
+
+Replace `<your_model>.pte` with your exported model file and `<your_tokenizer>` with your tokenizer file (e.g., `tokenizer.bin` or `tokenizer.model`).
+
 ### Select Models and Parameters
 
 Once you've selected the model, tokenizer, and model type you are ready to click on "Load Model" to have the app load the model and go back to the main Chat activity.
