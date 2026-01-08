@@ -48,10 +48,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Download local AAR
-        if: ${{ inputs.local_aar != '' && matrix.name == 'LlamaDemo' }}
+        if: ${{ inputs.local_aar && matrix.name == 'LlamaDemo' }}
         run: |
           mkdir -p ${{ matrix.path }}/app/libs
-          curl -L -o ${{ matrix.path }}/app/libs/executorch.aar "${{ inputs.local_aar }}"
+          curl -fL -o ${{ matrix.path }}/app/libs/executorch.aar "${{ inputs.local_aar }}"
 
       - name: Build with Gradle
         working-directory: ${{ matrix.path }}
