@@ -24,12 +24,14 @@
 #include <executorch/extension/threadpool/threadpool.h>
 #endif
 
-DEFINE_string(model1, "llama_3_2_1B_lora.pte",
+DEFINE_string(model1, "qwen3_06B_lora.pte",
               "First model, a PTE file.");
-DEFINE_string(model2, "llama_3_2_1B.pte",
+DEFINE_string(model2, "qwen3_06B.pte",
               "Second model, a PTE file.");
-DEFINE_string(weights, "foundation.ptd",
-              "Shared weights, a PTD file.");
+DEFINE_string(weights1, "qwen3_06B.ptd,qwen3_06B_lora.ptd",
+              "Comma-separated weights for model1.");
+DEFINE_string(weights2, "qwen3_06B.ptd",
+              "Comma-separated weights for model2.");
 
 DEFINE_string(tokenizer_path, "tokenizer.model", "Tokenizer.");
 
@@ -59,18 +61,28 @@ static inline std::unique_ptr<std::vector<std::string>>
 _get_default_special_tokens() {
   auto special_tokens =
       std::make_unique<std::vector<std::string>>(std::vector<std::string>{
-          "<|begin_of_text|>", "<|end_of_text|>",
-          "<|reserved_special_token_0|>", "<|reserved_special_token_1|>",
-          "<|finetune_right_pad_id|>", "<|step_id|>", "<|start_header_id|>",
-          "<|end_header_id|>", "<|eom_id|>", "<|eot_id|>", "<|python_tag|>"});
+          "<|endoftext|>", "<|im_start|>", "<|im_end|>"});
   // pad the rest of the special tokens with reserved tokens
-  ssize_t reserved_special_token_num = 2;
+  ssize_t reserved_special_token_num = 0;
   while (special_tokens->size() < kSpecialTokensSize) {
     special_tokens->emplace_back("<|reserved_special_token_" +
                                  std::to_string(reserved_special_token_num++) +
                                  "|>");
   }
   return special_tokens;
+}
+
+// Parse comma-separated string into vector of strings
+static std::vector<std::string> parse_data_paths(const std::string& paths) {
+  std::vector<std::string> result;
+  std::stringstream ss(paths);
+  std::string item;
+  while (std::getline(ss, item, ',')) {
+    if (!item.empty()) {
+      result.push_back(item);
+    }
+  }
+  return result;
 }
 } // namespace
 
@@ -81,12 +93,11 @@ int main(int argc, char *argv[]) {
 
   const char *model1 = FLAGS_model1.c_str();
   const char *model2 = FLAGS_model2.c_str();
-  const char *weights = FLAGS_weights.c_str();
 
   const char *tokenizer_path = FLAGS_tokenizer_path.c_str();
   const char *prompt = FLAGS_prompt.c_str();
   float temperature = FLAGS_temperature;
-  int32_t seq_len = 128;
+  int32_t seq_len = FLAGS_seq_len;
   int32_t cpu_threads = -1;
 
   // Create tokenizers.
@@ -103,13 +114,19 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  // Create runners.
+  // Create runners with parsed data paths.
+  std::vector<std::string> data_files1 = parse_data_paths(FLAGS_weights1);
+  std::vector<std::string> data_files2 = parse_data_paths(FLAGS_weights2);
+
+  ET_LOG(Info, "Loading model1: %s with weights: %s", model1, FLAGS_weights1.c_str());
   std::unique_ptr<llm::TextLLMRunner> runner1 =
       llm::create_text_llm_runner(model1, std::move(tokenizer1),
-                                  weights, temperature);
+                                  data_files1, temperature);
+
+  ET_LOG(Info, "Loading model2: %s with weights: %s", model2, FLAGS_weights2.c_str());
   std::unique_ptr<llm::TextLLMRunner> runner2 =
       llm::create_text_llm_runner(model2, std::move(tokenizer2),
-                                  weights, temperature);
+                                  data_files2, temperature);
 
   llm::GenerationConfig config{
       .echo = false,
@@ -119,13 +136,10 @@ int main(int argc, char *argv[]) {
   std::string formatted_prompt = std::string();
   if (FLAGS_apply_chat_template) {
     ET_LOG(Info, "Applying chat template...");
-    // System Prompt.
-    formatted_prompt += "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n";
-    // User Prompt.
-    formatted_prompt += "You are a helpful assistant.<|eot_id|>";
-    formatted_prompt += "<|start_header_id|>user<|end_header_id|>\n";
+    // Qwen3 chat template format
+    formatted_prompt += "<|im_start|>user\n";
     formatted_prompt += prompt;
-    formatted_prompt += "<|eot_id|><|start_header_id|>assistant<|end_header_id|>";
+    formatted_prompt += "<|im_end|>\n<|im_start|>assistant\n";
   } else {
     formatted_prompt += prompt;
   }
