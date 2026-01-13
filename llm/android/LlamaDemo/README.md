@@ -15,16 +15,17 @@ The goal is for you to see the type of support ExecuTorch provides and feel comf
 
 ## Supporting Models
 As a whole, the models that this app supports are (varies by delegate):
-* Llama 3.2 Quantized 1B/3B
-* Llama 3.2 1B/3B in BF16
-* Llama Guard 3 1B
-* Llama 3.1 8B
-* Llama 3 8B
-* Llama 2 7B
-* LLaVA-1.5 vision model (only XNNPACK)
-* Qwen 3 0.6B, 1.7B, and 4B
-* Voxtral Mini 3B
-* Gemma 3 4B
+* [Llama](https://github.com/pytorch/executorch/tree/main/examples/models/llama)
+      * Llama 3.2 Quantized 1B/3B
+      * Llama 3.2 1B/3B in BF16
+      * Llama Guard 3 1B
+      * Llama 3.1 8B
+      * Llama 3 8B
+      * Llama 2 7B
+* [LLaVA-1.5 vision model (only XNNPACK)](https://github.com/pytorch/executorch/tree/main/examples/models/llava)
+* [Qwen 3 0.6B, 1.7B, and 4B](https://github.com/pytorch/executorch/tree/main/examples/models/qwen3)
+* [Voxtral Mini 3B](https://github.com/pytorch/executorch/tree/main/examples/models/voxtral)
+* [Gemma 3 4B](https://github.com/pytorch/executorch/tree/main/examples/models/gemma3)
 
 ## Building the APK
 First it’s important to note that by default, the app depends on [ExecuTorch library](https://central.sonatype.com/artifact/org.pytorch/executorch-android) on Maven Central. It uses the latest `org.pytorch:executorch-android` package, which comes with all the default kernel libraries (portable, quantized, optimized), LLM customized libraries, and XNNPACK backend.
