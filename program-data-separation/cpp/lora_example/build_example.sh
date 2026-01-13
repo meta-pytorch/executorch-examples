@@ -7,7 +7,10 @@ mkdir -p build
 cd build
 
 # Configure CMake
-cmake -DCMAKE_BUILD_TYPE=Release -DEXECUTORCH_BUILD_LORA_DEMO=True -DEXECUTORCH_XNNPACK_ENABLE_WEIGHT_CACHE=True ../..
+cmake -DCMAKE_BUILD_TYPE=Release \
+      -DEXECUTORCH_BUILD_LORA_DEMO=True \
+      -DEXECUTORCH_XNNPACK_ENABLE_WEIGHT_CACHE=True \
+      ../..
 
 # Build the project
 cmake --build . -j$(nproc)

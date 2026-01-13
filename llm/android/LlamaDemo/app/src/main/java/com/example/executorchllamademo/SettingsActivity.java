@@ -50,6 +50,13 @@ public class SettingsActivity extends AppCompatActivity {
   private ModelType mModelType;
   public SettingsFields mSettingsFields;
 
+  // Store initial values to detect changes
+  private String mInitialModelFilePath = "";
+  private String mInitialTokenizerFilePath = "";
+  private String mInitialDataPath = "";
+  private BackendType mInitialBackendType;
+  private ModelType mInitialModelType;
+
   private DemoSharedPreferences mDemoSharedPreferences;
   public static double TEMPERATURE_MIN_VALUE = 0.0;
 
@@ -162,6 +169,9 @@ public class SettingsActivity extends AppCompatActivity {
       setBackendSettingMode();
     }
 
+    // Store initial values for change detection
+    storeInitialSettings();
+
     setupParameterSettings();
     setupPromptSettings();
     setupClearChatHistoryButton();
@@ -170,7 +180,8 @@ public class SettingsActivity extends AppCompatActivity {
 
   private void setupLoadModelButton() {
     mLoadModelButton = requireViewById(R.id.loadModelButton);
-    mLoadModelButton.setEnabled(true);
+    // Disable by default until settings change
+    mLoadModelButton.setEnabled(false);
     mLoadModelButton.setOnClickListener(
         view -> {
           new AlertDialog.Builder(this)
@@ -361,6 +372,7 @@ public class SettingsActivity extends AppCompatActivity {
           mBackendTextView.setText(backendTypes[item]);
           mBackendType = BackendType.valueOf(backendTypes[item]);
           setBackendSettingMode();
+          updateLoadModelButtonState();
           dialog.dismiss();
         });
 
@@ -378,7 +390,7 @@ public class SettingsActivity extends AppCompatActivity {
         (dialog, item) -> {
           mModelFilePath = pteFiles[item];
           mModelTextView.setText(getFilenameFromPath(mModelFilePath));
-          mLoadModelButton.setEnabled(true);
+          updateLoadModelButtonState();
           dialog.dismiss();
         });
 
@@ -406,7 +418,7 @@ public class SettingsActivity extends AppCompatActivity {
             mDataPath = null;
             mDataPathTextView.setText(getFilenameFromPath("no data path selected"));
           }
-          mLoadModelButton.setEnabled(true);
+          updateLoadModelButtonState();
           dialog.dismiss();
         });
 
@@ -449,6 +461,7 @@ public class SettingsActivity extends AppCompatActivity {
           mModelTypeTextView.setText(modelTypes[item]);
           mModelType = ModelType.valueOf(modelTypes[item]);
           mUserPromptEditText.setText(PromptFormat.getUserPromptTemplate(mModelType));
+          updateLoadModelButtonState();
           dialog.dismiss();
         });
 
@@ -466,7 +479,7 @@ public class SettingsActivity extends AppCompatActivity {
         (dialog, item) -> {
           mTokenizerFilePath = tokenizerFiles[item];
           mTokenizerTextView.setText(getFilenameFromPath(mTokenizerFilePath));
-          mLoadModelButton.setEnabled(true);
+          updateLoadModelButtonState();
           dialog.dismiss();
         });
 
@@ -482,6 +495,32 @@ public class SettingsActivity extends AppCompatActivity {
       return segments[segments.length - 1]; // get last element (aka filename)
     }
     return "";
+  }
+
+  private void storeInitialSettings() {
+    mInitialModelFilePath = mModelFilePath != null ? mModelFilePath : "";
+    mInitialTokenizerFilePath = mTokenizerFilePath != null ? mTokenizerFilePath : "";
+    mInitialDataPath = mDataPath != null ? mDataPath : "";
+    mInitialBackendType = mBackendType;
+    mInitialModelType = mModelType;
+  }
+
+  private boolean hasSettingsChanged() {
+    String currentModelPath = mModelFilePath != null ? mModelFilePath : "";
+    String currentTokenizerPath = mTokenizerFilePath != null ? mTokenizerFilePath : "";
+    String currentDataPath = mDataPath != null ? mDataPath : "";
+    
+    boolean modelChanged = !currentModelPath.equals(mInitialModelFilePath);
+    boolean tokenizerChanged = !currentTokenizerPath.equals(mInitialTokenizerFilePath);
+    boolean dataPathChanged = !currentDataPath.equals(mInitialDataPath);
+    boolean backendChanged = !java.util.Objects.equals(mBackendType, mInitialBackendType);
+    boolean modelTypeChanged = !java.util.Objects.equals(mModelType, mInitialModelType);
+
+    return modelChanged || tokenizerChanged || dataPathChanged || backendChanged || modelTypeChanged;
+  }
+
+  private void updateLoadModelButtonState() {
+    mLoadModelButton.setEnabled(hasSettingsChanged());
   }
 
   private void setBackendSettingMode() {

@@ -7,11 +7,15 @@
 name: Android Build
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  schedule:
+    # Run nightly at midnight UTC
+    - cron: '0 0 * * *'
   workflow_dispatch:
+    inputs:
+      local_aar:
+        description: 'URL to download a local AAR file. When set, the workflow will download the AAR and use it instead of the Maven dependency.'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -42,9 +46,20 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Download local AAR
+        if: ${{ inputs.local_aar && matrix.name == 'LlamaDemo' }}
+        run: |
+          mkdir -p ${{ matrix.path }}/app/libs
+          curl -fL -o ${{ matrix.path }}/app/libs/executorch.aar "${{ inputs.local_aar }}"
+
       - name: Build with Gradle
         working-directory: ${{ matrix.path }}
-        run: ./gradlew build --no-daemon
+        run: |
+          if [ -n "${{ inputs.local_aar }}" ] && [ "${{ matrix.name }}" == "LlamaDemo" ]; then
+            ./gradlew build --no-daemon -PuseLocalAar=true
+          else
+            ./gradlew build --no-daemon
+          fi
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
