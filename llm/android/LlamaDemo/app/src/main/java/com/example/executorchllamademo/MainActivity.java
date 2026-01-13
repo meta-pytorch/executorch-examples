@@ -384,6 +384,13 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
         } else {
           askUserToSelectModel();
         }
+      } else {
+        // Settings not updated, but still check if model/tokenizer is not selected
+        String modelPath = updatedSettingsFields.getModelFilePath();
+        String tokenizerPath = updatedSettingsFields.getTokenizerFilePath();
+        if (modelPath.isEmpty() || tokenizerPath.isEmpty()) {
+          askUserToSelectModel();
+        }
       }
     } else {
       askUserToSelectModel();
