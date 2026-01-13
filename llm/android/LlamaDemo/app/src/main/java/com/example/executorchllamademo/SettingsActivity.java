@@ -147,11 +147,11 @@ public class SettingsActivity extends AppCompatActivity {
             });
     mModelFilePath = mSettingsFields.getModelFilePath();
     if (!mModelFilePath.isEmpty()) {
-      mModelTextView.setText(getFilenameFromPath(mModelFilePath));
+      mModelTextView.setText(mModelFilePath);
     }
     mTokenizerFilePath = mSettingsFields.getTokenizerFilePath();
     if (!mTokenizerFilePath.isEmpty()) {
-      mTokenizerTextView.setText(getFilenameFromPath(mTokenizerFilePath));
+      mTokenizerTextView.setText(mTokenizerFilePath);
     }
     mDataPath = mSettingsFields.getDataPath();
     if (mDataPath != null && !mDataPath.isEmpty()) {
@@ -389,7 +389,7 @@ public class SettingsActivity extends AppCompatActivity {
         -1,
         (dialog, item) -> {
           mModelFilePath = pteFiles[item];
-          mModelTextView.setText(getFilenameFromPath(mModelFilePath));
+          mModelTextView.setText(mModelFilePath);
           updateLoadModelButtonState();
           dialog.dismiss();
         });
@@ -478,7 +478,7 @@ public class SettingsActivity extends AppCompatActivity {
         -1,
         (dialog, item) -> {
           mTokenizerFilePath = tokenizerFiles[item];
-          mTokenizerTextView.setText(getFilenameFromPath(mTokenizerFilePath));
+          mTokenizerTextView.setText(mTokenizerFilePath);
           updateLoadModelButtonState();
           dialog.dismiss();
         });
