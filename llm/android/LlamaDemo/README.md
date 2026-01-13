@@ -24,7 +24,7 @@ As a whole, the models that this app supports are (varies by delegate):
       * Llama 2 7B
 * [LLaVA-1.5 vision model (only XNNPACK)](https://github.com/pytorch/executorch/tree/main/examples/models/llava)
 * [Qwen 3 0.6B, 1.7B, and 4B](https://github.com/pytorch/executorch/tree/main/examples/models/qwen3)
-* [Voxtral Mini 3B](https://github.com/pytorch/executorch/blob/main/examples/models/voxtral)
+* [Voxtral Mini 3B](https://github.com/pytorch/executorch/tree/main/examples/models/voxtral)
 * [Gemma 3 4B](https://github.com/pytorch/executorch/tree/main/examples/models/gemma3)
 
 ## Building the APK
