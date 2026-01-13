@@ -145,13 +145,11 @@ public class SettingsActivity extends AppCompatActivity {
             view -> {
               setupModelTypeSelectorDialog();
             });
-    mModelFilePath = mSettingsFields.getModelFilePath();
-    if (!mModelFilePath.isEmpty()) {
-      mModelTextView.setText(mModelFilePath);
+    if (mModelFilePath != null && !mModelFilePath.isEmpty()) {
+      mModelTextView.setText(getFilenameFromPath(mModelFilePath));
     }
-    mTokenizerFilePath = mSettingsFields.getTokenizerFilePath();
-    if (!mTokenizerFilePath.isEmpty()) {
-      mTokenizerTextView.setText(mTokenizerFilePath);
+    if (mTokenizerFilePath != null && !mTokenizerFilePath.isEmpty()) {
+      mTokenizerTextView.setText(getFilenameFromPath(mTokenizerFilePath));
     }
     mDataPath = mSettingsFields.getDataPath();
     if (mDataPath != null && !mDataPath.isEmpty()) {
@@ -389,7 +387,7 @@ public class SettingsActivity extends AppCompatActivity {
         -1,
         (dialog, item) -> {
           mModelFilePath = pteFiles[item];
-          mModelTextView.setText(mModelFilePath);
+          mModelTextView.setText(getFilenameFromPath(mModelFilePath));
           updateLoadModelButtonState();
           dialog.dismiss();
         });
@@ -478,7 +476,7 @@ public class SettingsActivity extends AppCompatActivity {
         -1,
         (dialog, item) -> {
           mTokenizerFilePath = tokenizerFiles[item];
-          mTokenizerTextView.setText(mTokenizerFilePath);
+          mTokenizerTextView.setText(getFilenameFromPath(mTokenizerFilePath));
           updateLoadModelButtonState();
           dialog.dismiss();
         });
