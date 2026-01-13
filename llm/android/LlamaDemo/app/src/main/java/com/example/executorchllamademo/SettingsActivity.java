@@ -520,7 +520,9 @@ public class SettingsActivity extends AppCompatActivity {
   }
 
   private void updateLoadModelButtonState() {
-    mLoadModelButton.setEnabled(hasSettingsChanged());
+    boolean hasModelPath = mModelFilePath != null && !mModelFilePath.isEmpty();
+    boolean hasTokenizerPath = mTokenizerFilePath != null && !mTokenizerFilePath.isEmpty();
+    mLoadModelButton.setEnabled(hasSettingsChanged() && hasModelPath && hasTokenizerPath);
   }
 
   private void setBackendSettingMode() {
