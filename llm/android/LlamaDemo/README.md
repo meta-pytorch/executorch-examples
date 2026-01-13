@@ -64,6 +64,18 @@ Select the settings widget to get started with picking a model, its parameters a
 
 
 
+### Push Model and Tokenizer Files to Device
+
+Before selecting a model and tokenizer in the app, you need to push these files to your Android device. Use the following commands to copy the model (`.pte`) and tokenizer files to the device:
+
+```sh
+adb shell mkdir -p /data/local/tmp/llama
+adb push <your_model>.pte /data/local/tmp/llama
+adb push <your_tokenizer> /data/local/tmp/llama
+```
+
+Replace `<your_model>.pte` with your exported model file and `<your_tokenizer>` with your tokenizer file (e.g., `tokenizer.bin` or `tokenizer.model`).
+
 ### Select Models and Parameters
 
 Once you've selected the model, tokenizer, and model type you are ready to click on "Load Model" to have the app load the model and go back to the main Chat activity.
@@ -91,15 +103,15 @@ mModule = new LlmModule(
 int loadResult = mModule.load();
 ```
 
-* `modelCategory`: Indicate whether it’s a text-only or vision model
-* `modePath`: path to the .pte file
-* `tokenizerPath`: path to the tokenizer file
-* `temperature`: model parameter to adjust the randomness of the model’s output
-* `dataPath`: path to one or a list of .ptd files
+* `modelCategory`: Indicates whether it’s a text-only or vision model
+* `modelPath`: Path to the .pte file
+* `tokenizerPath`: Path to the tokenizer file
+* `temperature`: Model parameter to adjust the randomness of the model’s output
+* `dataPath`: Path to one or a list of .ptd files
 
 
 ### User Prompt
-Once model is successfully loaded then enter any prompt and click the send (i.e. generate) button to send it to the model.
+Once the model is successfully loaded, enter any prompt and click the send (i.e., generate) button to send it to the model.
 <p align="center">
 <img src="https://raw.githubusercontent.com/pytorch/executorch/refs/heads/main/docs/source/_static/img/load_complete_and_start_prompt.png" style="width:300px">
 </p>
@@ -112,11 +124,11 @@ You can provide it more follow-up questions as well.
 #### ExecuTorch App API
 
 ```java
-mModule.generate(prompt,sequence_length, MainActivity.this);
+mModule.generate(prompt, sequence_length, MainActivity.this);
 ```
-* `prompt`: User formatted prompt
+* `prompt`: User-formatted prompt
 * `sequence_length`: Number of tokens to generate in response to a prompt
-* `MainActivity.this`: Indicate that the callback functions (OnResult(), OnStats()) are present in this class.
+* `MainActivity.this`: Indicates that the callback functions (`onResult()`, `onStats()`) are present in this class.
 
 [*LLaVA-1.5: Only for XNNPACK delegate*]
 
@@ -177,7 +189,7 @@ Ensure you have the following functions in your callback class that you provided
 ```
 
 ## Instrumentation Test
-You can run the instrumentation test for sanity check. The test loads a model pte file and tokenizer.bin file
+You can run the instrumentation test for a sanity check. The test loads a model .pte file and tokenizer.bin file
 under `/data/local/tmp/llama`.
 
 ### Model preparation
@@ -204,4 +216,4 @@ adb push tokenizer.bin /data/local/tmp/llama
 ```
 
 ## Reporting Issues
-If you encountered any bugs or issues following this tutorial please file a bug/issue here on [Github](https://github.com/pytorch/executorch/issues/new), or join our discord [here](https://lnkd.in/gWCM4ViK).
+If you encountered any bugs or issues following this tutorial, please file a bug/issue here on [GitHub](https://github.com/pytorch/executorch/issues/new), or join our Discord [here](https://lnkd.in/gWCM4ViK).

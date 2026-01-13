@@ -50,6 +50,13 @@ public class SettingsActivity extends AppCompatActivity {
   private ModelType mModelType;
   public SettingsFields mSettingsFields;
 
+  // Store initial values to detect changes
+  private String mInitialModelFilePath = "";
+  private String mInitialTokenizerFilePath = "";
+  private String mInitialDataPath = "";
+  private BackendType mInitialBackendType;
+  private ModelType mInitialModelType;
+
   private DemoSharedPreferences mDemoSharedPreferences;
   public static double TEMPERATURE_MIN_VALUE = 0.0;
 
@@ -93,22 +100,51 @@ public class SettingsActivity extends AppCompatActivity {
         view -> {
           setupBackendSelectorDialog();
         });
+    requireViewById(R.id.backendLayout)
+        .setOnClickListener(
+            view -> {
+              setupBackendSelectorDialog();
+            });
+
     modelImageButton.setOnClickListener(
         view -> {
           setupModelSelectorDialog();
         });
+    requireViewById(R.id.modelLayout)
+        .setOnClickListener(
+            view -> {
+              setupModelSelectorDialog();
+            });
+
     tokenizerImageButton.setOnClickListener(
         view -> {
           setupTokenizerSelectorDialog();
         });
+    requireViewById(R.id.tokenizerLayout)
+        .setOnClickListener(
+            view -> {
+              setupTokenizerSelectorDialog();
+            });
+
     dataPathImageButton.setOnClickListener(
         view -> {
           setupDataPathSelectorDialog();
         });
+    requireViewById(R.id.dataPathLayout)
+        .setOnClickListener(
+            view -> {
+              setupDataPathSelectorDialog();
+            });
+
     modelTypeImageButton.setOnClickListener(
         view -> {
           setupModelTypeSelectorDialog();
         });
+    requireViewById(R.id.modelTypeLayout)
+        .setOnClickListener(
+            view -> {
+              setupModelTypeSelectorDialog();
+            });
     mModelFilePath = mSettingsFields.getModelFilePath();
     if (!mModelFilePath.isEmpty()) {
       mModelTextView.setText(getFilenameFromPath(mModelFilePath));
@@ -133,6 +169,9 @@ public class SettingsActivity extends AppCompatActivity {
       setBackendSettingMode();
     }
 
+    // Store initial values for change detection
+    storeInitialSettings();
+
     setupParameterSettings();
     setupPromptSettings();
     setupClearChatHistoryButton();
@@ -141,7 +180,8 @@ public class SettingsActivity extends AppCompatActivity {
 
   private void setupLoadModelButton() {
     mLoadModelButton = requireViewById(R.id.loadModelButton);
-    mLoadModelButton.setEnabled(true);
+    // Disable by default until settings change
+    mLoadModelButton.setEnabled(false);
     mLoadModelButton.setOnClickListener(
         view -> {
           new AlertDialog.Builder(this)
@@ -332,6 +372,7 @@ public class SettingsActivity extends AppCompatActivity {
           mBackendTextView.setText(backendTypes[item]);
           mBackendType = BackendType.valueOf(backendTypes[item]);
           setBackendSettingMode();
+          updateLoadModelButtonState();
           dialog.dismiss();
         });
 
@@ -349,7 +390,7 @@ public class SettingsActivity extends AppCompatActivity {
         (dialog, item) -> {
           mModelFilePath = pteFiles[item];
           mModelTextView.setText(getFilenameFromPath(mModelFilePath));
-          mLoadModelButton.setEnabled(true);
+          updateLoadModelButtonState();
           dialog.dismiss();
         });
 
@@ -357,14 +398,13 @@ public class SettingsActivity extends AppCompatActivity {
   }
 
   private void setupDataPathSelectorDialog() {
-    String[] dataPathFiles = listLocalFile("/data/local/tmp/llama/", new String[] {".ptd"});
+    String[] dataPathFiles =
+        listLocalFile("/data/local/tmp/llama/", new String[] {".ptd"});
     AlertDialog.Builder dataPathBuilder = new AlertDialog.Builder(this);
     dataPathBuilder.setTitle("Select data path");
 
     String[] dataPathOptions = new String[dataPathFiles.length + 1];
-    for (int i = 0; i < dataPathFiles.length; i++) {
-      dataPathOptions[i] = dataPathFiles[i];
-    }
+    System.arraycopy(dataPathFiles, 0, dataPathOptions, 0, dataPathFiles.length);
     dataPathOptions[dataPathOptions.length - 1] = "(unused)";
 
     dataPathBuilder.setSingleChoiceItems(
@@ -378,7 +418,7 @@ public class SettingsActivity extends AppCompatActivity {
             mDataPath = null;
             mDataPathTextView.setText(getFilenameFromPath("no data path selected"));
           }
-          mLoadModelButton.setEnabled(true);
+          updateLoadModelButtonState();
           dialog.dismiss();
         });
 
@@ -393,7 +433,7 @@ public class SettingsActivity extends AppCompatActivity {
     File directory = new File(path);
     if (directory.exists() && directory.isDirectory()) {
       File[] files = directory.listFiles((dir, name) -> (fileHasExtension(name, suffix)));
-      String[] result = new String[files.length];
+        String[] result = new String[files.length];
       for (int i = 0; i < files.length; i++) {
         if (files[i].isFile() && fileHasExtension(files[i].getName(), suffix)) {
           result[i] = files[i].getAbsolutePath();
@@ -421,6 +461,7 @@ public class SettingsActivity extends AppCompatActivity {
           mModelTypeTextView.setText(modelTypes[item]);
           mModelType = ModelType.valueOf(modelTypes[item]);
           mUserPromptEditText.setText(PromptFormat.getUserPromptTemplate(mModelType));
+          updateLoadModelButtonState();
           dialog.dismiss();
         });
 
@@ -438,7 +479,7 @@ public class SettingsActivity extends AppCompatActivity {
         (dialog, item) -> {
           mTokenizerFilePath = tokenizerFiles[item];
           mTokenizerTextView.setText(getFilenameFromPath(mTokenizerFilePath));
-          mLoadModelButton.setEnabled(true);
+          updateLoadModelButtonState();
           dialog.dismiss();
         });
 
@@ -454,6 +495,32 @@ public class SettingsActivity extends AppCompatActivity {
       return segments[segments.length - 1]; // get last element (aka filename)
     }
     return "";
+  }
+
+  private void storeInitialSettings() {
+    mInitialModelFilePath = mModelFilePath != null ? mModelFilePath : "";
+    mInitialTokenizerFilePath = mTokenizerFilePath != null ? mTokenizerFilePath : "";
+    mInitialDataPath = mDataPath != null ? mDataPath : "";
+    mInitialBackendType = mBackendType;
+    mInitialModelType = mModelType;
+  }
+
+  private boolean hasSettingsChanged() {
+    String currentModelPath = mModelFilePath != null ? mModelFilePath : "";
+    String currentTokenizerPath = mTokenizerFilePath != null ? mTokenizerFilePath : "";
+    String currentDataPath = mDataPath != null ? mDataPath : "";
+    
+    boolean modelChanged = !currentModelPath.equals(mInitialModelFilePath);
+    boolean tokenizerChanged = !currentTokenizerPath.equals(mInitialTokenizerFilePath);
+    boolean dataPathChanged = !currentDataPath.equals(mInitialDataPath);
+    boolean backendChanged = !java.util.Objects.equals(mBackendType, mInitialBackendType);
+    boolean modelTypeChanged = !java.util.Objects.equals(mModelType, mInitialModelType);
+
+    return modelChanged || tokenizerChanged || dataPathChanged || backendChanged || modelTypeChanged;
+  }
+
+  private void updateLoadModelButtonState() {
+    mLoadModelButton.setEnabled(hasSettingsChanged());
   }
 
   private void setBackendSettingMode() {

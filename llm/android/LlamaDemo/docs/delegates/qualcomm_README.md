@@ -1,25 +1,25 @@
-# Building ExecuTorch Android Demo App for Llama running Qualcomm
+# Building ExecuTorch Android Demo App for Llama Running Qualcomm
 
-This tutorial covers the end to end workflow for building an android demo app using Qualcomm AI accelerators on device.
+This tutorial covers the end-to-end workflow for building an Android demo app using Qualcomm AI accelerators on device.
 More specifically, it covers:
 1. Export and quantization of Llama models against the Qualcomm backend.
-2. Building and linking libraries that are required to inference on-device for Android platform using Qualcomm AI accelerators.
+2. Building and linking libraries that are required for on-device inference on the Android platform using Qualcomm AI accelerators.
 3. Building the Android demo app itself.
 
 Verified on Linux CentOS, QNN SDK [v2.26](https://softwarecenter.qualcomm.com/api/download/software/qualcomm_neural_processing_sdk/v2.26.0.240828.zip), python 3.10, Android NDK r27b.
 
-Phone verified: OnePlus 12, Samsung 24+, Samsung 23
+Phones verified: OnePlus 12, Samsung 24+, Samsung 23.
 
 ## Prerequisites
 * Download and unzip QNN SDK [v2.26](https://softwarecenter.qualcomm.com/api/download/software/qualcomm_neural_processing_sdk/v2.26.0.240828.zip)
 * Download and unzip Android NDK [r27b](https://developer.android.com/ndk/downloads)
-* Android phone with Snapdragon8 Gen3 (SM8650) or Gen2 (SM8550). Gen 1 and lower SoC might be supported but not fully validated.
-* Desired Llama model weights in .PTH format. You can download them on HuggingFace ([Example](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct)).
+* Android phone with Snapdragon 8 Gen 3 (SM8650) or Gen 2 (SM8550). Gen 1 and lower SoC might be supported but not fully validated.
+* Desired Llama model weights in .pth format. You can download them on Hugging Face ([Example](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct)).
 
 ## Setup ExecuTorch
 In this section, we will need to set up the ExecuTorch repo first with Conda environment management. Make sure you have Conda available in your system (or follow the instructions to install it [here](https://anaconda.org/anaconda/conda)). The commands below are running on Linux (CentOS).
 
-Checkout ExecuTorch repo and sync submodules
+Checkout ExecuTorch repo and sync submodules:
 
 ```
 git clone -b viable/strict https://github.com/pytorch/executorch.git && cd executorch
@@ -37,7 +37,7 @@ Or a Conda environment:
 conda create -n et_xnnpack python=3.10.0 && conda activate et_xnnpack
 ```
 
-Install dependencies
+Install dependencies:
 ```
 ./install_executorch.sh
 ```
@@ -45,8 +45,8 @@ Install dependencies
 ## Setup QNN
 ```
 # Set these variables correctly for your environment
-export ANDROID_NDK_ROOT=$HOME/android-ndk-r27b # Download android SDK and unzip to home directory
-export QNN_SDK_ROOT=$HOME/Your-SDK-Root #Folder contains lib
+export ANDROID_NDK_ROOT=$HOME/android-ndk-r27b # Download Android SDK and unzip to home directory
+export QNN_SDK_ROOT=$HOME/Your-SDK-Root # Folder contains lib
 export EXECUTORCH_ROOT=$HOME/repos/executorch
 export LD_LIBRARY_PATH=$QNN_SDK_ROOT/lib/x86_64-linux-clang/:$LD_LIBRARY_PATH
 export PYTHONPATH=$EXECUTORCH_ROOT/..
@@ -168,7 +168,7 @@ python -m extension.llm.export.export_llm base.tokenizer=<path_to_tokenizer.mode
 
 ## Pushing Model and Tokenizer
 
-Once you have the model and tokenizer ready, you can push them to the device before we start building the android demo app.
+Once you have the model and tokenizer ready, you can push them to the device before we start building the Android demo app.
 ```
 adb shell mkdir -p /data/local/tmp/llama
 adb push llama-exported.pte /data/local/tmp/llama
@@ -178,7 +178,7 @@ adb push tokenizer.bin /data/local/tmp/llama
 
 
 ## Build AAR Library
-1. Open a terminal window and navigate to the root directory of the executorch
+1. Open a terminal window and navigate to the root directory of the ExecuTorch:
 ```sh
 cd $EXECUTORCH_ROOT
 ```
@@ -202,16 +202,16 @@ export BUILD_AAR_DIR=aar-out
 sh scripts/build_android_library.sh
 ```
 
-5. Now go to demo app root (containing main README.md) and copy the AAR to the app:
+5. Now go to the demo app root (containing the main README.md) and copy the AAR to the app:
 ```sh
 cd $DEMO_APP
 mkdir -p app/libs
 cp $EXECUTORCH_ROOT/aar-out/executorch.aar app/libs/executorch.aar
 ```
 
-This is running the shell script which configures the required core ExecuTorch, Llama2/3, and Android libraries, builds them into AAR, and copies it to the app.
+This runs the shell script which configures the required core ExecuTorch, Llama 2/3, and Android libraries, builds them into an AAR, and copies it to the app.
 
-6. Add QNN runtime dependency to gradle
+6. Add QNN runtime dependency to Gradle:
 ```
 implementation("com.qualcomm.qti:qnn-runtime:2.33.0")
 ```
@@ -223,18 +223,18 @@ First, make sure your Android phone's chipset version is compatible with this de
 Open Android Studio and select "Open an existing Android Studio project" to open LlamaDemo.
 Run the app (^R). This builds and launches the app on the phone.
 
-### Alternative 2: Command line
-Without Android Studio UI, we can run gradle directly to build the app. We need to set up the Android SDK path and invoke gradle.
+### Alternative 2: Command Line
+Without Android Studio UI, we can run Gradle directly to build the app. We need to set up the Android SDK path and invoke Gradle.
 ```
 export ANDROID_HOME=<path_to_android_sdk_home>
 cd LlamaDemo
 ./gradlew :app:installDebug
 ```
-If the app successfully run on your device, you should see something like below:
+If the app successfully runs on your device, you should see something like the screenshot below:
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/pytorch/executorch/refs/heads/main/docs/source/_static/img/opening_the_app_details.png" style="width:800px">
 </p>
 
 ## Reporting Issues
-If you encountered any bugs or issues following this tutorial please file a bug/issue here on Github.
+If you encountered any bugs or issues following this tutorial, please file a bug/issue here on [GitHub](https://github.com/pytorch/executorch/issues/new).

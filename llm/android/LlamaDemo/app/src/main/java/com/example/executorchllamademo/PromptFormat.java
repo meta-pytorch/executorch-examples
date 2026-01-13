@@ -47,7 +47,7 @@ public class PromptFormat {
             + "<|im_start|>assistant\n"
             + THINKING_MODE_PLACEHOLDER;
       case LLAVA_1_5:
-        return "User: " + USER_PLACEHOLDER;
+        return " USER: " + USER_PLACEHOLDER + " ASSISTANT:";
       default:
         return USER_PLACEHOLDER;
     }
@@ -101,6 +101,9 @@ public class PromptFormat {
         + " gives helpful, detailed, and polite answers to the human's questions. USER: ";
   }
 
+  public static String getLlavaFirstTurnUserPrompt() {
+    return USER_PLACEHOLDER + " ASSISTANT:";
+  }
   public static String getFormattedLlamaGuardPrompt(String userPrompt) {
     return getUserPromptTemplate(ModelType.LLAMA_GUARD_3)
         .replace(
