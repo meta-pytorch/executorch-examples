@@ -6,7 +6,7 @@ More specifically, it covers:
 2. Building and linking libraries that are required for on-device inference on the Android platform using Qualcomm AI accelerators.
 3. Building the Android demo app itself.
 
-Verified on Linux CentOS, QNN SDK [v2.26](https://softwarecenter.qualcomm.com/api/download/software/qualcomm_neural_processing_sdk/v2.26.0.240828.zip), python 3.10, Android NDK r27b.
+Verified on Linux CentOS, QNN SDK [v2.26](https://softwarecenter.qualcomm.com/api/download/software/qualcomm_neural_processing_sdk/v2.26.0.240828.zip), Python 3.10, Android NDK r27b.
 
 Phones verified: OnePlus 12, Samsung 24+, Samsung 23.
 
