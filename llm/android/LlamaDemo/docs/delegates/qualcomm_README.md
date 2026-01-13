@@ -6,13 +6,13 @@ More specifically, it covers:
 2. Building and linking libraries that are required for on-device inference on the Android platform using Qualcomm AI accelerators.
 3. Building the Android demo app itself.
 
-Verified on Linux CentOS, QNN SDK [v2.26](https://softwarecenter.qualcomm.com/api/download/software/qualcomm_neural_processing_sdk/v2.26.0.240828.zip), Python 3.10, Android SDK r27b.
+Verified on Linux CentOS, QNN SDK [v2.26](https://softwarecenter.qualcomm.com/api/download/software/qualcomm_neural_processing_sdk/v2.26.0.240828.zip), Python 3.10, Android NDK r27b.
 
 Phones verified: OnePlus 12, Samsung 24+, Samsung 23.
 
 ## Prerequisites
 * Download and unzip QNN SDK [v2.26](https://softwarecenter.qualcomm.com/api/download/software/qualcomm_neural_processing_sdk/v2.26.0.240828.zip)
-* Download and unzip Android SDK [r27b](https://developer.android.com/ndk/downloads)
+* Download and unzip Android NDK [r27b](https://developer.android.com/ndk/downloads)
 * Android phone with Snapdragon 8 Gen 3 (SM8650) or Gen 2 (SM8550). Gen 1 and lower SoC might be supported but not fully validated.
 * Desired Llama model weights in .pth format. You can download them on Hugging Face ([Example](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct)).
 
