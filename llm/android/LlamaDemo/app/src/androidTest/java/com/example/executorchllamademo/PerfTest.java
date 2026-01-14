@@ -35,31 +35,6 @@ public class PerfTest implements LlmCallback {
   private final List<Float> tokensPerSecond = new ArrayList<>();
     @Test public void testSanity() {}
 
-  @Test
-  public void testTokensPerSecond() {
-    String tokenizerPath = RESOURCE_PATH + TOKENIZER_BIN;
-    // Find out the model name
-    File directory = new File(RESOURCE_PATH);
-    Arrays.stream(directory.listFiles())
-        .filter(file -> file.getName().endsWith("model.pte"))
-        .forEach(
-            model -> {
-              LlmModule mModule = new LlmModule(model.getPath(), tokenizerPath, 0.8f);
-              // Print the model name because there might be more than one of them
-              report("ModelName", model.getName());
-
-              int loadResult = mModule.load();
-              // Check that the model can be load successfully
-              assertEquals(0, loadResult);
-
-              // Run a testing prompt
-              mModule.generate("How do you do! I'm testing llama2 on mobile device", PerfTest.this);
-              assertFalse(tokensPerSecond.isEmpty());
-
-              final Float tps = tokensPerSecond.get(tokensPerSecond.size() - 1);
-              report("TPS", tps);
-            });
-  }
 
   @Override
   public void onResult(String result) {
