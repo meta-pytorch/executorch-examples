@@ -8,6 +8,8 @@
 
 package com.example.executorchllamademo;
 
+import java.util.Objects;
+
 public class SettingsFields {
 
   public String getModelFilePath() {
@@ -143,15 +145,15 @@ public class SettingsFields {
   public boolean equals(SettingsFields anotherSettingsFields) {
     if (this == anotherSettingsFields) return true;
     if (anotherSettingsFields == null) return false;
-    return java.util.Objects.equals(modelFilePath, anotherSettingsFields.modelFilePath)
-        && java.util.Objects.equals(tokenizerFilePath, anotherSettingsFields.tokenizerFilePath)
-        && java.util.Objects.equals(dataPath, anotherSettingsFields.dataPath)
+    return Objects.equals(modelFilePath, anotherSettingsFields.modelFilePath)
+        && Objects.equals(tokenizerFilePath, anotherSettingsFields.tokenizerFilePath)
+        && Objects.equals(dataPath, anotherSettingsFields.dataPath)
         && temperature == anotherSettingsFields.temperature
-        && java.util.Objects.equals(systemPrompt, anotherSettingsFields.systemPrompt)
-        && java.util.Objects.equals(userPrompt, anotherSettingsFields.userPrompt)
+        && Objects.equals(systemPrompt, anotherSettingsFields.systemPrompt)
+        && Objects.equals(userPrompt, anotherSettingsFields.userPrompt)
         && isClearChatHistory == anotherSettingsFields.isClearChatHistory
         && isLoadModel == anotherSettingsFields.isLoadModel
-        && modelType == anotherSettingsFields.modelType
-        && backendType == anotherSettingsFields.backendType;
+        && Objects.equals(modelType, anotherSettingsFields.modelType)
+        && Objects.equals(backendType, anotherSettingsFields.backendType);
   }
 }
