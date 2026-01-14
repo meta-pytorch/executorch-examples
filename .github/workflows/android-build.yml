@@ -112,7 +112,7 @@ jobs:
           set -e
           mkdir -p model_files
           curl -fL -o model_files/model.pte "https://huggingface.co/pytorch/SmolLM3-3B-INT8-INT4/resolve/main/model.pte"
-          curl -fL -o model_files/tokenizer.json "https://huggingface.co/pytorch/SmolLM3-3B-INT8-INT4/resolve/main/tokenizer.json"
+          curl -fL -o model_files/tokenizer.bin "https://huggingface.co/pytorch/SmolLM3-3B-INT8-INT4/resolve/main/tokenizer.bin"
 
       - name: Run instrumentation tests
         uses: reactivecircus/android-emulator-runner@v2
@@ -127,5 +127,5 @@ jobs:
             set -e
             adb shell mkdir -p /data/local/tmp/llama
             adb push $GITHUB_WORKSPACE/model_files/model.pte /data/local/tmp/llama/
-            adb push $GITHUB_WORKSPACE/model_files/tokenizer.json /data/local/tmp/llama/
+            adb push $GITHUB_WORKSPACE/model_files/tokenizer.bin /data/local/tmp/llama/
             ./gradlew connectedCheck
