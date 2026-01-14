@@ -75,7 +75,7 @@ jobs:
     if: github.event_name == 'schedule'
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v4.1.3
         with:
           path: artifacts
 
