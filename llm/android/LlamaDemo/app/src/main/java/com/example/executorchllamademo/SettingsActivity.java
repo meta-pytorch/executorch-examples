@@ -380,7 +380,7 @@ public class SettingsActivity extends AppCompatActivity {
         (dialog, item) -> {
           mSettingsFields.saveModelPath(pteFiles[item]);
           mModelTextView.setText(getFilenameFromPath(pteFiles[item]));
-          autoSelectModelType(mModelFilePath);
+          autoSelectModelType(pteFiles[item]);
           updateLoadModelButtonState();
           dialog.dismiss();
         });
