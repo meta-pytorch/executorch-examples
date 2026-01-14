@@ -387,11 +387,54 @@ public class SettingsActivity extends AppCompatActivity {
         (dialog, item) -> {
           mModelFilePath = pteFiles[item];
           mModelTextView.setText(getFilenameFromPath(mModelFilePath));
+          autoSelectModelType(mModelFilePath);
           updateLoadModelButtonState();
           dialog.dismiss();
         });
 
     modelPathBuilder.create().show();
+  }
+
+  private void autoSelectModelType(String filePath) {
+    ModelType detectedType = detectModelTypeFromFilePath(filePath);
+    if (detectedType != null) {
+      mModelType = detectedType;
+      mModelTypeTextView.setText(mModelType.toString());
+      mUserPromptEditText.setText(PromptFormat.getUserPromptTemplate(mModelType));
+    }
+  }
+
+  static ModelType detectModelTypeFromFilePath(String filePath) {
+    if (filePath == null || filePath.isEmpty()) {
+      return null;
+    }
+    // Extract just the filename from the path
+    String fileName = filePath;
+    int lastSeparatorIndex = filePath.lastIndexOf('/');
+    if (lastSeparatorIndex >= 0 && lastSeparatorIndex < filePath.length() - 1) {
+      fileName = filePath.substring(lastSeparatorIndex + 1);
+    }
+    String lowerFileName = fileName.toLowerCase();
+    // Check for more specific patterns first
+    if (lowerFileName.contains("llama_guard") || lowerFileName.contains("llama-guard") || lowerFileName.contains("llamaguard")) {
+      return ModelType.LLAMA_GUARD_3;
+    }
+    if (lowerFileName.contains("llava")) {
+      return ModelType.LLAVA_1_5;
+    }
+    if (lowerFileName.contains("gemma")) {
+      return ModelType.GEMMA_3;
+    }
+    if (lowerFileName.contains("llama")) {
+      return ModelType.LLAMA_3;
+    }
+    if (lowerFileName.contains("qwen")) {
+      return ModelType.QWEN_3;
+    }
+    if (lowerFileName.contains("voxtral")) {
+      return ModelType.VOXTRAL;
+    }
+    return null;
   }
 
   private void setupDataPathSelectorDialog() {
