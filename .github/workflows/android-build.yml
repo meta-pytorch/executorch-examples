@@ -84,6 +84,7 @@ jobs:
         run: |
           echo "tag_name=nightly-$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
           echo "release_name=Nightly Build $(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+          echo "build_date=$(date +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_OUTPUT
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -97,9 +98,9 @@ jobs:
             - LlamaDemo APK
             - DeepLabV3Demo APK
 
-            **Build Date:** ${{ steps.tag.outputs.release_name }}
+            **Build Date:** ${{ steps.tag.outputs.build_date }}
             **Commit:** ${{ github.sha }}
           files: |
-            artifacts/**/*.apk
+            artifacts/*-apk/**/*.apk
           prerelease: true
           draft: false
