@@ -32,9 +32,6 @@ import java.util.List;
 
 public class SettingsActivity extends AppCompatActivity {
 
-  private String mModelFilePath = "";
-  private String mTokenizerFilePath = "";
-  private String mDataPath = "";
   private TextView mBackendTextView;
   private TextView mModelTextView;
   private TextView mTokenizerTextView;
@@ -43,12 +40,11 @@ public class SettingsActivity extends AppCompatActivity {
   private EditText mSystemPromptEditText;
   private EditText mUserPromptEditText;
   private Button mLoadModelButton;
-  private double mSetTemperature;
-  private String mSystemPrompt;
-  private String mUserPrompt;
-  private BackendType mBackendType;
-  private ModelType mModelType;
+  // mSettingsFields is the single source of truth for all settings
   public SettingsFields mSettingsFields;
+
+  // Store initial settings to detect changes
+  private SettingsFields mInitialSettingsFields;
 
   private DemoSharedPreferences mDemoSharedPreferences;
   public static double TEMPERATURE_MIN_VALUE = 0.0;
@@ -138,29 +134,32 @@ public class SettingsActivity extends AppCompatActivity {
             view -> {
               setupModelTypeSelectorDialog();
             });
-    mModelFilePath = mSettingsFields.getModelFilePath();
-    if (!mModelFilePath.isEmpty()) {
-      mModelTextView.setText(getFilenameFromPath(mModelFilePath));
+    String modelFilePath = mSettingsFields.getModelFilePath();
+    if (modelFilePath != null && !modelFilePath.isEmpty()) {
+      mModelTextView.setText(getFilenameFromPath(modelFilePath));
     }
-    mTokenizerFilePath = mSettingsFields.getTokenizerFilePath();
-    if (!mTokenizerFilePath.isEmpty()) {
-      mTokenizerTextView.setText(getFilenameFromPath(mTokenizerFilePath));
+    String tokenizerFilePath = mSettingsFields.getTokenizerFilePath();
+    if (tokenizerFilePath != null && !tokenizerFilePath.isEmpty()) {
+      mTokenizerTextView.setText(getFilenameFromPath(tokenizerFilePath));
     }
-    mDataPath = mSettingsFields.getDataPath();
-    if (mDataPath != null && !mDataPath.isEmpty()) {
-      mDataPathTextView.setText(getFilenameFromPath(mDataPath));
+    String dataPath = mSettingsFields.getDataPath();
+    if (dataPath != null && !dataPath.isEmpty()) {
+      mDataPathTextView.setText(getFilenameFromPath(dataPath));
     }
-    mModelType = mSettingsFields.getModelType();
-    ETLogging.getInstance().log("mModelType from settings " + mModelType);
-    if (mModelType != null) {
-      mModelTypeTextView.setText(mModelType.toString());
+    ModelType modelType = mSettingsFields.getModelType();
+    ETLogging.getInstance().log("mModelType from settings " + modelType);
+    if (modelType != null) {
+      mModelTypeTextView.setText(modelType.toString());
     }
-    mBackendType = mSettingsFields.getBackendType();
-    ETLogging.getInstance().log("mBackendType from settings " + mBackendType);
-    if (mBackendType != null) {
-      mBackendTextView.setText(mBackendType.toString());
+    BackendType backendType = mSettingsFields.getBackendType();
+    ETLogging.getInstance().log("mBackendType from settings " + backendType);
+    if (backendType != null) {
+      mBackendTextView.setText(backendType.toString());
       setBackendSettingMode();
     }
+
+    // Store initial values for change detection
+    storeInitialSettings();
 
     setupParameterSettings();
     setupPromptSettings();
@@ -170,7 +169,8 @@ public class SettingsActivity extends AppCompatActivity {
 
   private void setupLoadModelButton() {
     mLoadModelButton = requireViewById(R.id.loadModelButton);
-    mLoadModelButton.setEnabled(true);
+    // Enable button if valid pre-filled paths are available from previous session
+    updateLoadModelButtonState();
     mLoadModelButton.setOnClickListener(
         view -> {
           new AlertDialog.Builder(this)
@@ -218,9 +218,9 @@ public class SettingsActivity extends AppCompatActivity {
   }
 
   private void setupTemperatureSettings() {
-    mSetTemperature = mSettingsFields.getTemperature();
+    double temperature = mSettingsFields.getTemperature();
     EditText temperatureEditText = requireViewById(R.id.temperatureEditText);
-    temperatureEditText.setText(String.valueOf(mSetTemperature));
+    temperatureEditText.setText(String.valueOf(temperature));
     temperatureEditText.addTextChangedListener(
         new TextWatcher() {
           @Override
@@ -231,11 +231,12 @@ public class SettingsActivity extends AppCompatActivity {
 
           @Override
           public void afterTextChanged(Editable s) {
-            mSetTemperature = Double.parseDouble(s.toString());
+            double newTemperature = Double.parseDouble(s.toString());
+            mSettingsFields.saveParameters(newTemperature);
             // This is needed because temperature is changed together with model loading
             // Once temperature is no longer in LlmModule constructor, we can remove this
             mSettingsFields.saveLoadModelAction(true);
-            saveSettings();
+            mDemoSharedPreferences.addSettings(mSettingsFields);
           }
         });
   }
@@ -246,8 +247,8 @@ public class SettingsActivity extends AppCompatActivity {
   }
 
   private void setupSystemPromptSettings() {
-    mSystemPrompt = mSettingsFields.getSystemPrompt();
-    mSystemPromptEditText.setText(mSystemPrompt);
+    String systemPrompt = mSettingsFields.getSystemPrompt();
+    mSystemPromptEditText.setText(systemPrompt);
     mSystemPromptEditText.addTextChangedListener(
         new TextWatcher() {
           @Override
@@ -258,7 +259,7 @@ public class SettingsActivity extends AppCompatActivity {
 
           @Override
           public void afterTextChanged(Editable s) {
-            mSystemPrompt = s.toString();
+            mSettingsFields.savePrompts(s.toString(), mSettingsFields.getUserPrompt());
           }
         });
 
@@ -283,8 +284,8 @@ public class SettingsActivity extends AppCompatActivity {
   }
 
   private void setupUserPromptSettings() {
-    mUserPrompt = mSettingsFields.getUserPrompt();
-    mUserPromptEditText.setText(mUserPrompt);
+    String userPrompt = mSettingsFields.getUserPrompt();
+    mUserPromptEditText.setText(userPrompt);
     mUserPromptEditText.addTextChangedListener(
         new TextWatcher() {
           @Override
@@ -296,7 +297,7 @@ public class SettingsActivity extends AppCompatActivity {
           @Override
           public void afterTextChanged(Editable s) {
             if (isValidUserPrompt(s.toString())) {
-              mUserPrompt = s.toString();
+              mSettingsFields.savePrompts(mSettingsFields.getSystemPrompt(), s.toString());
             } else {
               showInvalidPromptDialog();
             }
@@ -315,7 +316,7 @@ public class SettingsActivity extends AppCompatActivity {
                   new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
                       // Clear the messageAdapter and sharedPreference
-                      mUserPromptEditText.setText(PromptFormat.getUserPromptTemplate(mModelType));
+                      mUserPromptEditText.setText(PromptFormat.getUserPromptTemplate(mSettingsFields.getModelType()));
                     }
                   })
               .setNegativeButton(android.R.string.no, null)
@@ -338,7 +339,7 @@ public class SettingsActivity extends AppCompatActivity {
         .setPositiveButton(
             android.R.string.yes,
             (dialog, whichButton) -> {
-              mUserPromptEditText.setText(PromptFormat.getUserPromptTemplate(mModelType));
+              mUserPromptEditText.setText(PromptFormat.getUserPromptTemplate(mSettingsFields.getModelType()));
             })
         .setNegativeButton(android.R.string.no, null)
         .show();
@@ -359,8 +360,9 @@ public class SettingsActivity extends AppCompatActivity {
         -1,
         (dialog, item) -> {
           mBackendTextView.setText(backendTypes[item]);
-          mBackendType = BackendType.valueOf(backendTypes[item]);
+          mSettingsFields.saveBackendType(BackendType.valueOf(backendTypes[item]));
           setBackendSettingMode();
+          updateLoadModelButtonState();
           dialog.dismiss();
         });
 
@@ -376,13 +378,22 @@ public class SettingsActivity extends AppCompatActivity {
         pteFiles,
         -1,
         (dialog, item) -> {
-          mModelFilePath = pteFiles[item];
-          mModelTextView.setText(getFilenameFromPath(mModelFilePath));
-          mLoadModelButton.setEnabled(true);
+          mSettingsFields.saveModelPath(pteFiles[item]);
+          mModelTextView.setText(getFilenameFromPath(pteFiles[item]));
+          autoSelectModelType(pteFiles[item]);
+          updateLoadModelButtonState();
           dialog.dismiss();
         });
 
     modelPathBuilder.create().show();
+  }
+
+  private void autoSelectModelType(String filePath) {
+    ModelType detectedType = ModelType.fromFilePath(filePath);
+    if (detectedType != null) {
+      mModelTypeTextView.setText(detectedType.toString());
+      mUserPromptEditText.setText(PromptFormat.getUserPromptTemplate(detectedType));
+    }
   }
 
   private void setupDataPathSelectorDialog() {
@@ -400,13 +411,13 @@ public class SettingsActivity extends AppCompatActivity {
         -1,
         (dialog, item) -> {
           if (dataPathOptions[item] != "(unused)") {
-            mDataPath = dataPathOptions[item];
-            mDataPathTextView.setText(getFilenameFromPath(mDataPath));
+            mSettingsFields.saveDataPath(dataPathOptions[item]);
+            mDataPathTextView.setText(getFilenameFromPath(dataPathOptions[item]));
           } else {
-            mDataPath = null;
+            mSettingsFields.saveDataPath(null);
             mDataPathTextView.setText(getFilenameFromPath("no data path selected"));
           }
-          mLoadModelButton.setEnabled(true);
+          updateLoadModelButtonState();
           dialog.dismiss();
         });
 
@@ -447,8 +458,10 @@ public class SettingsActivity extends AppCompatActivity {
         -1,
         (dialog, item) -> {
           mModelTypeTextView.setText(modelTypes[item]);
-          mModelType = ModelType.valueOf(modelTypes[item]);
-          mUserPromptEditText.setText(PromptFormat.getUserPromptTemplate(mModelType));
+          ModelType selectedModelType = ModelType.valueOf(modelTypes[item]);
+          mSettingsFields.saveModelType(selectedModelType);
+          mUserPromptEditText.setText(PromptFormat.getUserPromptTemplate(selectedModelType));
+          updateLoadModelButtonState();
           dialog.dismiss();
         });
 
@@ -464,9 +477,9 @@ public class SettingsActivity extends AppCompatActivity {
         tokenizerFiles,
         -1,
         (dialog, item) -> {
-          mTokenizerFilePath = tokenizerFiles[item];
-          mTokenizerTextView.setText(getFilenameFromPath(mTokenizerFilePath));
-          mLoadModelButton.setEnabled(true);
+          mSettingsFields.saveTokenizerPath(tokenizerFiles[item]);
+          mTokenizerTextView.setText(getFilenameFromPath(tokenizerFiles[item]));
+          updateLoadModelButtonState();
           dialog.dismiss();
         });
 
@@ -484,10 +497,28 @@ public class SettingsActivity extends AppCompatActivity {
     return "";
   }
 
+  private void storeInitialSettings() {
+    mInitialSettingsFields = new SettingsFields(mSettingsFields);
+  }
+
+  private boolean hasSettingsChanged() {
+    return !mSettingsFields.equals(mInitialSettingsFields);
+  }
+
+  private void updateLoadModelButtonState() {
+    // Enable button if settings changed OR if valid pre-filled paths are available
+    String modelFilePath = mSettingsFields.getModelFilePath();
+    String tokenizerFilePath = mSettingsFields.getTokenizerFilePath();
+    boolean hasValidPaths = modelFilePath != null && !modelFilePath.isEmpty()
+        && tokenizerFilePath != null && !tokenizerFilePath.isEmpty();
+    mLoadModelButton.setEnabled(hasSettingsChanged() || hasValidPaths);
+  }
+
   private void setBackendSettingMode() {
-    if (mBackendType.equals(BackendType.XNNPACK) || mBackendType.equals(BackendType.QUALCOMM)) {
+    BackendType backendType = mSettingsFields.getBackendType();
+    if (backendType.equals(BackendType.XNNPACK) || backendType.equals(BackendType.QUALCOMM)) {
       setXNNPACKSettingMode();
-    } else if (mBackendType.equals(BackendType.MEDIATEK)) {
+    } else if (backendType.equals(BackendType.MEDIATEK)) {
       setMediaTekSettingMode();
     }
   }
@@ -507,11 +538,13 @@ public class SettingsActivity extends AppCompatActivity {
     requireViewById(R.id.parametersView).setVisibility(View.GONE);
     requireViewById(R.id.temperatureLayout).setVisibility(View.GONE);
     // For MediaTek, only set default paths if they're empty - preserve existing selections
-    if (mModelFilePath == null || mModelFilePath.isEmpty()) {
-      mModelFilePath = "/in/mtk/llama/runner";
+    String modelFilePath = mSettingsFields.getModelFilePath();
+    if (modelFilePath == null || modelFilePath.isEmpty()) {
+      mSettingsFields.saveModelPath("/in/mtk/llama/runner");
     }
-    if (mTokenizerFilePath == null || mTokenizerFilePath.isEmpty()) {
-      mTokenizerFilePath = "/in/mtk/llama/runner";
+    String tokenizerFilePath = mSettingsFields.getTokenizerFilePath();
+    if (tokenizerFilePath == null || tokenizerFilePath.isEmpty()) {
+      mSettingsFields.saveTokenizerPath("/in/mtk/llama/runner");
     }
   }
 
@@ -520,32 +553,11 @@ public class SettingsActivity extends AppCompatActivity {
     String settingsFieldsJSON = mDemoSharedPreferences.getSettings();
     if (!settingsFieldsJSON.isEmpty()) {
       mSettingsFields = gson.fromJson(settingsFieldsJSON, SettingsFields.class);
-
-      // Update local variables with loaded values for session persistence
-      mModelFilePath =
-          mSettingsFields.getModelFilePath() != null ? mSettingsFields.getModelFilePath() : "";
-      mTokenizerFilePath =
-          mSettingsFields.getTokenizerFilePath() != null
-              ? mSettingsFields.getTokenizerFilePath()
-              : "";
-      mDataPath = mSettingsFields.getDataPath(); // Can be null
-      mSetTemperature = mSettingsFields.getTemperature();
-      mSystemPrompt =
-          mSettingsFields.getSystemPrompt() != null ? mSettingsFields.getSystemPrompt() : "";
-      mUserPrompt = mSettingsFields.getUserPrompt() != null ? mSettingsFields.getUserPrompt() : "";
-      mModelType = mSettingsFields.getModelType();
-      mBackendType = mSettingsFields.getBackendType();
     }
   }
 
   private void saveSettings() {
-    mSettingsFields.saveModelPath(mModelFilePath);
-    mSettingsFields.saveTokenizerPath(mTokenizerFilePath);
-    mSettingsFields.saveDataPath(mDataPath);
-    mSettingsFields.saveParameters(mSetTemperature);
-    mSettingsFields.savePrompts(mSystemPrompt, mUserPrompt);
-    mSettingsFields.saveModelType(mModelType);
-    mSettingsFields.saveBackendType(mBackendType);
+    // All values are now stored directly in mSettingsFields, so just persist to SharedPreferences
     mDemoSharedPreferences.addSettings(mSettingsFields);
   }
 

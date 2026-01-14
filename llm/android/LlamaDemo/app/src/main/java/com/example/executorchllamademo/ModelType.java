@@ -8,11 +8,69 @@
 
 package com.example.executorchllamademo;
 
+import java.util.Arrays;
+
 public enum ModelType {
-  GEMMA_3,
-  LLAMA_3,
-  LLAVA_1_5,
-  LLAMA_GUARD_3,
-  QWEN_3,
-  VOXTRAL,
+  GEMMA_3("gemma"),
+  LLAMA_3("llama"),
+  LLAVA_1_5("llava"),
+  LLAMA_GUARD_3("llama_guard", "llama-guard", "llamaguard"),
+  QWEN_3("qwen"),
+  VOXTRAL("voxtral");
+
+  private final String[] patterns;
+
+  ModelType(String... patterns) {
+    this.patterns = patterns;
+  }
+
+  /**
+   * Returns a copy of the file name patterns associated with this model type.
+   */
+  String[] getPatterns() {
+    return Arrays.copyOf(patterns, patterns.length);
+  }
+
+  /**
+   * Detects the ModelType from a file path based on partial matches in the filename.
+   * Returns null if no match is found.
+   */
+  static ModelType fromFilePath(String filePath) {
+    if (filePath == null || filePath.isEmpty()) {
+      return null;
+    }
+    // Extract just the filename from the path
+    String fileName = filePath;
+    int lastSeparatorIndex = filePath.lastIndexOf('/');
+    if (lastSeparatorIndex >= 0 && lastSeparatorIndex < filePath.length() - 1) {
+      fileName = filePath.substring(lastSeparatorIndex + 1);
+    }
+    String lowerFileName = fileName.toLowerCase();
+    // Check more specific patterns first (LLAMA_GUARD before LLAMA, LLAVA before LLAMA)
+    if (LLAMA_GUARD_3.matchesFileName(lowerFileName)) {
+      return LLAMA_GUARD_3;
+    }
+    if (LLAVA_1_5.matchesFileName(lowerFileName)) {
+      return LLAVA_1_5;
+    }
+    // Check remaining types
+    for (ModelType type : values()) {
+      if (type != LLAMA_GUARD_3 && type != LLAVA_1_5 && type.matchesFileName(lowerFileName)) {
+        return type;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Checks if the given lowercase filename contains any of this model type's patterns.
+   */
+  private boolean matchesFileName(String lowerFileName) {
+    for (String pattern : patterns) {
+      if (lowerFileName.contains(pattern)) {
+        return true;
+      }
+    }
+    return false;
+  }
 }

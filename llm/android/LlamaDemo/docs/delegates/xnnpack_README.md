@@ -1,11 +1,11 @@
-# Building ExecuTorch Android Demo App for Llama/Llava running XNNPACK
-This tutorial covers the end to end workflow for building an android demo app using CPU on device via XNNPACK framework.
+# Building ExecuTorch Android Demo App for Llama/Llava Running XNNPACK
+This tutorial covers the end-to-end workflow for building an Android demo app using CPU on device via the XNNPACK framework.
 More specifically, it covers:
 1. Export and quantization of Llama and Llava models against the XNNPACK backend.
-2. Building and linking libraries that are required to inference on-device for Android platform.
+2. Building and linking libraries that are required for on-device inference on the Android platform.
 3. Building the Android demo app itself.
 
-Phone verified: OnePlus 12, OnePlus 9 Pro. Samsung S23 (Llama only), Samsung S24+ (Llama only), Pixel 8 Pro (Llama only)
+Phones verified: OnePlus 12, OnePlus 9 Pro, Samsung S23 (Llama only), Samsung S24+ (Llama only), Pixel 8 Pro (Llama only).
 
 ## Prerequisites
 * Install [Java 17 JDK](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html).
@@ -46,10 +46,10 @@ Install dependencies
 
 ## Prepare Models
 In this demo app, we support text-only inference with up-to-date Llama models and image reasoning inference with LLaVA 1.5.
-* You can request and download model weights for Llama through Meta official [website](https://llama.meta.com/).
-* For chat use-cases, download the instruct models instead of pretrained.
+* You can request and download model weights for Llama through Meta's official [website](https://llama.meta.com/).
+* For chat use cases, download the instruct models instead of pretrained.
 * Run `./examples/models/llama/install_requirements.sh` to install dependencies.
-* Rename tokenizer for Llama3.x with command: `mv tokenizer.model tokenizer.bin`. We are updating the demo app to support tokenizer in original format directly.
+* Rename tokenizer for Llama 3.x with the command: `mv tokenizer.model tokenizer.bin`. We are updating the demo app to support the tokenizer in its original format directly.
 
 ### For Llama 3.2 1B and 3B SpinQuant models
 Meta has released prequantized INT4 SpinQuant Llama 3.2 models that ExecuTorch supports on the XNNPACK backend.
@@ -95,7 +95,7 @@ python -m extension.llm.export.export_llm base.checkpoint=<path-to-pruned-llama-
 
 
 ### For Llama 3.1 and Llama 2 models
-* For Llama 2 models, Edit params.json file. Replace "vocab_size": -1 with "vocab_size": 32000. This is a short-term workaround.
+* For Llama 2 models, edit the params.json file. Replace "vocab_size": -1 with "vocab_size": 32000. This is a short-term workaround.
 * The Llama 3.1 and Llama 2 models (8B and 7B) can run on devices with 12GB+ RAM.
 * Export Llama model and generate .pte file as below:
 
@@ -105,15 +105,15 @@ python -m extension.llm.export.export_llm base.checkpoint=<path-to-your-checkpoi
 
 You may wonder what the ‘--metadata’ flag is doing. This flag helps export the model with proper special tokens added that the runner can detect EOS tokens easily.
 
-* Convert tokenizer for Llama 2 and Llava (skip this for Llama 3.x)
+* Convert tokenizer for Llama 2 and Llava (skip this for Llama 3.x):
 ```
 python -m pytorch_tokenizers.tools.llama2c.convert -t tokenizer.model -o tokenizer.bin
 ```
 
 ### For LLaVA model
-* For the Llava 1.5 model, you can get it from Huggingface [here](https://huggingface.co/llava-hf/llava-1.5-7b-hf).
+* For the LLaVA 1.5 model, you can get it from Hugging Face [here](https://huggingface.co/llava-hf/llava-1.5-7b-hf).
 * Run `examples/models/llava/install_requirements.sh` to install dependencies.
-* Run the following command to generate llava.pte, tokenizer.bin and download an image basketball.jpg.
+* Run the following command to generate llava.pte, tokenizer.bin, and download an image basketball.jpg.
 
 ```
 python -m executorch.examples.models.llava.export_llava --pte-name llava.pte --with-artifacts
@@ -130,7 +130,7 @@ adb push tokenizer.bin /data/local/tmp/llama
 ```
 
 ## Build AAR Library
-1. Open a terminal window and navigate to the root directory of the executorch
+1. Open a terminal window and navigate to the root directory of the ExecuTorch:
 ```sh
 cd $EXECUTORCH_ROOT
 ```
@@ -152,19 +152,19 @@ export BUILD_AAR_DIR=aar-out
 sh scripts/build_android_library.sh
 ```
 
-5. Now go to demo app root (containing main README.md) and copy the AAR to the app:
+5. Now go to the demo app root (containing the main README.md) and copy the AAR to the app:
 ```sh
 cd $DEMO_APP
 mkdir -p app/libs
 cp $EXECUTORCH_ROOT/aar-out/executorch.aar app/libs/executorch.aar
 ```
 
-This is running the shell script which configures the required core ExecuTorch, Llama2/3, and Android libraries, builds them into AAR, and copies it to the app.
+This runs the shell script which configures the required core ExecuTorch, Llama 2/3, and Android libraries, builds them into an AAR, and copies it to the app.
 
-**Output**: The executorch.aar file will be generated in a newly created folder in app/libs directory. This is the path that the Android app expects it to be in.
+**Output**: The executorch.aar file will be generated in a newly created folder in the app/libs directory. This is the path that the Android app expects it to be in.
 
-### Alternative: Use prebuilt AAR library
-Simply add ExecuTorch to your gradle dependency:
+### Alternative: Use Prebuilt AAR Library
+Simply add ExecuTorch to your Gradle dependency:
 ```
 implementation("org.pytorch:executorch-android:1.0.0")
 ```
@@ -174,19 +174,19 @@ implementation("org.pytorch:executorch-android:1.0.0")
 1. Open Android Studio and select “Open an existing Android Studio project” to open LlamaDemo.
 2. Run the app (^R). This builds and launches the app on the phone.
 
-### Alternative 2: Command line
-Without Android Studio UI, we can run gradle directly to build the app. We need to set up the Android SDK path and invoke gradle.
+### Alternative 2: Command Line
+Without Android Studio UI, we can run Gradle directly to build the app. We need to set up the Android SDK path and invoke Gradle.
 ```
 export ANDROID_SDK=<path_to_android_sdk_home>
 export ANDROID_HOME=<path_to_android_sdk_home>
 cd LlamaDemo
 ./gradlew :app:installDebug
 ```
-If the app successfully run on your device, you should see something like below:
+If the app successfully runs on your device, you should see something like the screenshot below:
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/pytorch/executorch/refs/heads/main/docs/source/_static/img/opening_the_app_details.png" style="width:800px">
 </p>
 
 ## Reporting Issues
-If you encountered any bugs or issues following this tutorial please file a bug/issue here on [Github](https://github.com/pytorch/executorch/issues/new).
+If you encountered any bugs or issues following this tutorial, please file a bug/issue here on [GitHub](https://github.com/pytorch/executorch/issues/new).
