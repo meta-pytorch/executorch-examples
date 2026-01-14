@@ -92,11 +92,11 @@ jobs:
           name: ${{ steps.tag.outputs.release_name }}
           body: |
             Automated nightly build of Android demo applications.
-            
+
             ## Apps included:
             - LlamaDemo APK
             - DeepLabV3Demo APK
-            
+
             **Build Date:** ${{ steps.tag.outputs.release_name }}
             **Commit:** ${{ github.sha }}
           files: |
