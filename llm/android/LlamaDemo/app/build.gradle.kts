@@ -20,6 +20,7 @@ android {
 
   defaultConfig {
     applicationId = "com.example.executorchllamademo"
+    testApplicationId = "com.example.executorchllamademo.test"
     minSdk = 28
     targetSdk = 33
     versionCode = 1
