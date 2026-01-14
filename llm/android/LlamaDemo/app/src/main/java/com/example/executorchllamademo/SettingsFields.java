@@ -142,12 +142,13 @@ public class SettingsFields {
 
   public boolean equals(SettingsFields anotherSettingsFields) {
     if (this == anotherSettingsFields) return true;
-    return modelFilePath.equals(anotherSettingsFields.modelFilePath)
-        && tokenizerFilePath.equals(anotherSettingsFields.tokenizerFilePath)
+    if (anotherSettingsFields == null) return false;
+    return java.util.Objects.equals(modelFilePath, anotherSettingsFields.modelFilePath)
+        && java.util.Objects.equals(tokenizerFilePath, anotherSettingsFields.tokenizerFilePath)
         && java.util.Objects.equals(dataPath, anotherSettingsFields.dataPath)
         && temperature == anotherSettingsFields.temperature
-        && systemPrompt.equals(anotherSettingsFields.systemPrompt)
-        && userPrompt.equals(anotherSettingsFields.userPrompt)
+        && java.util.Objects.equals(systemPrompt, anotherSettingsFields.systemPrompt)
+        && java.util.Objects.equals(userPrompt, anotherSettingsFields.userPrompt)
         && isClearChatHistory == anotherSettingsFields.isClearChatHistory
         && isLoadModel == anotherSettingsFields.isLoadModel
         && modelType == anotherSettingsFields.modelType
