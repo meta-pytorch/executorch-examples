@@ -120,6 +120,7 @@ jobs:
           api-level: ${{ env.API_LEVEL }}
           arch: ${{ env.ARCH }}
           force-avd-creation: false
+          ram-size: 16384M
           emulator-options: ${{ env.EMULATOR_OPTIONS }}
           disable-animations: false
           working-directory: ${{ matrix.path }}
@@ -138,6 +139,7 @@ jobs:
           api-level: ${{ env.API_LEVEL }}
           arch: ${{ env.ARCH }}
           force-avd-creation: false
+          ram-size: 16384M
           emulator-options: -no-snapshot-save ${{ env.EMULATOR_OPTIONS }}
           disable-animations: true
           working-directory: ${{ matrix.path }}
