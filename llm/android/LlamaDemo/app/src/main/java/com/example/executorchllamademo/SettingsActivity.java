@@ -151,7 +151,6 @@ public class SettingsActivity extends AppCompatActivity {
     if (mTokenizerFilePath != null && !mTokenizerFilePath.isEmpty()) {
       mTokenizerTextView.setText(getFilenameFromPath(mTokenizerFilePath));
     }
-    mDataPath = mSettingsFields.getDataPath();
     if (mDataPath != null && !mDataPath.isEmpty()) {
       mDataPathTextView.setText(getFilenameFromPath(mDataPath));
     }
