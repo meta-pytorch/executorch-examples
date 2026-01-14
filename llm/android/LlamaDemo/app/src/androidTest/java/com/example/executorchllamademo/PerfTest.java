@@ -29,10 +29,11 @@ import org.pytorch.executorch.extension.llm.LlmModule;
 public class PerfTest implements LlmCallback {
 
   private static final String RESOURCE_PATH = "/data/local/tmp/llama/";
-  private static final String TOKENIZER_BIN = "tokenizer.bin";
+  private static final String TOKENIZER_BIN = "tokenizer.json";
 
   private final List<String> results = new ArrayList<>();
   private final List<Float> tokensPerSecond = new ArrayList<>();
+    @Test public void testSanity() {}
 
   @Test
   public void testTokensPerSecond() {
@@ -40,7 +41,7 @@ public class PerfTest implements LlmCallback {
     // Find out the model name
     File directory = new File(RESOURCE_PATH);
     Arrays.stream(directory.listFiles())
-        .filter(file -> file.getName().endsWith(".pte"))
+        .filter(file -> file.getName().endsWith("model.pte"))
         .forEach(
             model -> {
               LlmModule mModule = new LlmModule(model.getPath(), tokenizerPath, 0.8f);
