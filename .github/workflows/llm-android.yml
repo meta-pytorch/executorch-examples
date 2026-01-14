@@ -62,11 +62,13 @@ jobs:
           if-no-files-found: warn
 
   instrumentation-test:
-    runs-on: ubuntu-latest
+    runs-on: linux.24xl.spr-metal
     env:
       API_LEVEL: 34
       ARCH: x86_64
       EMULATOR_OPTIONS: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+      MODEL_URL: https://huggingface.co/pytorch/Qwen3-4B-INT8-INT4/resolve/main/model.pte
+      TOKENIZER_URL: https://huggingface.co/pytorch/Qwen3-4B-INT8-INT4/resolve/main/tokenizer.json
 
     name: Instrumentation Test LlamaDemo
     steps:
@@ -87,6 +89,12 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+
+      - name: Download model and tokenizer
+        run: |
+          mkdir -p llm/android/LlamaDemo/app/src/androidTest/assets
+          curl -fL -o llm/android/LlamaDemo/app/src/androidTest/assets/model.pte "${{ env.MODEL_URL }}"
+          curl -fL -o llm/android/LlamaDemo/app/src/androidTest/assets/tokenizer.json "${{ env.TOKENIZER_URL }}"
 
       - name: AVD cache
         uses: actions/cache@v4
