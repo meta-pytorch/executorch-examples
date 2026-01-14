@@ -142,18 +142,35 @@ public class SettingsFields {
     this.dataPath = dataPath;
   }
 
-  public boolean equals(SettingsFields anotherSettingsFields) {
-    if (this == anotherSettingsFields) return true;
-    if (anotherSettingsFields == null) return false;
-    return Objects.equals(modelFilePath, anotherSettingsFields.modelFilePath)
-        && Objects.equals(tokenizerFilePath, anotherSettingsFields.tokenizerFilePath)
-        && Objects.equals(dataPath, anotherSettingsFields.dataPath)
-        && temperature == anotherSettingsFields.temperature
-        && Objects.equals(systemPrompt, anotherSettingsFields.systemPrompt)
-        && Objects.equals(userPrompt, anotherSettingsFields.userPrompt)
-        && isClearChatHistory == anotherSettingsFields.isClearChatHistory
-        && isLoadModel == anotherSettingsFields.isLoadModel
-        && Objects.equals(modelType, anotherSettingsFields.modelType)
-        && Objects.equals(backendType, anotherSettingsFields.backendType);
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    SettingsFields that = (SettingsFields) o;
+    return Double.compare(temperature, that.temperature) == 0
+        && isClearChatHistory == that.isClearChatHistory
+        && isLoadModel == that.isLoadModel
+        && Objects.equals(modelFilePath, that.modelFilePath)
+        && Objects.equals(tokenizerFilePath, that.tokenizerFilePath)
+        && Objects.equals(dataPath, that.dataPath)
+        && Objects.equals(systemPrompt, that.systemPrompt)
+        && Objects.equals(userPrompt, that.userPrompt)
+        && modelType == that.modelType
+        && backendType == that.backendType;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        modelFilePath,
+        tokenizerFilePath,
+        dataPath,
+        temperature,
+        systemPrompt,
+        userPrompt,
+        isClearChatHistory,
+        isLoadModel,
+        modelType,
+        backendType);
   }
 }
