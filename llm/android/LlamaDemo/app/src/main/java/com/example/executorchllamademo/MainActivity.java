@@ -461,10 +461,19 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
     ETLogging.getInstance().log(askLoadModel);
     runOnUiThread(
         () -> {
-          mMessageAdapter.add(askLoadModelMessage);
-          mMessageAdapter.notifyDataSetChanged();
+          // Only add the message if it's not already the last message in the chat
+          int messageCount = mMessageAdapter.getCount();
+          Message lastMessage = messageCount > 0 ? mMessageAdapter.getItem(messageCount - 1) : null;
+          boolean isDuplicate =
+              lastMessage != null
+                  && lastMessage.getMessageType() == MessageType.SYSTEM
+                  && askLoadModel.equals(lastMessage.getText());
+          if (!isDuplicate) {
+            mMessageAdapter.add(askLoadModelMessage);
+            mMessageAdapter.notifyDataSetChanged();
+          }
           new AlertDialog.Builder(this)
-              .setTitle("No Model Selected")
+              .setTitle("Please Select a Model")
               .setMessage(
                   "Please select a model and tokenizer from the settings (top right corner) to get started.")
               .setPositiveButton(android.R.string.ok, null)
