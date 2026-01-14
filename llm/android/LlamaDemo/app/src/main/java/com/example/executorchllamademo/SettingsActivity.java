@@ -393,6 +393,7 @@ public class SettingsActivity extends AppCompatActivity {
     if (detectedType != null) {
       mModelTypeTextView.setText(detectedType.toString());
       mUserPromptEditText.setText(PromptFormat.getUserPromptTemplate(detectedType));
+      mSettingsFields.saveModelType(detectedType);
     }
   }
 
