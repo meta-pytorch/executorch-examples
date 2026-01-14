@@ -29,11 +29,12 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install executorch
+          pip install executorch torchvision
 
       - name: Run export script
         working-directory: dl3/python
@@ -44,4 +45,68 @@ jobs:
         with:
           name: dl3-xnnpack-fp32
           path: dl3/python/dl3_xnnpack_fp32.pte
+          if-no-files-found: error
+
+  mv2_export:
+    runs-on: ubuntu-latest
+    name: Export MV2 to XNNPACK
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install executorch torchvision
+
+      - name: Run export script
+        working-directory: mv2/python
+        run: python export.py
+
+      - name: Upload exported model
+        uses: actions/upload-artifact@v4
+        with:
+          name: mv2-xnnpack
+          path: mv2/python/model_mv2_xnnpack.pte
+          if-no-files-found: error
+
+  mv3_export:
+    runs-on: ubuntu-latest
+    name: Export MV3 to XNNPACK and CoreML
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install executorch torchvision
+
+      - name: Run export script
+        working-directory: mv3/python
+        run: python export.py
+
+      - name: Upload exported models
+        uses: actions/upload-artifact@v4
+        with:
+          name: mv3-models
+          path: |
+            mv3/python/mv3.pte
+            mv3/python/mv3_coreml_all.pte
+            mv3/python/mv3_mps_float16.pte
+            mv3/python/mv3_xnnpack_fp32.pte
           if-no-files-found: error
