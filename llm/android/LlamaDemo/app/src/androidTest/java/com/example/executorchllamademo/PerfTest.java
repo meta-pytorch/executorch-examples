@@ -29,35 +29,48 @@ import org.pytorch.executorch.extension.llm.LlmModule;
 public class PerfTest implements LlmCallback {
 
   private static final String RESOURCE_PATH = "/data/local/tmp/llama/";
-  private static final String TOKENIZER_BIN = "tokenizer.bin";
+  private static final String TOKENIZER_PATH = "tokenizer.model";
+  private static final String MODEL_PATH = "stories110M.pte";
 
   private final List<String> results = new ArrayList<>();
   private final List<Float> tokensPerSecond = new ArrayList<>();
 
   @Test
-  public void testTokensPerSecond() {
-    String tokenizerPath = RESOURCE_PATH + TOKENIZER_BIN;
+  public void testLoadAndGenerate() {
+    String tokenizerPath = RESOURCE_PATH + TOKENIZER_PATH;
     // Find out the model name
-    File directory = new File(RESOURCE_PATH);
-    Arrays.stream(directory.listFiles())
-        .filter(file -> file.getName().endsWith(".pte"))
-        .forEach(
-            model -> {
-              LlmModule mModule = new LlmModule(model.getPath(), tokenizerPath, 0.8f);
-              // Print the model name because there might be more than one of them
-              report("ModelName", model.getName());
+    File model = new File(RESOURCE_PATH + MODEL_PATH);
+    LlmModule mModule = new LlmModule(model.getPath(), tokenizerPath, 0.8f);
+    // Print the model name because there might be more than one of them
+    report("ModelName", model.getName());
 
-              int loadResult = mModule.load();
-              // Check that the model can be load successfully
-              assertEquals(0, loadResult);
+    int loadResult = mModule.load();
+    // Check that the model can be load successfully
+    assertEquals(0, loadResult);
 
-              // Run a testing prompt
-              mModule.generate("How do you do! I'm testing llama2 on mobile device", PerfTest.this);
-              assertFalse(tokensPerSecond.isEmpty());
+    // Run a testing prompt
+    mModule.generate("How do you do! I'm testing llm on mobile device", PerfTest.this);
+  }
 
-              final Float tps = tokensPerSecond.get(tokensPerSecond.size() - 1);
-              report("TPS", tps);
-            });
+  @Test
+  public void testTokensPerSecond() {
+    String tokenizerPath = RESOURCE_PATH + TOKENIZER_PATH;
+    // Find out the model name
+    File model = new File(RESOURCE_PATH + MODEL_PATH);
+    LlmModule mModule = new LlmModule(model.getPath(), tokenizerPath, 0.8f);
+    // Print the model name because there might be more than one of them
+    report("ModelName", model.getName());
+
+    int loadResult = mModule.load();
+    // Check that the model can be load successfully
+    assertEquals(0, loadResult);
+
+    // Run a testing prompt
+    mModule.generate("How do you do! I'm testing llm on mobile device", PerfTest.this);
+    assertFalse(tokensPerSecond.isEmpty());
+
+    final Float tps = tokensPerSecond.get(tokensPerSecond.size() - 1);
+    report("TPS", tps);
   }
 
   @Override
