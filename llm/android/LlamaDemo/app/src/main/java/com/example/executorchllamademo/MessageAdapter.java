@@ -139,7 +139,7 @@ public class MessageAdapter extends ArrayAdapter<Message> {
    * @param text The text to check against the last message
    * @return true if the last message is a system message with matching text, false otherwise
    */
-  public boolean isDuplicateSystemMessage(String text) {
+  boolean isDuplicateSystemMessage(String text) {
     int count = getCount();
     if (count == 0) {
       return false;
