@@ -145,15 +145,12 @@ public class SettingsActivity extends AppCompatActivity {
             view -> {
               setupModelTypeSelectorDialog();
             });
-    mModelFilePath = mSettingsFields.getModelFilePath();
-    if (!mModelFilePath.isEmpty()) {
+    if (mModelFilePath != null && !mModelFilePath.isEmpty()) {
       mModelTextView.setText(getFilenameFromPath(mModelFilePath));
     }
-    mTokenizerFilePath = mSettingsFields.getTokenizerFilePath();
-    if (!mTokenizerFilePath.isEmpty()) {
+    if (mTokenizerFilePath != null && !mTokenizerFilePath.isEmpty()) {
       mTokenizerTextView.setText(getFilenameFromPath(mTokenizerFilePath));
     }
-    mDataPath = mSettingsFields.getDataPath();
     if (mDataPath != null && !mDataPath.isEmpty()) {
       mDataPathTextView.setText(getFilenameFromPath(mDataPath));
     }
@@ -180,8 +177,8 @@ public class SettingsActivity extends AppCompatActivity {
 
   private void setupLoadModelButton() {
     mLoadModelButton = requireViewById(R.id.loadModelButton);
-    // Disable by default until settings change
-    mLoadModelButton.setEnabled(false);
+    // Enable button if valid pre-filled paths are available from previous session
+    updateLoadModelButtonState();
     mLoadModelButton.setOnClickListener(
         view -> {
           new AlertDialog.Builder(this)
@@ -520,9 +517,10 @@ public class SettingsActivity extends AppCompatActivity {
   }
 
   private void updateLoadModelButtonState() {
-    boolean hasModelPath = mModelFilePath != null && !mModelFilePath.isEmpty();
-    boolean hasTokenizerPath = mTokenizerFilePath != null && !mTokenizerFilePath.isEmpty();
-    mLoadModelButton.setEnabled(hasSettingsChanged() && hasModelPath && hasTokenizerPath);
+    // Enable button if settings changed OR if valid pre-filled paths are available
+    boolean hasValidPaths = mModelFilePath != null && !mModelFilePath.isEmpty()
+        && mTokenizerFilePath != null && !mTokenizerFilePath.isEmpty();
+    mLoadModelButton.setEnabled(hasSettingsChanged() || hasValidPaths);
   }
 
   private void setBackendSettingMode() {

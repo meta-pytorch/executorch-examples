@@ -381,7 +381,8 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
           // If users change the model file, but not pressing loadModelButton, we won't load the new
           // model
           checkForUpdateAndReloadModel(updatedSettingsFields);
-        } else {
+        } else if (mModule == null) {
+          // Only ask user to select model if no model is currently loaded
           askUserToSelectModel();
         }
       } else {
@@ -392,7 +393,8 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
           askUserToSelectModel();
         }
       }
-    } else {
+    } else if (mModule == null) {
+      // Only ask user to select model if no model is currently loaded
       askUserToSelectModel();
     }
   }
