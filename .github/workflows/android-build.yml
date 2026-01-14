@@ -18,7 +18,7 @@ on:
         type: string
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -67,3 +67,39 @@ jobs:
           name: ${{ matrix.name }}-apk
           path: ${{ matrix.path }}/app/build/outputs/apk/
           if-no-files-found: warn
+
+  create-release:
+    name: Create Nightly Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Generate release tag
+        id: tag
+        run: |
+          echo "tag_name=nightly-$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+          echo "release_name=Nightly Build $(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.tag_name }}
+          name: ${{ steps.tag.outputs.release_name }}
+          body: |
+            Automated nightly build of Android demo applications.
+            
+            ## Apps included:
+            - LlamaDemo APK
+            - DeepLabV3Demo APK
+            
+            **Build Date:** ${{ steps.tag.outputs.release_name }}
+            **Commit:** ${{ github.sha }}
+          files: |
+            artifacts/**/*.apk
+          prerelease: true
+          draft: false
