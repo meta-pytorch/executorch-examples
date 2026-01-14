@@ -391,9 +391,8 @@ public class SettingsActivity extends AppCompatActivity {
   private void autoSelectModelType(String filePath) {
     ModelType detectedType = ModelType.fromFilePath(filePath);
     if (detectedType != null) {
-      mModelType = detectedType;
-      mModelTypeTextView.setText(mModelType.toString());
-      mUserPromptEditText.setText(PromptFormat.getUserPromptTemplate(mModelType));
+      mModelTypeTextView.setText(detectedType.toString());
+      mUserPromptEditText.setText(PromptFormat.getUserPromptTemplate(detectedType));
     }
   }
 
