@@ -132,4 +132,21 @@ public class MessageAdapter extends ArrayAdapter<Message> {
     }
     return maxPromptID;
   }
+
+  /**
+   * Checks if the last message is a duplicate system message with the given text.
+   *
+   * @param text The text to check against the last message
+   * @return true if the last message is a system message with matching text, false otherwise
+   */
+  boolean isDuplicateSystemMessage(String text) {
+    int count = getCount();
+    if (count == 0) {
+      return false;
+    }
+    Message lastMessage = getItem(count - 1);
+    return lastMessage != null
+        && lastMessage.getMessageType() == MessageType.SYSTEM
+        && text.equals(lastMessage.getText());
+  }
 }
