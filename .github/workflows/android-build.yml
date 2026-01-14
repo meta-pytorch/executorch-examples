@@ -125,12 +125,18 @@ jobs:
           working-directory: ${{ matrix.path }}
           script: echo "Generated AVD snapshot for caching."
 
-      - name: Download model files
+      - name: Download model files from S3
         run: |
           set -e
           mkdir -p model_files
-          curl -fL -o model_files/model.pte "https://huggingface.co/pytorch/Qwen3-4B-INT8-INT4/resolve/main/model.pte"
-          curl -fL -o model_files/tokenizer.json "https://huggingface.co/pytorch/Qwen3-4B-INT8-INT4/resolve/main/tokenizer.json"
+          curl -fL -o model_files/stories110M.pte "https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114/stories110M.pte"
+          curl -fL -o model_files/stories110M.pte.sha256sums "https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114/stories110M.pte.sha256sums"
+          curl -fL -o model_files/tokenizer.model "https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114/tokenizer.model"
+          curl -fL -o model_files/tokenizer.model.sha256sums "https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114/tokenizer.model.sha256sums"
+          # Verify checksums
+          cd model_files
+          sha256sum -c stories110M.pte.sha256sums
+          sha256sum -c tokenizer.model.sha256sums
 
       - name: Run instrumentation tests
         uses: reactivecircus/android-emulator-runner@v2
@@ -145,6 +151,6 @@ jobs:
           script: |
             set -e
             adb shell mkdir -p /data/local/tmp/llama
-            adb push $GITHUB_WORKSPACE/model_files/model.pte /data/local/tmp/llama/
-            adb push $GITHUB_WORKSPACE/model_files/tokenizer.json /data/local/tmp/llama/
+            adb push $GITHUB_WORKSPACE/model_files/stories110M.pte /data/local/tmp/llama/
+            adb push $GITHUB_WORKSPACE/model_files/tokenizer.model /data/local/tmp/llama/
             ./gradlew connectedCheck
