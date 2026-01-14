@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   build:
-    runs-on: linux.24xl.spr-metal
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
