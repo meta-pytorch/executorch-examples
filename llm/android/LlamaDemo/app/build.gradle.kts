@@ -83,3 +83,26 @@ dependencies {
   debugImplementation("androidx.compose.ui:ui-tooling")
   debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
+
+// Task to push model files to the device before running instrumentation tests
+tasks.register<Exec>("pushModelFiles") {
+  description = "Push model files to the device for instrumentation tests"
+  group = "verification"
+
+  val modelFilesDir = System.getenv("GITHUB_WORKSPACE")?.let { "$it/model_files" }
+    ?: "${rootProject.projectDir}/../../../model_files"
+  val devicePath = "/data/local/tmp/llama"
+
+  commandLine("sh", "-c", """
+    adb shell mkdir -p $devicePath &&
+    adb push $modelFilesDir/model.pte $devicePath/ &&
+    adb push $modelFilesDir/tokenizer.bin $devicePath/
+  """.trimIndent())
+}
+
+// Make connectedCheck depend on pushModelFiles
+tasks.whenTaskAdded {
+  if (name == "connectedDebugAndroidTest") {
+    dependsOn("pushModelFiles")
+  }
+}

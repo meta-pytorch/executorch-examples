@@ -143,9 +143,4 @@ jobs:
           emulator-options: -no-snapshot-save ${{ env.EMULATOR_OPTIONS }}
           disable-animations: true
           working-directory: ${{ matrix.path }}
-          script: |
-            set -e
-            adb shell mkdir -p /data/local/tmp/llama
-            adb push $GITHUB_WORKSPACE/model_files/model.pte /data/local/tmp/llama/
-            adb push $GITHUB_WORKSPACE/model_files/tokenizer.bin /data/local/tmp/llama/
-            ./gradlew connectedCheck
+          script: ./gradlew connectedCheck
