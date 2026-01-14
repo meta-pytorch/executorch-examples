@@ -34,6 +34,7 @@ Runs only for scheduled (nightly) builds. This job:
   - All built APK files attached
   - Marked as pre-release
   - Build metadata (date and commit SHA)
+- Automatically cleans up old nightly releases, keeping only the last 7 nightly builds to prevent the releases page from becoming cluttered
 
 ### How to Access Nightly Releases
 
@@ -42,6 +43,8 @@ Nightly builds are automatically published as GitHub Releases:
 1. Go to the [Releases page](https://github.com/meta-pytorch/executorch-examples/releases)
 2. Look for releases tagged with `nightly-YYYYMMDD`
 3. Download the APK files from the release assets
+
+**Note:** Only the last 7 nightly releases are kept. Older releases are automatically deleted to keep the releases page manageable.
 
 ### Manual Workflow Dispatch
 
