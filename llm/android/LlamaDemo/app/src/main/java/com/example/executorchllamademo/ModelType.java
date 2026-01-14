@@ -8,6 +8,8 @@
 
 package com.example.executorchllamademo;
 
+import java.util.Arrays;
+
 public enum ModelType {
   GEMMA_3("gemma"),
   LLAMA_3("llama"),
@@ -23,10 +25,10 @@ public enum ModelType {
   }
 
   /**
-   * Returns the file name patterns associated with this model type.
+   * Returns a copy of the file name patterns associated with this model type.
    */
   public String[] getPatterns() {
-    return patterns;
+    return Arrays.copyOf(patterns, patterns.length);
   }
 
   /**
