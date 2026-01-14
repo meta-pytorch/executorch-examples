@@ -178,8 +178,8 @@ public class SettingsActivity extends AppCompatActivity {
 
   private void setupLoadModelButton() {
     mLoadModelButton = requireViewById(R.id.loadModelButton);
-    // Disable by default until settings change
-    mLoadModelButton.setEnabled(false);
+    // Enable button if valid pre-filled paths are available from previous session
+    updateLoadModelButtonState();
     mLoadModelButton.setOnClickListener(
         view -> {
           new AlertDialog.Builder(this)
@@ -518,7 +518,10 @@ public class SettingsActivity extends AppCompatActivity {
   }
 
   private void updateLoadModelButtonState() {
-    mLoadModelButton.setEnabled(hasSettingsChanged());
+    // Enable button if settings changed OR if valid pre-filled paths are available
+    boolean hasValidPaths = mModelFilePath != null && !mModelFilePath.isEmpty()
+        && mTokenizerFilePath != null && !mTokenizerFilePath.isEmpty();
+    mLoadModelButton.setEnabled(hasSettingsChanged() || hasValidPaths);
   }
 
   private void setBackendSettingMode() {
