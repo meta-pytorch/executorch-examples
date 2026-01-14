@@ -380,11 +380,20 @@ public class SettingsActivity extends AppCompatActivity {
         (dialog, item) -> {
           mSettingsFields.saveModelPath(pteFiles[item]);
           mModelTextView.setText(getFilenameFromPath(pteFiles[item]));
+          autoSelectModelType(pteFiles[item]);
           updateLoadModelButtonState();
           dialog.dismiss();
         });
 
     modelPathBuilder.create().show();
+  }
+
+  private void autoSelectModelType(String filePath) {
+    ModelType detectedType = ModelType.fromFilePath(filePath);
+    if (detectedType != null) {
+      mModelTypeTextView.setText(detectedType.toString());
+      mUserPromptEditText.setText(PromptFormat.getUserPromptTemplate(detectedType));
+    }
   }
 
   private void setupDataPathSelectorDialog() {
