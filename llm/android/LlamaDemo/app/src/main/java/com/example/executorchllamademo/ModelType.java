@@ -27,7 +27,7 @@ public enum ModelType {
   /**
    * Returns a copy of the file name patterns associated with this model type.
    */
-  public String[] getPatterns() {
+  String[] getPatterns() {
     return Arrays.copyOf(patterns, patterns.length);
   }
 
@@ -35,7 +35,7 @@ public enum ModelType {
    * Detects the ModelType from a file path based on partial matches in the filename.
    * Returns null if no match is found.
    */
-  public static ModelType fromFilePath(String filePath) {
+  static ModelType fromFilePath(String filePath) {
     if (filePath == null || filePath.isEmpty()) {
       return null;
     }
