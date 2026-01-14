@@ -7,7 +7,6 @@
 name: Android Build
 
 on:
-  push:
   pull_request:
     branches: [main]
   schedule:
