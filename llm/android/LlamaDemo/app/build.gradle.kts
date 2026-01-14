@@ -11,6 +11,123 @@ plugins {
   id("org.jetbrains.kotlin.android")
 }
 
+// Model files configuration for instrumentation tests
+val modelFilesBaseUrl = "https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114"
+val deviceModelDir = "/data/local/tmp/llama"
+val modelFiles = listOf(
+  "stories110M.pte",
+  "tokenizer.model"
+)
+
+fun execCmd(vararg args: String): String {
+  val process = ProcessBuilder(*args)
+    .redirectErrorStream(true)
+    .start()
+  val output = process.inputStream.bufferedReader().readText().trim()
+  process.waitFor()
+  return output
+}
+
+fun execCmdWithExitCode(vararg args: String): Pair<Int, String> {
+  val process = ProcessBuilder(*args)
+    .redirectErrorStream(true)
+    .start()
+  val output = process.inputStream.bufferedReader().readText().trim()
+  val exitCode = process.waitFor()
+  return Pair(exitCode, output)
+}
+
+tasks.register("pushModelFiles") {
+  description = "Download model files from S3 and push to connected Android device if not present"
+  group = "verification"
+
+  doLast {
+    // Check if adb is available
+    val adbPath = android.adbExecutable.absolutePath
+    val (adbCheckCode, _) = execCmdWithExitCode(adbPath, "devices")
+    if (adbCheckCode != 0) {
+      throw GradleException("adb is not available or no device connected")
+    }
+
+    // Check which files need to be pushed
+    val filesToPush = modelFiles.filter { fileName ->
+      val devicePath = "$deviceModelDir/$fileName"
+      val (exitCode, _) = execCmdWithExitCode(adbPath, "shell", "test -f $devicePath && echo exists")
+      exitCode != 0
+    }
+
+    if (filesToPush.isEmpty()) {
+      logger.lifecycle("All model files already present on device")
+      return@doLast
+    }
+
+    logger.lifecycle("Need to push ${filesToPush.size} model file(s): ${filesToPush.joinToString(", ")}")
+
+    // Create temp directory using mktemp
+    val tempDir = execCmd("mktemp", "-d")
+    logger.lifecycle("Using temp directory: $tempDir")
+
+    try {
+      // Create device directory
+      execCmd(adbPath, "shell", "mkdir -p $deviceModelDir")
+
+      for (fileName in filesToPush) {
+        val localPath = "$tempDir/$fileName"
+        val checksumPath = "$tempDir/$fileName.sha256sums"
+        val devicePath = "$deviceModelDir/$fileName"
+
+        // Download file
+        logger.lifecycle("Downloading $fileName...")
+        val (dlCode, dlOutput) = execCmdWithExitCode(
+          "curl", "-fL", "-o", localPath, "$modelFilesBaseUrl/$fileName"
+        )
+        if (dlCode != 0) {
+          throw GradleException("Failed to download $fileName: $dlOutput")
+        }
+
+        // Download and verify checksum
+        logger.lifecycle("Verifying checksum for $fileName...")
+        val (csDownloadCode, csDownloadOutput) = execCmdWithExitCode(
+          "curl", "-fL", "-o", checksumPath, "$modelFilesBaseUrl/$fileName.sha256sums"
+        )
+        if (csDownloadCode != 0) {
+          throw GradleException("Failed to download checksum for $fileName: $csDownloadOutput")
+        }
+
+        // Verify checksum (run sha256sum in the temp directory)
+        val (verifyCode, verifyOutput) = execCmdWithExitCode(
+          "bash", "-c", "cd $tempDir && sha256sum -c $fileName.sha256sums"
+        )
+        if (verifyCode != 0) {
+          throw GradleException("Checksum verification failed for $fileName: $verifyOutput")
+        }
+        logger.lifecycle("Checksum verified for $fileName")
+
+        // Push to device
+        logger.lifecycle("Pushing $fileName to device...")
+        val (pushCode, pushOutput) = execCmdWithExitCode(adbPath, "push", localPath, devicePath)
+        if (pushCode != 0) {
+          throw GradleException("Failed to push $fileName to device: $pushOutput")
+        }
+        logger.lifecycle("Successfully pushed $fileName")
+      }
+    } finally {
+      // Clean up temp directory
+      logger.lifecycle("Cleaning up temp directory...")
+      execCmd("rm", "-rf", tempDir)
+    }
+
+    logger.lifecycle("All model files pushed successfully")
+  }
+}
+
+// Make all connected Android test tasks depend on pushModelFiles
+tasks.whenTaskAdded {
+  if (name.startsWith("connected") && name.endsWith("AndroidTest")) {
+    dependsOn("pushModelFiles")
+  }
+}
+
 val qnnVersion: String? = project.findProperty("qnnVersion") as? String
 val useLocalAar: Boolean? = (project.findProperty("useLocalAar") as? String)?.toBoolean()
 
