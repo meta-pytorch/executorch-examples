@@ -385,6 +385,13 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
           // Only ask user to select model if no model is currently loaded
           askUserToSelectModel();
         }
+      } else {
+        // Settings not updated, but still check if model/tokenizer is not selected
+        String modelPath = updatedSettingsFields.getModelFilePath();
+        String tokenizerPath = updatedSettingsFields.getTokenizerFilePath();
+        if (modelPath.isEmpty() || tokenizerPath.isEmpty()) {
+          askUserToSelectModel();
+        }
       }
     } else if (mModule == null) {
       // Only ask user to select model if no model is currently loaded
@@ -456,6 +463,12 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
         () -> {
           mMessageAdapter.add(askLoadModelMessage);
           mMessageAdapter.notifyDataSetChanged();
+          new AlertDialog.Builder(this)
+              .setTitle("No Model Selected")
+              .setMessage(
+                  "Please select a model and tokenizer from the settings (top right corner) to get started.")
+              .setPositiveButton(android.R.string.ok, null)
+              .show();
         });
   }
 
