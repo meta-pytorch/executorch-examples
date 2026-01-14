@@ -29,8 +29,8 @@ import org.pytorch.executorch.extension.llm.LlmModule;
 public class PerfTest implements LlmCallback {
 
   private static final String RESOURCE_PATH = "/data/local/tmp/llama/";
-  private static final String TOKENIZER_PATH = "tokenizer.json";
-  private static final String MODEL_PATH = "model.pte";
+  private static final String TOKENIZER_PATH = "tokenizer.model";
+  private static final String MODEL_PATH = "stories110M.pte";
 
   private final List<String> results = new ArrayList<>();
   private final List<Float> tokensPerSecond = new ArrayList<>();
