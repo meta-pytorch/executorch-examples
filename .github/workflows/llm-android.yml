@@ -83,7 +83,7 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-${{ env.API_LEVEL }}-${{ env.ARCH }}-ram${{ env.RAM_SIZE }}
+          key: avd-${{ env.API_LEVEL }}-${{ env.ARCH }}-ram${{ env.RAM_SIZE }}-disk16G
 
       - name: Create AVD and generate snapshot for caching
         if: steps.avd-cache.outputs.cache-hit != 'true'
@@ -97,14 +97,18 @@ jobs:
           working-directory: llm/android/LlamaDemo
           script: echo "Generated AVD snapshot for caching."
 
-      - name: Configure AVD RAM
+      - name: Configure AVD RAM and disk
         run: |
           AVD_DIR="$HOME/.android/avd"
           for config in "$AVD_DIR"/*.avd/config.ini; do
             if [ -f "$config" ]; then
-              echo "Updating RAM in $config"
+              echo "Updating config in $config"
+              # Update RAM
               sed -i 's/hw.ramSize=.*/hw.ramSize=${{ env.RAM_SIZE }}/' "$config" || true
               grep -q "hw.ramSize" "$config" || echo "hw.ramSize=${{ env.RAM_SIZE }}" >> "$config"
+              # Update disk size to 16GB for large models
+              sed -i 's/disk.dataPartition.size=.*/disk.dataPartition.size=16G/' "$config" || true
+              grep -q "disk.dataPartition.size" "$config" || echo "disk.dataPartition.size=16G" >> "$config"
             fi
           done
 
@@ -167,7 +171,10 @@ jobs:
             adb shell rm -rf /data/local/tmp/llama
             adb shell mkdir -p /data/local/tmp/llama
             echo "=== Pushing pre-downloaded model files to device ==="
-            adb push /tmp/llama_models/* /data/local/tmp/llama/
+            for file in /tmp/llama_models/*; do
+              echo "Pushing $(basename "$file")..."
+              adb push "$file" /data/local/tmp/llama/
+            done
             echo "=== Model directory contents ==="
             adb shell ls -la /data/local/tmp/llama/
             adb logcat -c && adb logcat > /tmp/logcat.txt &
