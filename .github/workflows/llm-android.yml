@@ -143,6 +143,8 @@ jobs:
             grep "LLAMA_RESPONSE" /tmp/logcat.txt | sed 's/.*LLAMA_RESPONSE: //' | grep -v "BEGIN_RESPONSE\|END_RESPONSE" > /tmp/response.txt || true
             echo "=== Response file contents ==="
             cat /tmp/response.txt || echo "Response file empty or not created"
+            # Clean up model files to avoid caching large files
+            adb shell rm -rf /data/local/tmp/llama
             exit $TEST_EXIT_CODE
 
       - name: Add model response to summary
