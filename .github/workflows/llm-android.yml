@@ -110,4 +110,25 @@ jobs:
             adb shell mkdir -p /data/local/tmp/llama/
             adb push /tmp/llama-models/model.pte /data/local/tmp/llama/
             adb push /tmp/llama-models/tokenizer.model /data/local/tmp/llama/
-            ./gradlew connectedCheck -PskipModelDownload=true
+
+            # Start logcat in background and save to file
+            adb logcat -c
+            adb logcat > /tmp/logcat.txt &
+            LOGCAT_PID=$!
+
+            # Run tests
+            ./gradlew connectedCheck -PskipModelDownload=true || TEST_EXIT_CODE=$?
+
+            # Stop logcat
+            kill $LOGCAT_PID || true
+
+            # Exit with the test exit code
+            exit ${TEST_EXIT_CODE:-0}
+
+      - name: Upload logcat
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logcat
+          path: /tmp/logcat.txt
+          retention-days: 7
