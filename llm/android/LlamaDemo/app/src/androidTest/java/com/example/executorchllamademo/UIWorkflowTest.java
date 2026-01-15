@@ -29,6 +29,7 @@ import static org.junit.Assert.assertTrue;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.core.app.ApplicationProvider;
@@ -198,9 +199,14 @@ public class UIWorkflowTest {
             // Click send button
             onView(withId(R.id.sendButton)).perform(click());
 
-            // --- Wait for response and validate ---
-            // Wait 50 seconds for model to generate response
-            Thread.sleep(50000);
+            // --- Wait for generation to complete ---
+            // First wait for generation to start (button becomes non-clickable)
+            boolean generationStarted = waitForButtonState(scenario, false, 5000);
+            assertTrue("Generation should start (button should become non-clickable)", generationStarted);
+
+            // Then wait for generation to complete (button becomes clickable again)
+            boolean generationComplete = waitForButtonState(scenario, true, 120000); // 2 minute timeout
+            assertTrue("Generation should complete", generationComplete);
 
             // Extract all messages from the list
             AtomicInteger messageCount = new AtomicInteger(0);
@@ -261,6 +267,32 @@ public class UIWorkflowTest {
                 return true;
             }
             Thread.sleep(500); // Poll every 500ms
+        }
+        return false;
+    }
+
+    /**
+     * Waits for the send button to reach the expected clickable state.
+     *
+     * @param scenario the activity scenario
+     * @param expectedClickable the expected clickable state (true = clickable/send, false = non-clickable/stop)
+     * @param timeoutMs maximum time to wait in milliseconds
+     * @return true if button reached expected state, false if timeout
+     */
+    private boolean waitForButtonState(ActivityScenario<MainActivity> scenario, boolean expectedClickable, long timeoutMs) throws InterruptedException {
+        long startTime = System.currentTimeMillis();
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            AtomicReference<Boolean> isClickable = new AtomicReference<>(null);
+            scenario.onActivity(activity -> {
+                ImageButton sendButton = activity.findViewById(R.id.sendButton);
+                if (sendButton != null) {
+                    isClickable.set(sendButton.isClickable());
+                }
+            });
+            if (isClickable.get() != null && isClickable.get() == expectedClickable) {
+                return true;
+            }
+            Thread.sleep(200); // Poll every 200ms
         }
         return false;
     }
