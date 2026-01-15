@@ -18,7 +18,7 @@ on:
         type: string
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -67,3 +67,86 @@ jobs:
           name: ${{ matrix.name }}-apk
           path: ${{ matrix.path }}/app/build/outputs/apk/
           if-no-files-found: warn
+
+  create-release:
+    name: Create Nightly Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4.1.3
+        with:
+          path: artifacts
+
+      - name: Generate release tag
+        id: tag
+        run: |
+          echo "tag_name=nightly-$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+          echo "release_name=Nightly Build $(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+          echo "build_date=$(date +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.tag_name }}
+          name: ${{ steps.tag.outputs.release_name }}
+          body: |
+            Automated nightly build of Android demo applications.
+
+            ## Apps included:
+            - LlamaDemo APK
+            - DeepLabV3Demo APK
+
+            **Build Date:** ${{ steps.tag.outputs.build_date }}
+            **Commit:** ${{ github.sha }}
+          files: |
+            artifacts/*-apk/**/*.apk
+          prerelease: true
+          draft: false
+
+      - name: Clean up old nightly releases
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const keep = 7; // Keep last 7 nightly releases
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Get all releases
+            const releases = await github.rest.repos.listReleases({
+              owner,
+              repo,
+              per_page: 100
+            });
+
+            // Filter nightly releases and sort by date (newest first)
+            const nightlyReleases = releases.data
+              .filter(release => release.tag_name.startsWith('nightly-'))
+              .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            // Delete releases older than the keep threshold
+            for (let i = keep; i < nightlyReleases.length; i++) {
+              const release = nightlyReleases[i];
+              console.log(`Deleting old nightly release: ${release.tag_name}`);
+
+              try {
+                // Delete the release
+                await github.rest.repos.deleteRelease({
+                  owner,
+                  repo,
+                  release_id: release.id
+                });
+
+                // Delete the tag
+                await github.rest.git.deleteRef({
+                  owner,
+                  repo,
+                  ref: `tags/${release.tag_name}`
+                });
+
+                console.log(`Deleted release and tag: ${release.tag_name}`);
+              } catch (error) {
+                console.log(`Error deleting ${release.tag_name}: ${error.message}`);
+              }
+            }
