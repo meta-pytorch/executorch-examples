@@ -49,13 +49,14 @@ for file in /tmp/llama_models/*; do
     # Run push (ignore exit code, verify by checking file on device)
     timeout $timeout_secs adb push "$file" /data/local/tmp/llama/ || true
 
-    # Verify file was pushed by checking it exists on device
-    if adb shell "test -f /data/local/tmp/llama/$filename" 2>/dev/null; then
+    # Verify file was pushed by checking it exists and has correct size
+    device_size=$(adb shell "stat -c%s /data/local/tmp/llama/$filename 2>/dev/null || echo 0" | tr -d '\r')
+    if [ "$device_size" = "$filesize" ]; then
       success=true
-      echo "Successfully pushed $filename"
+      echo "Successfully pushed $filename (verified size: $device_size bytes)"
     else
       retry=$((retry + 1))
-      echo "Push failed or timed out (attempt $retry/$max_retries)"
+      echo "Push failed or incomplete (attempt $retry/$max_retries, expected $filesize bytes, got $device_size bytes)"
       if [ $retry -lt $max_retries ]; then
         echo "Waiting 5 seconds before retry..."
         sleep 5
