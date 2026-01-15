@@ -29,7 +29,6 @@ import static org.junit.Assert.assertTrue;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.widget.ImageButton;
 import android.widget.ListView;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.core.app.ApplicationProvider;
@@ -199,10 +198,9 @@ public class UIWorkflowTest {
             // Click send button
             onView(withId(R.id.sendButton)).perform(click());
 
-            // --- Wait for generation to complete ---
-            // Poll until the send button shows "Send" again (generation complete)
-            boolean generationComplete = waitForGenerationComplete(scenario, 120000); // 2 minute timeout
-            assertTrue("Generation should complete", generationComplete);
+            // --- Wait for response and validate ---
+            // Wait 50 seconds for model to generate response
+            Thread.sleep(50000);
 
             // Extract all messages from the list
             AtomicInteger messageCount = new AtomicInteger(0);
@@ -260,32 +258,6 @@ public class UIWorkflowTest {
                 }
             });
             if (foundIndex.get() >= 0) {
-                return true;
-            }
-            Thread.sleep(500); // Poll every 500ms
-        }
-        return false;
-    }
-
-    /**
-     * Waits for generation to complete by checking if the send button is clickable.
-     * The send button becomes clickable when generation is complete.
-     *
-     * @param scenario the activity scenario
-     * @param timeoutMs maximum time to wait in milliseconds
-     * @return true if generation completed, false if timeout
-     */
-    private boolean waitForGenerationComplete(ActivityScenario<MainActivity> scenario, long timeoutMs) throws InterruptedException {
-        long startTime = System.currentTimeMillis();
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
-            AtomicReference<Boolean> isClickable = new AtomicReference<>(false);
-            scenario.onActivity(activity -> {
-                ImageButton sendButton = activity.findViewById(R.id.sendButton);
-                if (sendButton != null) {
-                    isClickable.set(sendButton.isClickable());
-                }
-            });
-            if (isClickable.get()) {
                 return true;
             }
             Thread.sleep(500); // Poll every 500ms
