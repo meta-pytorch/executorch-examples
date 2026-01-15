@@ -25,16 +25,58 @@ echo "TOKENIZER_FILE: $TOKENIZER_FILE"
 echo "=== Emulator Memory Info ==="
 adb shell cat /proc/meminfo | head -5
 
+echo "=== Emulator Disk Space ==="
+adb shell df -h /data
+
 # Clean and prepare device directory
 adb shell rm -rf /data/local/tmp/llama
 adb shell mkdir -p /data/local/tmp/llama
 
-# Push pre-downloaded model files to device
+# Push pre-downloaded model files to device with timeout and retry
 echo "=== Pushing pre-downloaded model files to device ==="
 for file in /tmp/llama_models/*; do
-  echo "Pushing $(basename "$file")..."
-  adb push "$file" /data/local/tmp/llama/
+  filename=$(basename "$file")
+  filesize=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null || echo "0")
+  # Calculate timeout: 30 seconds base + 1 second per 50MB
+  timeout_secs=$((30 + filesize / 50000000))
+  echo "Pushing $filename (size: $((filesize / 1024 / 1024))MB, timeout: ${timeout_secs}s)..."
+
+  max_retries=3
+  retry=0
+  success=false
+
+  while [ $retry -lt $max_retries ] && [ "$success" = "false" ]; do
+    # Run push (ignore exit code, verify by checking file on device)
+    timeout $timeout_secs adb push "$file" /data/local/tmp/llama/ || true
+
+    # Verify file was pushed by checking it exists and has correct size
+    device_size=$(adb shell "stat -c%s /data/local/tmp/llama/$filename 2>/dev/null || echo 0" | tr -d '\r')
+    if [ "$device_size" = "$filesize" ]; then
+      success=true
+      echo "Successfully pushed $filename (verified size: $device_size bytes)"
+    else
+      retry=$((retry + 1))
+      echo "Push failed or incomplete (attempt $retry/$max_retries, expected $filesize bytes, got $device_size bytes)"
+      if [ $retry -lt $max_retries ]; then
+        echo "Waiting 5 seconds before retry..."
+        sleep 5
+        echo "Checking if emulator is still responsive..."
+        adb shell getprop ro.build.version.sdk || echo "WARNING: Emulator may be unresponsive"
+      fi
+    fi
+  done
+
+  if [ "$success" = "false" ]; then
+    echo "ERROR: Failed to push $filename after $max_retries attempts"
+    exit 1
+  fi
+
+  echo "Checking emulator responsiveness..."
+  adb shell getprop ro.build.version.sdk || echo "WARNING: Emulator may be unresponsive"
 done
+
+echo "=== Syncing filesystem ==="
+adb shell sync
 
 echo "=== Model directory contents ==="
 adb shell ls -la /data/local/tmp/llama/
