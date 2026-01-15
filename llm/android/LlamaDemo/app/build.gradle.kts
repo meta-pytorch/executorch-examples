@@ -62,6 +62,14 @@ fun execCmdWithExitCode(vararg args: String): Pair<Int, String> {
   return Pair(exitCode, output)
 }
 
+// Streaming version that shows output in real-time (for long-running commands)
+fun execCmdStreaming(vararg args: String): Int {
+  val process = ProcessBuilder(*args)
+    .inheritIO()
+    .start()
+  return process.waitFor()
+}
+
 tasks.register("pushModelFiles") {
   description = "Download model files and push to connected Android device if not present"
   group = "verification"
