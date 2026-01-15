@@ -52,25 +52,6 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Install Android Emulator dependencies
-        run: |
-          cat /etc/os-release
-          sudo apt-get update
-          sudo apt-get install -y \
-            libx11-xcb1 \
-            libxcb1 \
-            libxcb-glx0 \
-            libxcb-shm0 \
-            libpulse0 \
-            libnss3 \
-            libxcomposite1 \
-            libxcursor1 \
-            libxi6 \
-            libxtst6 \
-            libasound2t64 \
-            libgl1-mesa-glx \
-            libgl1-mesa-dri
-
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
