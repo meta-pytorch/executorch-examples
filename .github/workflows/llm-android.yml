@@ -107,6 +107,7 @@ jobs:
           disable-animations: true
           working-directory: llm/android/LlamaDemo
           script: |
+            adb shell mkdir -p /data/local/tmp/llama/
             adb push /tmp/llama-models/model.pte /data/local/tmp/llama/
             adb push /tmp/llama-models/tokenizer.model /data/local/tmp/llama/
             ./gradlew connectedCheck -PskipModelDownload=true
