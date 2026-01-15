@@ -130,13 +130,11 @@ tasks.register("pushModelFiles") {
         val localPath = "$tempDir/$targetName"
         val devicePath = "$deviceModelDir/$targetName"
 
-        // Download file
+        // Download file with progress indicator
         logger.lifecycle("Downloading from $sourceUrl...")
-        val (dlCode, dlOutput) = execCmdWithExitCode(
-          "curl", "-fL", "-o", localPath, sourceUrl
-        )
+        val dlCode = execCmdStreaming("curl", "-fL", "--progress-bar", "-o", localPath, sourceUrl)
         if (dlCode != 0) {
-          throw GradleException("Failed to download from $sourceUrl: $dlOutput")
+          throw GradleException("Failed to download from $sourceUrl")
         }
 
         // Verify checksum if enabled and available (only for stories preset)
@@ -173,11 +171,11 @@ tasks.register("pushModelFiles") {
           }
         }
 
-        // Push to device
+        // Push to device with progress
         logger.lifecycle("Pushing $targetName to device...")
-        val (pushCode, pushOutput) = execCmdWithExitCode(adbPath, "push", localPath, devicePath)
+        val pushCode = execCmdStreaming(adbPath, "push", localPath, devicePath)
         if (pushCode != 0) {
-          throw GradleException("Failed to push $targetName to device: $pushOutput")
+          throw GradleException("Failed to push $targetName to device")
         }
         logger.lifecycle("Successfully pushed $targetName")
       }
