@@ -128,7 +128,7 @@ jobs:
             LOGCAT_PID=$!
             if [ "$MODEL_PRESET" = "custom" ]; then GRADLE_ARGS="-PmodelPreset=$MODEL_PRESET -PcustomPteUrl=$CUSTOM_PTE_URL -PcustomTokenizerUrl=$CUSTOM_TOKENIZER_URL"; else GRADLE_ARGS="-PmodelPreset=$MODEL_PRESET"; fi
             ./gradlew connectedCheck $GRADLE_ARGS; TEST_EXIT_CODE=$?
-            adb pull /data/local/tmp/llama/response.txt /tmp/response.txt || true
+            adb pull /sdcard/Android/data/com.example.executorchllamademo/files/response.txt /tmp/response.txt || true
             kill $LOGCAT_PID || true
             exit $TEST_EXIT_CODE
 
