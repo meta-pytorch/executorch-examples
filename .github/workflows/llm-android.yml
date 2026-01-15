@@ -83,7 +83,7 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-${{ env.API_LEVEL }}-${{ env.ARCH }}-ram${{ env.RAM_SIZE }}
+          key: avd-${{ env.API_LEVEL }}-${{ env.ARCH }}-ram${{ env.RAM_SIZE }}-disk16G
 
       - name: Create AVD and generate snapshot for caching
         if: steps.avd-cache.outputs.cache-hit != 'true'
@@ -97,23 +97,69 @@ jobs:
           working-directory: llm/android/LlamaDemo
           script: echo "Generated AVD snapshot for caching."
 
-      - name: Configure AVD RAM
+      - name: Configure AVD RAM and disk
         run: |
           AVD_DIR="$HOME/.android/avd"
           for config in "$AVD_DIR"/*.avd/config.ini; do
             if [ -f "$config" ]; then
-              echo "Updating RAM in $config"
+              echo "Updating config in $config"
+              # Update RAM
               sed -i 's/hw.ramSize=.*/hw.ramSize=${{ env.RAM_SIZE }}/' "$config" || true
               grep -q "hw.ramSize" "$config" || echo "hw.ramSize=${{ env.RAM_SIZE }}" >> "$config"
+              # Update disk size to 16GB for large models
+              sed -i 's/disk.dataPartition.size=.*/disk.dataPartition.size=16G/' "$config" || true
+              grep -q "disk.dataPartition.size" "$config" || echo "disk.dataPartition.size=16G" >> "$config"
             fi
           done
+
+      - name: Download model files
+        env:
+          MODEL_PRESET: ${{ inputs.model_preset || 'stories' }}
+          CUSTOM_PTE_URL: ${{ inputs.custom_pte_url }}
+          CUSTOM_TOKENIZER_URL: ${{ inputs.custom_tokenizer_url }}
+        run: |
+          mkdir -p /tmp/llama_models
+
+          # Determine URLs based on preset
+          case "$MODEL_PRESET" in
+            llama)
+              PTE_URL="https://huggingface.co/executorch-community/Llama-3.2-1B-ET/resolve/main/llama3_2-1B.pte"
+              TOKENIZER_URL="https://huggingface.co/executorch-community/Llama-3.2-1B-ET/resolve/main/tokenizer.model"
+              ;;
+            qwen3)
+              PTE_URL="https://huggingface.co/pytorch/Qwen3-4B-INT8-INT4/resolve/main/model.pte"
+              TOKENIZER_URL="https://huggingface.co/pytorch/Qwen3-4B-INT8-INT4/resolve/main/tokenizer.json"
+              ;;
+            custom)
+              PTE_URL="$CUSTOM_PTE_URL"
+              TOKENIZER_URL="$CUSTOM_TOKENIZER_URL"
+              ;;
+            *)
+              PTE_URL="https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114/stories110M.pte"
+              TOKENIZER_URL="https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114/tokenizer.model"
+              ;;
+          esac
+
+          PTE_FILE=$(basename "$PTE_URL")
+          TOKENIZER_FILE=$(basename "$TOKENIZER_URL")
+
+          echo "Downloading model: $PTE_URL"
+          curl -fL --progress-bar -o "/tmp/llama_models/$PTE_FILE" "$PTE_URL"
+
+          echo "Downloading tokenizer: $TOKENIZER_URL"
+          curl -fL --progress-bar -o "/tmp/llama_models/$TOKENIZER_FILE" "$TOKENIZER_URL"
+
+          echo "Downloaded files:"
+          ls -lh /tmp/llama_models/
+
+          # Export filenames for later steps
+          echo "MODEL_FILE=$PTE_FILE" >> $GITHUB_ENV
+          echo "TOKENIZER_FILE=$TOKENIZER_FILE" >> $GITHUB_ENV
 
       - name: Run instrumentation tests
         uses: reactivecircus/android-emulator-runner@v2
         env:
           MODEL_PRESET: ${{ inputs.model_preset || 'stories' }}
-          CUSTOM_PTE_URL: ${{ inputs.custom_pte_url }}
-          CUSTOM_TOKENIZER_URL: ${{ inputs.custom_tokenizer_url }}
         with:
           api-level: ${{ env.API_LEVEL }}
           arch: ${{ env.ARCH }}
@@ -121,13 +167,18 @@ jobs:
           emulator-options: -no-snapshot-save ${{ env.EMULATOR_OPTIONS }}
           disable-animations: true
           working-directory: llm/android/LlamaDemo
-          script: |
-            adb shell rm -rf /data/local/tmp/llama
-            adb shell mkdir -p /data/local/tmp/llama
-            adb logcat -c && adb logcat > /tmp/logcat.txt &
-            LOGCAT_PID=$!
-            if [ "$MODEL_PRESET" = "custom" ]; then GRADLE_ARGS="-PmodelPreset=$MODEL_PRESET -PcustomPteUrl=$CUSTOM_PTE_URL -PcustomTokenizerUrl=$CUSTOM_TOKENIZER_URL"; else GRADLE_ARGS="-PmodelPreset=$MODEL_PRESET"; fi
-            ./gradlew connectedCheck $GRADLE_ARGS; TEST_EXIT_CODE=$?; kill $LOGCAT_PID || true; exit $TEST_EXIT_CODE
+          script: bash ./scripts/run-ci-tests.sh "$MODEL_PRESET" "$MODEL_FILE" "$TOKENIZER_FILE"
+
+      - name: Add model response to summary
+        if: always()
+        run: |
+          if [ -f /tmp/response.txt ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "## Model Response" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat /tmp/response.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Upload logcat
         if: always()

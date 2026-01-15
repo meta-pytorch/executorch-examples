@@ -12,7 +12,7 @@ plugins {
 }
 
 // Model files configuration for instrumentation tests
-// Supported presets: stories, llama, custom
+// Supported presets: stories, llama, qwen3, custom
 val modelPreset: String = (project.findProperty("modelPreset") as? String) ?: "stories"
 
 // Preset configurations
@@ -62,6 +62,14 @@ fun execCmdWithExitCode(vararg args: String): Pair<Int, String> {
   return Pair(exitCode, output)
 }
 
+// Streaming version that shows output in real-time (for long-running commands)
+fun execCmdStreaming(vararg args: String): Int {
+  val process = ProcessBuilder(*args)
+    .inheritIO()
+    .start()
+  return process.waitFor()
+}
+
 tasks.register("pushModelFiles") {
   description = "Download model files and push to connected Android device if not present"
   group = "verification"
@@ -84,17 +92,17 @@ tasks.register("pushModelFiles") {
       tokenizerUrl = customTokenizerUrl ?: throw GradleException("customTokenizerUrl is required when modelPreset is 'custom'")
       verifyChecksum = false
     } else {
-      val preset = modelPresets[modelPreset] ?: throw GradleException("Unknown model preset: $modelPreset. Valid options: stories, llama, custom")
+      val preset = modelPresets[modelPreset] ?: throw GradleException("Unknown model preset: $modelPreset. Valid options: ${modelPresets.keys.joinToString(", ")}, custom")
       val baseUrl = preset["baseUrl"] as String
       pteUrl = "$baseUrl/${preset["pteFile"]}"
       tokenizerUrl = "$baseUrl/${preset["tokenizerFile"]}"
       verifyChecksum = preset["verifyChecksum"] as Boolean
     }
 
-    // Files to download: source URL -> target name on device
+    // Files to download: source URL -> target name on device (keep original filenames)
     val filesToDownload = mapOf(
-      pteUrl to "model.pte",
-      tokenizerUrl to "tokenizer.model"
+      pteUrl to pteUrl.substringAfterLast("/"),
+      tokenizerUrl to tokenizerUrl.substringAfterLast("/")
     )
 
     // Check if adb is available
@@ -130,13 +138,11 @@ tasks.register("pushModelFiles") {
         val localPath = "$tempDir/$targetName"
         val devicePath = "$deviceModelDir/$targetName"
 
-        // Download file
+        // Download file with progress indicator
         logger.lifecycle("Downloading from $sourceUrl...")
-        val (dlCode, dlOutput) = execCmdWithExitCode(
-          "curl", "-fL", "-o", localPath, sourceUrl
-        )
+        val dlCode = execCmdStreaming("curl", "-fL", "--progress-bar", "-o", localPath, sourceUrl)
         if (dlCode != 0) {
-          throw GradleException("Failed to download from $sourceUrl: $dlOutput")
+          throw GradleException("Failed to download from $sourceUrl")
         }
 
         // Verify checksum if enabled and available (only for stories preset)
@@ -173,11 +179,11 @@ tasks.register("pushModelFiles") {
           }
         }
 
-        // Push to device
+        // Push to device with progress
         logger.lifecycle("Pushing $targetName to device...")
-        val (pushCode, pushOutput) = execCmdWithExitCode(adbPath, "push", localPath, devicePath)
+        val pushCode = execCmdStreaming(adbPath, "push", localPath, devicePath)
         if (pushCode != 0) {
-          throw GradleException("Failed to push $targetName to device: $pushOutput")
+          throw GradleException("Failed to push $targetName to device")
         }
         logger.lifecycle("Successfully pushed $targetName")
       }

@@ -228,15 +228,39 @@ adb push tokenizer.model /data/local/tmp/llama
 
 ### Running Tests
 
-Run all instrumentation tests:
+The easiest way to run instrumentation tests is using model presets, which automatically download the model and tokenizer files:
+
 ```sh
-./gradlew connectedAndroidTest
+# Run with stories model (default, smallest and fastest)
+./gradlew connectedCheck -PmodelPreset=stories
+
+# Run with Llama 3.2 1B model
+./gradlew connectedCheck -PmodelPreset=llama
+
+# Run with Qwen3 4B model
+./gradlew connectedCheck -PmodelPreset=qwen3
+
+# Run with custom model URLs
+./gradlew connectedCheck -PmodelPreset=custom \
+  -PcustomPteUrl=https://example.com/model.pte \
+  -PcustomTokenizerUrl=https://example.com/tokenizer.model
+
+# Skip model download (use existing files on device)
+./gradlew connectedCheck -PmodelPreset=stories -PskipModelDownload=true
 ```
+
+Available presets:
+| Preset | Model | Description |
+|--------|-------|-------------|
+| `stories` | stories110M | Tiny model for quick testing |
+| `llama` | Llama 3.2 1B | Production-quality Llama model |
+| `qwen3` | Qwen3 4B | Qwen3 model with INT8/INT4 quantization |
+| `custom` | User-provided | Specify custom URLs for model and tokenizer |
 
 Run a specific test class:
 ```sh
-./gradlew connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.executorchllamademo.SanityCheck
-./gradlew connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.executorchllamademo.UIWorkflowTest
+./gradlew connectedCheck -PmodelPreset=stories -Pandroid.testInstrumentationRunnerArguments.class=com.example.executorchllamademo.SanityCheck
+./gradlew connectedCheck -PmodelPreset=stories -Pandroid.testInstrumentationRunnerArguments.class=com.example.executorchllamademo.UIWorkflowTest
 ```
 
 ## Reporting Issues
