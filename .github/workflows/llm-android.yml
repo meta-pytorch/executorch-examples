@@ -168,14 +168,18 @@ jobs:
           disable-animations: true
           working-directory: llm/android/LlamaDemo
           script: |
+            set -x
             adb shell rm -rf /data/local/tmp/llama
             adb shell mkdir -p /data/local/tmp/llama
             echo "=== Pushing pre-downloaded model files to device ==="
             for file in /tmp/llama_models/*; do echo "Pushing $(basename "$file")..."; adb push "$file" /data/local/tmp/llama/; done
             echo "=== Model directory contents ==="
             adb shell ls -la /data/local/tmp/llama/
+            echo "=== Verifying emulator is responsive ==="
+            adb shell getprop ro.build.version.sdk
             adb logcat -c && adb logcat > /tmp/logcat.txt &
             LOGCAT_PID=$!
+            echo "=== Starting Gradle ==="
             ./gradlew connectedCheck -PskipModelDownload=true \
               -PmodelPreset="$MODEL_PRESET" \
               -Pandroid.testInstrumentationRunnerArguments.modelFile="$MODEL_FILE" \
