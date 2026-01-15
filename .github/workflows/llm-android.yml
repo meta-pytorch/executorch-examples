@@ -88,6 +88,10 @@ jobs:
 
       - name: Run instrumentation tests
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          MODEL_PRESET: ${{ inputs.model_preset || 'stories' }}
+          CUSTOM_PTE_URL: ${{ inputs.custom_pte_url }}
+          CUSTOM_TOKENIZER_URL: ${{ inputs.custom_tokenizer_url }}
         with:
           api-level: ${{ env.API_LEVEL }}
           arch: ${{ env.ARCH }}
@@ -97,27 +101,12 @@ jobs:
           disable-animations: true
           working-directory: llm/android/LlamaDemo
           script: |
-            # Start logcat in background and save to file
-            adb logcat -c
-            adb logcat > /tmp/logcat.txt &
+            adb logcat -c && adb logcat > /tmp/logcat.txt &
             LOGCAT_PID=$!
-
-            # Build Gradle command with model preset
-            MODEL_PRESET="${{ inputs.model_preset || 'stories' }}"
             GRADLE_ARGS="-PmodelPreset=$MODEL_PRESET"
-
-            # Add custom URLs if using custom preset
-            if [ "$MODEL_PRESET" = "custom" ]; then
-              GRADLE_ARGS="$GRADLE_ARGS -PcustomPteUrl=${{ inputs.custom_pte_url }} -PcustomTokenizerUrl=${{ inputs.custom_tokenizer_url }}"
-            fi
-
-            # Run tests (Gradle will download and push model files)
+            [ "$MODEL_PRESET" = "custom" ] && GRADLE_ARGS="$GRADLE_ARGS -PcustomPteUrl=$CUSTOM_PTE_URL -PcustomTokenizerUrl=$CUSTOM_TOKENIZER_URL"
             ./gradlew connectedCheck $GRADLE_ARGS || TEST_EXIT_CODE=$?
-
-            # Stop logcat
             kill $LOGCAT_PID || true
-
-            # Exit with the test exit code
             exit ${TEST_EXIT_CODE:-0}
 
       - name: Upload logcat
