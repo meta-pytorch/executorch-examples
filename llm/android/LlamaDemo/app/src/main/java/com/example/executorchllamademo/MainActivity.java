@@ -461,10 +461,12 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
     ETLogging.getInstance().log(askLoadModel);
     runOnUiThread(
         () -> {
-          mMessageAdapter.add(askLoadModelMessage);
-          mMessageAdapter.notifyDataSetChanged();
+          if (!mMessageAdapter.isDuplicateSystemMessage(askLoadModel)) {
+            mMessageAdapter.add(askLoadModelMessage);
+            mMessageAdapter.notifyDataSetChanged();
+          }
           new AlertDialog.Builder(this)
-              .setTitle("No Model Selected")
+              .setTitle("Please Select a Model")
               .setMessage(
                   "Please select a model and tokenizer from the settings (top right corner) to get started.")
               .setPositiveButton(android.R.string.ok, null)

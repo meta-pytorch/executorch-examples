@@ -189,31 +189,54 @@ Ensure you have the following functions in your callback class that you provided
 
 ```
 
-## Instrumentation Test
-You can run the instrumentation test for a sanity check. The test loads a model .pte file and tokenizer.bin file
-under `/data/local/tmp/llama`.
+## Instrumentation Tests
 
-### Model preparation
-You need to install [executorch python package](https://docs.pytorch.org/executorch/stable/getting-started.html#installation) first.
+The app includes instrumentation tests for sanity checking and UI workflow validation.
+
+### Available Tests
+
+1. **SanityCheck** - Basic model loading and generation test that verifies the LLM module can load a model and generate tokens.
+
+2. **UIWorkflowTest** - UI-based tests that simulate user interactions:
+   - `testModelLoadingWorkflow`: Tests the complete flow of selecting a model/tokenizer and loading it
+   - `testSendMessageAndReceiveResponse`: Tests sending a message and receiving a response from the model
+
+### Model Preparation
+
+The test model (`stories110M.pte`) and tokenizer (`tokenizer.model`) are **automatically downloaded** when you run the tests via Gradle. The download task runs before the instrumentation tests execute.
+
+If you want to manually prepare the model files, you can use the following commands:
+
 ```sh
+# Install executorch python package first: https://docs.pytorch.org/executorch/stable/getting-started.html#installation
+
 curl -C - -Ls "https://huggingface.co/karpathy/tinyllamas/resolve/main/stories110M.pt" --output stories110M.pt
 curl -C - -Ls "https://raw.githubusercontent.com/karpathy/llama2.c/master/tokenizer.model" --output tokenizer.model
+
 # Create params.json file
 touch params.json
 echo '{"dim": 768, "multiple_of": 32, "n_heads": 12, "n_layers": 12, "norm_eps": 1e-05, "vocab_size": 32000}' > params.json
-python -m executorch.extension.llm.export.export_llm base.checkpoint=stories110M.pt base.params=params.json model.dtype_override="fp16" export.output_name=stories110m_h.pte model.use_kv_cache=True
-python -m pytorch_tokenizers.tools.llama2c.convert -t tokenizer.model -o tokenizer.bin
-```
-### Push model
-```sh
+
+# Export the model
+python -m executorch.extension.llm.export.export_llm base.checkpoint=stories110M.pt base.params=params.json model.dtype_override="fp16" export.output_name=stories110M.pte model.use_kv_cache=True
+
+# Push to device
 adb shell mkdir -p /data/local/tmp/llama
-adb push stories110m_h.pte /data/local/tmp/llama
-adb push tokenizer.bin /data/local/tmp/llama
+adb push stories110M.pte /data/local/tmp/llama
+adb push tokenizer.model /data/local/tmp/llama
 ```
 
-### Run test
+### Running Tests
+
+Run all instrumentation tests:
 ```sh
 ./gradlew connectedAndroidTest
+```
+
+Run a specific test class:
+```sh
+./gradlew connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.executorchllamademo.SanityCheck
+./gradlew connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.executorchllamademo.UIWorkflowTest
 ```
 
 ## Reporting Issues

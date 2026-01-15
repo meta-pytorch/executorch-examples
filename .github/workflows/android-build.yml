@@ -7,6 +7,8 @@
 name: Android Build
 
 on:
+  pull_request:
+    branches: [main]
   schedule:
     # Run nightly at midnight UTC
     - cron: '0 0 * * *'
@@ -129,7 +131,7 @@ jobs:
             for (let i = keep; i < nightlyReleases.length; i++) {
               const release = nightlyReleases[i];
               console.log(`Deleting old nightly release: ${release.tag_name}`);
-              
+
               try {
                 // Delete the release
                 await github.rest.repos.deleteRelease({
@@ -144,7 +146,7 @@ jobs:
                   repo,
                   ref: `tags/${release.tag_name}`
                 });
-                
+
                 console.log(`Deleted release and tag: ${release.tag_name}`);
               } catch (error) {
                 console.log(`Error deleting ${release.tag_name}: ${error.message}`);

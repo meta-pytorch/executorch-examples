@@ -8,6 +8,8 @@
 
 package com.example.executorchllamademo;
 
+import java.util.Objects;
+
 public class SettingsFields {
 
   public String getModelFilePath() {
@@ -140,17 +142,35 @@ public class SettingsFields {
     this.dataPath = dataPath;
   }
 
-  public boolean equals(SettingsFields anotherSettingsFields) {
-    if (this == anotherSettingsFields) return true;
-    return modelFilePath.equals(anotherSettingsFields.modelFilePath)
-        && tokenizerFilePath.equals(anotherSettingsFields.tokenizerFilePath)
-        && java.util.Objects.equals(dataPath, anotherSettingsFields.dataPath)
-        && temperature == anotherSettingsFields.temperature
-        && systemPrompt.equals(anotherSettingsFields.systemPrompt)
-        && userPrompt.equals(anotherSettingsFields.userPrompt)
-        && isClearChatHistory == anotherSettingsFields.isClearChatHistory
-        && isLoadModel == anotherSettingsFields.isLoadModel
-        && modelType == anotherSettingsFields.modelType
-        && backendType == anotherSettingsFields.backendType;
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    SettingsFields that = (SettingsFields) o;
+    return Double.compare(temperature, that.temperature) == 0
+        && isClearChatHistory == that.isClearChatHistory
+        && isLoadModel == that.isLoadModel
+        && Objects.equals(modelFilePath, that.modelFilePath)
+        && Objects.equals(tokenizerFilePath, that.tokenizerFilePath)
+        && Objects.equals(dataPath, that.dataPath)
+        && Objects.equals(systemPrompt, that.systemPrompt)
+        && Objects.equals(userPrompt, that.userPrompt)
+        && modelType == that.modelType
+        && backendType == that.backendType;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        modelFilePath,
+        tokenizerFilePath,
+        dataPath,
+        temperature,
+        systemPrompt,
+        userPrompt,
+        isClearChatHistory,
+        isLoadModel,
+        modelType,
+        backendType);
   }
 }

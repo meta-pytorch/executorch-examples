@@ -1,0 +1,67 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+name: Export Models
+
+on:
+  schedule:
+    # Run nightly at midnight UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: dl3
+            path: dl3/python
+            artifact: dl3-xnnpack-fp32
+            output: dl3/python/dl3_xnnpack_fp32.pte
+          - name: mv2
+            path: mv2/python
+            artifact: mv2-xnnpack
+            output: mv2/python/model_mv2_xnnpack.pte
+          - name: mv3
+            path: mv3/python
+            artifact: mv3-models
+            output: |
+              mv3/python/mv3.pte
+              mv3/python/mv3_coreml_all.pte
+              mv3/python/mv3_mps_float16.pte
+              mv3/python/mv3_xnnpack_fp32.pte
+
+    name: Export ${{ matrix.name }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install executorch torchvision
+
+      - name: Run export script
+        working-directory: ${{ matrix.path }}
+        run: python export.py
+
+      - name: Upload exported model
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.output }}
+          if-no-files-found: error
