@@ -35,7 +35,7 @@ env:
 
 jobs:
   instrumentation-test:
-    runs-on: ubuntu-latest
+    runs-on: linux.24xl.spr-metal
     env:
       API_LEVEL: 34
       ARCH: x86_64
