@@ -90,7 +90,7 @@ jobs:
           api-level: ${{ env.API_LEVEL }}
           arch: ${{ env.ARCH }}
           force-avd-creation: false
-          ram-size: 6144M
+          ram-size: 16384M
           emulator-options: ${{ env.EMULATOR_OPTIONS }}
           disable-animations: false
           working-directory: llm/android/LlamaDemo
@@ -102,7 +102,7 @@ jobs:
           api-level: ${{ env.API_LEVEL }}
           arch: ${{ env.ARCH }}
           force-avd-creation: false
-          ram-size: 6144M
+          ram-size: 16384M
           emulator-options: -no-snapshot-save ${{ env.EMULATOR_OPTIONS }}
           disable-animations: true
           working-directory: llm/android/LlamaDemo
