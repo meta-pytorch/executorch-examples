@@ -84,7 +84,7 @@ tasks.register("pushModelFiles") {
       tokenizerUrl = customTokenizerUrl ?: throw GradleException("customTokenizerUrl is required when modelPreset is 'custom'")
       verifyChecksum = false
     } else {
-      val preset = modelPresets[modelPreset] ?: throw GradleException("Unknown model preset: $modelPreset. Valid options: stories, llama, custom")
+      val preset = modelPresets[modelPreset] ?: throw GradleException("Unknown model preset: $modelPreset. Valid options: ${modelPresets.keys.joinToString(", ")}, custom")
       val baseUrl = preset["baseUrl"] as String
       pteUrl = "$baseUrl/${preset["pteFile"]}"
       tokenizerUrl = "$baseUrl/${preset["tokenizerFile"]}"
