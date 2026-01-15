@@ -101,6 +101,7 @@ jobs:
           disable-animations: true
           working-directory: llm/android/LlamaDemo
           script: |
+            adb shell cat /proc/meminfo | head -5
             adb logcat -c && adb logcat > /tmp/logcat.txt &
             LOGCAT_PID=$!
             if [ "$MODEL_PRESET" = "custom" ]; then GRADLE_ARGS="-PmodelPreset=$MODEL_PRESET -PcustomPteUrl=$CUSTOM_PTE_URL -PcustomTokenizerUrl=$CUSTOM_TOKENIZER_URL"; else GRADLE_ARGS="-PmodelPreset=$MODEL_PRESET"; fi
