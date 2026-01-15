@@ -54,21 +54,26 @@ jobs:
 
       - name: Install Android Emulator dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libx11-xcb1 \
-            libxcb1 \
-            libxcb-glx0 \
-            libxcb-shm0 \
-            libpulse0 \
-            libnss3 \
-            libxcomposite1 \
-            libxcursor1 \
-            libxi6 \
-            libxtst6 \
-            libasound2 \
-            libgl1-mesa-glx \
-            libgl1-mesa-dri
+          cat /etc/os-release
+          sudo dnf install -y \
+            libX11-xcb \
+            libxcb \
+            pulseaudio-libs \
+            nss \
+            libXcomposite \
+            libXcursor \
+            libXi \
+            libXtst \
+            alsa-lib \
+            mesa-libGL \
+            mesa-dri-drivers
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android Emulator and system image
+        run: |
+          sdkmanager --install "emulator" "platform-tools" "platforms;android-${{ env.API_LEVEL }}" "system-images;android-${{ env.API_LEVEL }};default;${{ env.ARCH }}"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
