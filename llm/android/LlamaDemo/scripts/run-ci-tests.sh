@@ -22,6 +22,9 @@ echo "MODEL_PRESET: $MODEL_PRESET"
 echo "MODEL_FILE: $MODEL_FILE"
 echo "TOKENIZER_FILE: $TOKENIZER_FILE"
 
+echo "=== Emulator Memory Info ==="
+adb shell cat /proc/meminfo | head -5
+
 # Clean and prepare device directory
 adb shell rm -rf /data/local/tmp/llama
 adb shell mkdir -p /data/local/tmp/llama
