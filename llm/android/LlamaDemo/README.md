@@ -257,6 +257,9 @@ You can run instrumentation tests with pre-configured model presets using `conne
 ./gradlew connectedCheck -PmodelPreset=custom \
   -PcustomPteUrl=https://example.com/model.pte \
   -PcustomTokenizerUrl=https://example.com/tokenizer.model
+
+# Skip model download (use existing files on device)
+./gradlew connectedCheck -PmodelPreset=stories -PskipModelDownload=true
 ```
 
 Available presets:

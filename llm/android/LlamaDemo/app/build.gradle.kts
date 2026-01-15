@@ -42,15 +42,18 @@ val customPteUrl: String? = project.findProperty("customPteUrl") as? String
 val customTokenizerUrl: String? = project.findProperty("customTokenizerUrl") as? String
 
 // Get the filenames for the current preset (used for instrumentation test args)
-val currentPteFile: String
-val currentTokenizerFile: String
-if (modelPreset == "custom") {
-  currentPteFile = customPteUrl?.substringAfterLast("/") ?: "model.pte"
-  currentTokenizerFile = customTokenizerUrl?.substringAfterLast("/") ?: "tokenizer.model"
+val currentPteFile: String = if (modelPreset == "custom") {
+  customPteUrl?.substringAfterLast("/") ?: "model.pte"
 } else {
   val preset = modelPresets[modelPreset] ?: modelPresets["stories"]!!
-  currentPteFile = preset["pteFile"] as String
-  currentTokenizerFile = preset["tokenizerFile"] as String
+  preset["pteFile"] as String
+}
+
+val currentTokenizerFile: String = if (modelPreset == "custom") {
+  customTokenizerUrl?.substringAfterLast("/") ?: "tokenizer.model"
+} else {
+  val preset = modelPresets[modelPreset] ?: modelPresets["stories"]!!
+  preset["tokenizerFile"] as String
 }
 
 val deviceModelDir = "/data/local/tmp/llama"
@@ -206,7 +209,7 @@ tasks.register("pushModelFiles") {
 // Make all connected Android test tasks depend on pushModelFiles
 tasks.whenTaskAdded {
   if (name.startsWith("connected") && name.endsWith("AndroidTest")) {
-    dependsOn("pushModelFiles")
+    // dependsOn("pushModelFiles")
   }
 }
 
