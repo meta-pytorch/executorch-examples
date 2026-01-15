@@ -128,28 +128,18 @@ jobs:
             adb shell ls -la /data/local/tmp/llama/ || echo "Directory empty or not found"
             adb logcat -c && adb logcat > /tmp/logcat.txt &
             LOGCAT_PID=$!
-            echo "=== MODEL_PRESET value: '$MODEL_PRESET' ==="
-            MODEL_FILE="stories110M.pte" && TOKENIZER_FILE="tokenizer.model"
-            [ "$MODEL_PRESET" = "llama" ] && MODEL_FILE="llama3_2-1B.pte" && TOKENIZER_FILE="tokenizer.model"
-            [ "$MODEL_PRESET" = "qwen3" ] && MODEL_FILE="model.pte" && TOKENIZER_FILE="tokenizer.json"
-            [ "$MODEL_PRESET" = "custom" ] && MODEL_FILE=$(basename "$CUSTOM_PTE_URL") && TOKENIZER_FILE=$(basename "$CUSTOM_TOKENIZER_URL")
-            echo "=== Model files: $MODEL_FILE, $TOKENIZER_FILE ==="
-            echo "=== Running Gradle with preset: $MODEL_PRESET ==="
-            [ "$MODEL_PRESET" = "custom" ] && ./gradlew connectedCheck "-PmodelPreset=$MODEL_PRESET" "-PcustomPteUrl=$CUSTOM_PTE_URL" "-PcustomTokenizerUrl=$CUSTOM_TOKENIZER_URL" "-Pandroid.testInstrumentationRunnerArguments.modelFile=$MODEL_FILE" "-Pandroid.testInstrumentationRunnerArguments.tokenizerFile=$TOKENIZER_FILE" || ./gradlew connectedCheck "-PmodelPreset=$MODEL_PRESET" "-Pandroid.testInstrumentationRunnerArguments.modelFile=$MODEL_FILE" "-Pandroid.testInstrumentationRunnerArguments.tokenizerFile=$TOKENIZER_FILE"
+            ./scripts/run-instrumentation-tests.sh "$MODEL_PRESET" "$CUSTOM_PTE_URL" "$CUSTOM_TOKENIZER_URL"
             TEST_EXIT_CODE=$?
             echo "=== Model directory after Gradle ==="
             adb shell ls -la /data/local/tmp/llama/
             kill $LOGCAT_PID || true
-            # Show which model was used
             echo "=== Model configuration used by test ==="
             grep "UIWorkflowTest.*Using model" /tmp/logcat.txt || echo "Model config not found in logcat"
-            # Extract response from logcat
             echo "=== Searching for LLAMA_RESPONSE in logcat ==="
             grep "LLAMA_RESPONSE" /tmp/logcat.txt || echo "No LLAMA_RESPONSE found in logcat"
             grep "LLAMA_RESPONSE" /tmp/logcat.txt | sed 's/.*LLAMA_RESPONSE: //' | grep -v "BEGIN_RESPONSE\|END_RESPONSE" > /tmp/response.txt || true
             echo "=== Response file contents ==="
             cat /tmp/response.txt || echo "Response file empty or not created"
-            # Clean up model files to avoid caching large files
             adb shell rm -rf /data/local/tmp/llama
             exit $TEST_EXIT_CODE
 
