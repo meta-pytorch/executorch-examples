@@ -41,21 +41,6 @@ val modelPresets = mapOf(
 val customPteUrl: String? = project.findProperty("customPteUrl") as? String
 val customTokenizerUrl: String? = project.findProperty("customTokenizerUrl") as? String
 
-// Get the filenames for the current preset (used for instrumentation test args)
-val currentPteFile: String = if (modelPreset == "custom") {
-  customPteUrl?.substringAfterLast("/") ?: "model.pte"
-} else {
-  val preset = modelPresets[modelPreset] ?: modelPresets["stories"]!!
-  preset["pteFile"] as String
-}
-
-val currentTokenizerFile: String = if (modelPreset == "custom") {
-  customTokenizerUrl?.substringAfterLast("/") ?: "tokenizer.model"
-} else {
-  val preset = modelPresets[modelPreset] ?: modelPresets["stories"]!!
-  preset["tokenizerFile"] as String
-}
-
 val deviceModelDir = "/data/local/tmp/llama"
 val skipModelDownload: Boolean = (project.findProperty("skipModelDownload") as? String)?.toBoolean() ?: false
 
@@ -229,9 +214,6 @@ android {
     versionName = "1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-    // Pass model filenames to instrumentation tests
-    testInstrumentationRunnerArguments["modelFile"] = currentPteFile
-    testInstrumentationRunnerArguments["tokenizerFile"] = currentTokenizerFile
     vectorDrawables { useSupportLibrary = true }
     externalNativeBuild { cmake { cppFlags += "" } }
   }
