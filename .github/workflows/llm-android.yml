@@ -127,10 +127,10 @@ jobs:
         with:
           api-level: ${{ env.API_LEVEL }}
           arch: ${{ env.ARCH }}
-          ram-size: ${{ env.RAM_SIZE }}M
-          disk-size: 16G
+          ram-size: 16384M
+          disk-size: 16384M
           force-avd-creation: true
-          emulator-options: ${{ env.EMULATOR_OPTIONS }}
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -memory 16384
           disable-animations: true
           working-directory: llm/android/LlamaDemo
           script: bash ./scripts/run-ci-tests.sh "$MODEL_PRESET" "$MODEL_FILE" "$TOKENIZER_FILE"
