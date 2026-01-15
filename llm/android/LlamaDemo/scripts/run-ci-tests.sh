@@ -32,13 +32,37 @@ adb shell df -h /data
 adb shell rm -rf /data/local/tmp/llama
 adb shell mkdir -p /data/local/tmp/llama
 
-# Push pre-downloaded model files to device
+# Push pre-downloaded model files to device with timeout and retry
 echo "=== Pushing pre-downloaded model files to device ==="
 for file in /tmp/llama_models/*; do
   filename=$(basename "$file")
   echo "Pushing $filename..."
-  adb push "$file" /data/local/tmp/llama/
-  echo "Successfully pushed $filename"
+
+  max_retries=3
+  retry=0
+  success=false
+
+  while [ $retry -lt $max_retries ] && [ "$success" = "false" ]; do
+    if timeout 20 adb push "$file" /data/local/tmp/llama/; then
+      success=true
+      echo "Successfully pushed $filename"
+    else
+      retry=$((retry + 1))
+      echo "Push failed or timed out (attempt $retry/$max_retries)"
+      if [ $retry -lt $max_retries ]; then
+        echo "Waiting 5 seconds before retry..."
+        sleep 5
+        echo "Checking if emulator is still responsive..."
+        adb shell getprop ro.build.version.sdk || echo "WARNING: Emulator may be unresponsive"
+      fi
+    fi
+  done
+
+  if [ "$success" = "false" ]; then
+    echo "ERROR: Failed to push $filename after $max_retries attempts"
+    exit 1
+  fi
+
   echo "Checking emulator responsiveness..."
   adb shell getprop ro.build.version.sdk || echo "WARNING: Emulator may be unresponsive"
 done
