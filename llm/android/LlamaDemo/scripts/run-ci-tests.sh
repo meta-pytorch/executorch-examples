@@ -37,8 +37,8 @@ echo "=== Pushing pre-downloaded model files to device ==="
 for file in /tmp/llama_models/*; do
   filename=$(basename "$file")
   filesize=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null || echo "0")
-  # Calculate timeout: 30 seconds base + 1 second per 10MB (more generous for CI)
-  timeout_secs=$((30 + filesize / 10000000))
+  # Calculate timeout: 30 seconds base + 1 second per 50MB
+  timeout_secs=$((30 + filesize / 50000000))
   echo "Pushing $filename (size: $((filesize / 1024 / 1024))MB, timeout: ${timeout_secs}s)..."
 
   max_retries=3
