@@ -180,10 +180,7 @@ jobs:
             adb logcat -c && adb logcat > /tmp/logcat.txt &
             LOGCAT_PID=$!
             echo "=== Starting Gradle ==="
-            ./gradlew connectedCheck -PskipModelDownload=true \
-              -PmodelPreset="$MODEL_PRESET" \
-              -Pandroid.testInstrumentationRunnerArguments.modelFile="$MODEL_FILE" \
-              -Pandroid.testInstrumentationRunnerArguments.tokenizerFile="$TOKENIZER_FILE"
+            ./gradlew connectedCheck -PskipModelDownload=true -PmodelPreset="$MODEL_PRESET" -Pandroid.testInstrumentationRunnerArguments.modelFile="$MODEL_FILE" -Pandroid.testInstrumentationRunnerArguments.tokenizerFile="$TOKENIZER_FILE"
             TEST_EXIT_CODE=$?
             echo "=== Model directory after Gradle ==="
             adb shell ls -la /data/local/tmp/llama/
