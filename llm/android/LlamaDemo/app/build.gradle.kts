@@ -146,13 +146,16 @@ tasks.register("pushModelFiles") {
           val checksumUrl = "$sourceUrl.sha256sums"
 
           logger.lifecycle("Verifying checksum for $sourceName...")
-          val (csDownloadCode, csDownloadOutput) = execCmdWithExitCode(
+          val (csDownloadCode, _) = execCmdWithExitCode(
             "curl", "-fL", "-o", checksumPath, checksumUrl
           )
           if (csDownloadCode == 0) {
-            // Rename file temporarily for checksum verification
+            // Copy file to original name for checksum verification if needed
             val tempForChecksum = "$tempDir/$sourceName"
-            execCmd("cp", localPath, tempForChecksum)
+            val needsCopy = localPath != tempForChecksum
+            if (needsCopy) {
+              execCmd("cp", localPath, tempForChecksum)
+            }
 
             val (verifyCode, verifyOutput) = execCmdWithExitCode(
               "bash", "-c", "cd $tempDir && sha256sum -c $sourceName.sha256sums"
@@ -161,7 +164,10 @@ tasks.register("pushModelFiles") {
               throw GradleException("Checksum verification failed for $sourceName: $verifyOutput")
             }
             logger.lifecycle("Checksum verified for $sourceName")
-            execCmd("rm", "-f", tempForChecksum)
+            // Only delete the temp copy if we made one
+            if (needsCopy) {
+              execCmd("rm", "-f", tempForChecksum)
+            }
           } else {
             logger.lifecycle("Checksum file not available, skipping verification")
           }
