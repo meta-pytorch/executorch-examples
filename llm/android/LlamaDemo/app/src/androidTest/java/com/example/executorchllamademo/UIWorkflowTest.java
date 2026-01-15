@@ -70,7 +70,7 @@ public class UIWorkflowTest {
      * 1. Dismiss the "Please Select a Model" dialog
      * 2. Click settings button
      * 3. Verify model path and tokenizer path show default "no selection" text
-     * 4. Click model selection, select stories110M.pte
+     * 4. Click model selection, select model.pte
      * 5. Click tokenizer selection, select tokenizer.model
      * 6. Click load model button
      */
@@ -92,10 +92,10 @@ public class UIWorkflowTest {
             onView(withId(R.id.modelTextView)).check(matches(withText("no model selected")));
             onView(withId(R.id.tokenizerTextView)).check(matches(withText("no tokenizer selected")));
 
-            // Step 3: Click model selection button and select stories110M.pte
+            // Step 3: Click model selection button and select model.pte
             onView(withId(R.id.modelImageButton)).perform(click());
-            // Select the model file containing "stories110M.pte"
-            onData(hasToString(containsString("stories110M.pte"))).inRoot(isDialog()).perform(click());
+            // Select the model file containing "model.pte"
+            onData(hasToString(containsString("model.pte"))).inRoot(isDialog()).perform(click());
 
             // Step 4: Click tokenizer selection button and select tokenizer.model
             onView(withId(R.id.tokenizerImageButton)).perform(click());
@@ -139,10 +139,10 @@ public class UIWorkflowTest {
             // Verify load button is initially disabled (no model/tokenizer selected)
             onView(withId(R.id.loadModelButton)).check(matches(not(isEnabled())));
 
-            // Select model - choose stories110M.pte
+            // Select model - choose model.pte
             onView(withId(R.id.modelImageButton)).perform(click());
             Thread.sleep(300); // Wait for dialog to appear
-            onData(hasToString(containsString("stories110M.pte"))).inRoot(isDialog()).perform(click());
+            onData(hasToString(containsString("model.pte"))).inRoot(isDialog()).perform(click());
             Thread.sleep(300); // Wait for dialog to dismiss and UI to update
 
             // Select tokenizer - choose tokenizer.model
