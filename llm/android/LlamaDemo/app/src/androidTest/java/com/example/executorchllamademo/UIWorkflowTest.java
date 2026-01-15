@@ -247,22 +247,16 @@ public class UIWorkflowTest {
     }
 
     /**
-     * Writes the model response to a file that can be pulled from the device.
-     * Writes to app's internal files directory, accessible via adb run-as.
-     * Appends to the file to support multiple test cases.
+     * Writes the model response to logcat with a special tag for extraction.
+     * The response can be extracted from logcat using: grep "LLAMA_RESPONSE"
      */
     private void writeResponseToFile(String response) {
-        try {
-            Context context = ApplicationProvider.getApplicationContext();
-            // Use internal files dir - accessible via "adb shell run-as <package>"
-            File outputFile = new File(context.getFilesDir(), "response.txt");
-            // Append mode (true) to support multiple test cases
-            try (FileWriter writer = new FileWriter(outputFile, true)) {
-                writer.write(response);
-            }
-            android.util.Log.i("UIWorkflowTest", "Response written to: " + outputFile.getAbsolutePath());
-        } catch (IOException e) {
-            android.util.Log.e("UIWorkflowTest", "Failed to write response file", e);
+        // Log with a unique tag that can be grepped from logcat
+        android.util.Log.i("LLAMA_RESPONSE", "BEGIN_RESPONSE");
+        // Split response into chunks to avoid logcat line length limits
+        for (String line : response.split("\n")) {
+            android.util.Log.i("LLAMA_RESPONSE", line);
         }
+        android.util.Log.i("LLAMA_RESPONSE", "END_RESPONSE");
     }
 }

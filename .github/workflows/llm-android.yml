@@ -128,11 +128,9 @@ jobs:
             LOGCAT_PID=$!
             if [ "$MODEL_PRESET" = "custom" ]; then GRADLE_ARGS="-PmodelPreset=$MODEL_PRESET -PcustomPteUrl=$CUSTOM_PTE_URL -PcustomTokenizerUrl=$CUSTOM_TOKENIZER_URL"; else GRADLE_ARGS="-PmodelPreset=$MODEL_PRESET"; fi
             ./gradlew connectedCheck $GRADLE_ARGS; TEST_EXIT_CODE=$?
-            echo "=== Checking for response file ==="
-            adb shell run-as com.example.executorchllamademo ls -la /data/data/com.example.executorchllamademo/files/ || echo "Directory not found"
-            adb shell run-as com.example.executorchllamademo cat /data/data/com.example.executorchllamademo/files/response.txt || echo "File not found or empty"
-            adb shell run-as com.example.executorchllamademo cat /data/data/com.example.executorchllamademo/files/response.txt > /tmp/response.txt || true
             kill $LOGCAT_PID || true
+            # Extract response from logcat
+            grep "LLAMA_RESPONSE" /tmp/logcat.txt | sed 's/.*LLAMA_RESPONSE: //' | grep -v "BEGIN_RESPONSE\|END_RESPONSE" > /tmp/response.txt || true
             exit $TEST_EXIT_CODE
 
       - name: Add model response to summary
