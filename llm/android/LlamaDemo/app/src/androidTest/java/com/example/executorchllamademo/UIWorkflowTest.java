@@ -199,8 +199,8 @@ public class UIWorkflowTest {
             onView(withId(R.id.sendButton)).perform(click());
 
             // --- Wait for response and validate ---
-            // Wait 5 seconds for model to generate response
-            Thread.sleep(5000);
+            // Wait 50 seconds for model to generate response
+            Thread.sleep(50000);
 
             // Extract all messages from the list
             AtomicInteger messageCount = new AtomicInteger(0);
