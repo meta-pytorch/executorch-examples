@@ -79,12 +79,25 @@ jobs:
         with:
           api-level: ${{ env.API_LEVEL }}
           arch: ${{ env.ARCH }}
-          force-avd-creation: false
+          force-avd-creation: true
           ram-size: ${{ env.RAM_SIZE }}
           emulator-options: ${{ env.EMULATOR_OPTIONS }}
           disable-animations: false
           working-directory: llm/android/LlamaDemo
           script: echo "Generated AVD snapshot for caching."
+
+      - name: Configure AVD RAM
+        run: |
+          # Find and update AVD config to set RAM
+          AVD_DIR="$HOME/.android/avd"
+          for config in "$AVD_DIR"/*.avd/config.ini; do
+            if [ -f "$config" ]; then
+              echo "Updating RAM in $config"
+              sed -i 's/hw.ramSize=.*/hw.ramSize=16384/' "$config" || true
+              grep -q "hw.ramSize" "$config" || echo "hw.ramSize=16384" >> "$config"
+              cat "$config" | grep -E "hw.ramSize|AvdId"
+            fi
+          done
 
       - name: Run instrumentation tests
         uses: reactivecircus/android-emulator-runner@v2
@@ -97,7 +110,7 @@ jobs:
           arch: ${{ env.ARCH }}
           force-avd-creation: false
           ram-size: ${{ env.RAM_SIZE }}
-          emulator-options: -no-snapshot-save ${{ env.EMULATOR_OPTIONS }}
+          emulator-options: -no-snapshot-save -memory 16384 ${{ env.EMULATOR_OPTIONS }}
           disable-animations: true
           working-directory: llm/android/LlamaDemo
           script: |
@@ -105,9 +118,7 @@ jobs:
             adb logcat -c && adb logcat > /tmp/logcat.txt &
             LOGCAT_PID=$!
             if [ "$MODEL_PRESET" = "custom" ]; then GRADLE_ARGS="-PmodelPreset=$MODEL_PRESET -PcustomPteUrl=$CUSTOM_PTE_URL -PcustomTokenizerUrl=$CUSTOM_TOKENIZER_URL"; else GRADLE_ARGS="-PmodelPreset=$MODEL_PRESET"; fi
-            ./gradlew connectedCheck $GRADLE_ARGS || TEST_EXIT_CODE=$?
-            kill $LOGCAT_PID || true
-            exit ${TEST_EXIT_CODE:-0}
+            ./gradlew connectedCheck $GRADLE_ARGS; TEST_EXIT_CODE=$?; kill $LOGCAT_PID || true; exit $TEST_EXIT_CODE
 
       - name: Upload logcat
         if: always()
