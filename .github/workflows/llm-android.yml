@@ -129,9 +129,9 @@ jobs:
             if [ "$MODEL_PRESET" = "custom" ]; then GRADLE_ARGS="-PmodelPreset=$MODEL_PRESET -PcustomPteUrl=$CUSTOM_PTE_URL -PcustomTokenizerUrl=$CUSTOM_TOKENIZER_URL"; else GRADLE_ARGS="-PmodelPreset=$MODEL_PRESET"; fi
             ./gradlew connectedCheck $GRADLE_ARGS; TEST_EXIT_CODE=$?
             echo "=== Checking for response file ==="
-            adb shell ls -la /sdcard/Android/data/com.example.executorchllamademo/files/ || echo "Directory not found"
-            adb shell cat /sdcard/Android/data/com.example.executorchllamademo/files/response.txt || echo "File not found or empty"
-            adb pull /sdcard/Android/data/com.example.executorchllamademo/files/response.txt /tmp/response.txt || true
+            adb shell run-as com.example.executorchllamademo ls -la /data/data/com.example.executorchllamademo/files/ || echo "Directory not found"
+            adb shell run-as com.example.executorchllamademo cat /data/data/com.example.executorchllamademo/files/response.txt || echo "File not found or empty"
+            adb shell run-as com.example.executorchllamademo cat /data/data/com.example.executorchllamademo/files/response.txt > /tmp/response.txt || true
             kill $LOGCAT_PID || true
             exit $TEST_EXIT_CODE
 

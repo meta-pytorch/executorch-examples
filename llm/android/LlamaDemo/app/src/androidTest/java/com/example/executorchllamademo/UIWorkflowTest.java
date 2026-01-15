@@ -248,22 +248,19 @@ public class UIWorkflowTest {
 
     /**
      * Writes the model response to a file that can be pulled from the device.
-     * Writes to app's external files directory which is accessible via adb.
+     * Writes to app's internal files directory, accessible via adb run-as.
      * Appends to the file to support multiple test cases.
      */
     private void writeResponseToFile(String response) {
         try {
             Context context = ApplicationProvider.getApplicationContext();
-            // Use external files dir which is accessible without root
-            File externalDir = context.getExternalFilesDir(null);
-            if (externalDir != null) {
-                File outputFile = new File(externalDir, "response.txt");
-                // Append mode (true) to support multiple test cases
-                try (FileWriter writer = new FileWriter(outputFile, true)) {
-                    writer.write(response);
-                }
-                android.util.Log.i("UIWorkflowTest", "Response written to: " + outputFile.getAbsolutePath());
+            // Use internal files dir - accessible via "adb shell run-as <package>"
+            File outputFile = new File(context.getFilesDir(), "response.txt");
+            // Append mode (true) to support multiple test cases
+            try (FileWriter writer = new FileWriter(outputFile, true)) {
+                writer.write(response);
             }
+            android.util.Log.i("UIWorkflowTest", "Response written to: " + outputFile.getAbsolutePath());
         } catch (IOException e) {
             android.util.Log.e("UIWorkflowTest", "Failed to write response file", e);
         }
