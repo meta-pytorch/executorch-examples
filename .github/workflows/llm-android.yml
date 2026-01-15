@@ -43,7 +43,7 @@ jobs:
       API_LEVEL: 34
       ARCH: x86_64
       EMULATOR_OPTIONS: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-      RAM_SIZE: 16384
+      RAM_SIZE: 16384M
 
     name: Instrumentation Test LlamaDemo
     steps:
@@ -81,6 +81,7 @@ jobs:
           api-level: ${{ env.API_LEVEL }}
           arch: ${{ env.ARCH }}
           force-avd-creation: true
+          ram-size: ${{ env.RAM_SIZE }}
           emulator-options: ${{ env.EMULATOR_OPTIONS }}
           disable-animations: false
           working-directory: llm/android/LlamaDemo
@@ -88,12 +89,14 @@ jobs:
 
       - name: Configure AVD RAM
         run: |
+          # Find and update AVD config to set RAM
           AVD_DIR="$HOME/.android/avd"
           for config in "$AVD_DIR"/*.avd/config.ini; do
             if [ -f "$config" ]; then
               echo "Updating RAM in $config"
-              sed -i 's/hw.ramSize=.*/hw.ramSize=${{ env.RAM_SIZE }}/' "$config" || true
-              grep -q "hw.ramSize" "$config" || echo "hw.ramSize=${{ env.RAM_SIZE }}" >> "$config"
+              sed -i 's/hw.ramSize=.*/hw.ramSize=16384/' "$config" || true
+              grep -q "hw.ramSize" "$config" || echo "hw.ramSize=16384" >> "$config"
+              cat "$config" | grep -E "hw.ramSize|AvdId"
             fi
           done
 
@@ -107,10 +110,12 @@ jobs:
           api-level: ${{ env.API_LEVEL }}
           arch: ${{ env.ARCH }}
           force-avd-creation: false
-          emulator-options: -no-snapshot-save ${{ env.EMULATOR_OPTIONS }}
+          ram-size: ${{ env.RAM_SIZE }}
+          emulator-options: -no-snapshot-save -memory 16384 ${{ env.EMULATOR_OPTIONS }}
           disable-animations: true
           working-directory: llm/android/LlamaDemo
           script: |
+            adb shell cat /proc/meminfo | head -5
             adb logcat -c && adb logcat > /tmp/logcat.txt &
             LOGCAT_PID=$!
             if [ "$MODEL_PRESET" = "custom" ]; then GRADLE_ARGS="-PmodelPreset=$MODEL_PRESET -PcustomPteUrl=$CUSTOM_PTE_URL -PcustomTokenizerUrl=$CUSTOM_TOKENIZER_URL"; else GRADLE_ARGS="-PmodelPreset=$MODEL_PRESET"; fi
