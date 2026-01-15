@@ -13,7 +13,7 @@ plugins {
 
 // Model files configuration for instrumentation tests
 // Supported presets: stories, llama, custom
-val modelPreset: String = (project.findProperty("modelPreset") as? String) ?: "stories"
+val modelPreset: String = (project.findProperty("modelPreset") as? String) ?: "llama"
 
 // Preset configurations
 val modelPresets = mapOf(
