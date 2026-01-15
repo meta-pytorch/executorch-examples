@@ -42,8 +42,6 @@ jobs:
     env:
       API_LEVEL: 34
       ARCH: x86_64
-      EMULATOR_OPTIONS: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-      RAM_SIZE: 16384
 
     name: Instrumentation Test LlamaDemo
     steps:
@@ -94,7 +92,7 @@ jobs:
           ram-size: 16384M
           disk-size: 16384M
           force-avd-creation: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot-save
           disable-animations: false
           working-directory: llm/android/LlamaDemo
           script: echo "Generated AVD snapshot for caching."
@@ -153,7 +151,7 @@ jobs:
           ram-size: 16384M
           disk-size: 16384M
           force-avd-creation: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -memory 16384
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot-save
           disable-animations: true
           working-directory: llm/android/LlamaDemo
           script: bash ./scripts/run-ci-tests.sh "$MODEL_PRESET" "$MODEL_FILE" "$TOKENIZER_FILE"
