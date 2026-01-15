@@ -130,7 +130,11 @@ jobs:
             ./gradlew connectedCheck $GRADLE_ARGS; TEST_EXIT_CODE=$?
             kill $LOGCAT_PID || true
             # Extract response from logcat
+            echo "=== Searching for LLAMA_RESPONSE in logcat ==="
+            grep "LLAMA_RESPONSE" /tmp/logcat.txt || echo "No LLAMA_RESPONSE found in logcat"
             grep "LLAMA_RESPONSE" /tmp/logcat.txt | sed 's/.*LLAMA_RESPONSE: //' | grep -v "BEGIN_RESPONSE\|END_RESPONSE" > /tmp/response.txt || true
+            echo "=== Response file contents ==="
+            cat /tmp/response.txt || echo "Response file empty or not created"
             exit $TEST_EXIT_CODE
 
       - name: Add model response to summary
