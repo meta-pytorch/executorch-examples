@@ -228,20 +228,7 @@ adb push tokenizer.model /data/local/tmp/llama
 
 ### Running Tests
 
-Run all instrumentation tests:
-```sh
-./gradlew connectedAndroidTest
-```
-
-Run a specific test class:
-```sh
-./gradlew connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.executorchllamademo.SanityCheck
-./gradlew connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.executorchllamademo.UIWorkflowTest
-```
-
-### Running Tests with Model Presets
-
-You can run instrumentation tests with pre-configured model presets using `connectedCheck`. This automatically downloads the model and tokenizer files before running tests:
+The easiest way to run instrumentation tests is using model presets, which automatically download the model and tokenizer files:
 
 ```sh
 # Run with stories model (default, smallest and fastest)
@@ -269,6 +256,12 @@ Available presets:
 | `llama` | Llama 3.2 1B | Production-quality Llama model |
 | `qwen3` | Qwen3 4B | Qwen3 model with INT8/INT4 quantization |
 | `custom` | User-provided | Specify custom URLs for model and tokenizer |
+
+Run a specific test class:
+```sh
+./gradlew connectedCheck -PmodelPreset=stories -Pandroid.testInstrumentationRunnerArguments.class=com.example.executorchllamademo.SanityCheck
+./gradlew connectedCheck -PmodelPreset=stories -Pandroid.testInstrumentationRunnerArguments.class=com.example.executorchllamademo.UIWorkflowTest
+```
 
 ## Reporting Issues
 If you encountered any bugs or issues following this tutorial, please file a bug/issue here on [GitHub](https://github.com/pytorch/executorch/issues/new), or join our Discord [here](https://lnkd.in/gWCM4ViK).
