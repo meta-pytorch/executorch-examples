@@ -81,7 +81,7 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-${{ env.API_LEVEL }}-${{ env.ARCH }}-ram16G-disk16G-v3
+          key: avd-${{ env.API_LEVEL }}-${{ env.ARCH }}-ram16G-disk16G-v4
 
       - name: Create AVD and generate snapshot for caching
         if: steps.avd-cache.outputs.cache-hit != 'true'
