@@ -128,9 +128,33 @@ jobs:
             adb shell ls -la /data/local/tmp/llama/ || echo "Directory empty or not found"
             adb logcat -c && adb logcat > /tmp/logcat.txt &
             LOGCAT_PID=$!
-            if [ "$MODEL_PRESET" = "custom" ]; then GRADLE_ARGS="-PmodelPreset=$MODEL_PRESET -PcustomPteUrl=$CUSTOM_PTE_URL -PcustomTokenizerUrl=$CUSTOM_TOKENIZER_URL"; else GRADLE_ARGS="-PmodelPreset=$MODEL_PRESET"; fi
+            # Determine model and tokenizer filenames based on preset
+            case "$MODEL_PRESET" in
+              llama)
+                MODEL_FILE="llama3_2-1B.pte"
+                TOKENIZER_FILE="tokenizer.model"
+                ;;
+              qwen3)
+                MODEL_FILE="model.pte"
+                TOKENIZER_FILE="tokenizer.json"
+                ;;
+              custom)
+                MODEL_FILE=$(basename "$CUSTOM_PTE_URL")
+                TOKENIZER_FILE=$(basename "$CUSTOM_TOKENIZER_URL")
+                ;;
+              *)
+                MODEL_FILE="stories110M.pte"
+                TOKENIZER_FILE="tokenizer.model"
+                ;;
+            esac
+            echo "=== Model files: $MODEL_FILE, $TOKENIZER_FILE ==="
+            echo "=== MODEL_PRESET value: '$MODEL_PRESET' ==="
             echo "=== Running Gradle with preset: $MODEL_PRESET ==="
-            ./gradlew connectedCheck $GRADLE_ARGS; TEST_EXIT_CODE=$?
+            if [ "$MODEL_PRESET" = "custom" ]; then
+              ./gradlew connectedCheck "-PmodelPreset=$MODEL_PRESET" "-PcustomPteUrl=$CUSTOM_PTE_URL" "-PcustomTokenizerUrl=$CUSTOM_TOKENIZER_URL" "-Pandroid.testInstrumentationRunnerArguments.modelFile=$MODEL_FILE" "-Pandroid.testInstrumentationRunnerArguments.tokenizerFile=$TOKENIZER_FILE"; TEST_EXIT_CODE=$?
+            else
+              ./gradlew connectedCheck "-PmodelPreset=$MODEL_PRESET" "-Pandroid.testInstrumentationRunnerArguments.modelFile=$MODEL_FILE" "-Pandroid.testInstrumentationRunnerArguments.tokenizerFile=$TOKENIZER_FILE"; TEST_EXIT_CODE=$?
+            fi
             echo "=== Model directory after Gradle ==="
             adb shell ls -la /data/local/tmp/llama/
             kill $LOGCAT_PID || true
