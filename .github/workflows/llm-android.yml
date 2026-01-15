@@ -91,26 +91,13 @@ jobs:
         with:
           api-level: ${{ env.API_LEVEL }}
           arch: ${{ env.ARCH }}
+          ram-size: ${{ env.RAM_SIZE }}M
+          disk-size: 16G
           force-avd-creation: true
           emulator-options: ${{ env.EMULATOR_OPTIONS }}
           disable-animations: false
           working-directory: llm/android/LlamaDemo
           script: echo "Generated AVD snapshot for caching."
-
-      - name: Configure AVD RAM and disk
-        run: |
-          AVD_DIR="$HOME/.android/avd"
-          for config in "$AVD_DIR"/*.avd/config.ini; do
-            if [ -f "$config" ]; then
-              echo "Updating config in $config"
-              # Update RAM
-              sed -i 's/hw.ramSize=.*/hw.ramSize=${{ env.RAM_SIZE }}/' "$config" || true
-              grep -q "hw.ramSize" "$config" || echo "hw.ramSize=${{ env.RAM_SIZE }}" >> "$config"
-              # Update disk size to 16GB for large models
-              sed -i 's/disk.dataPartition.size=.*/disk.dataPartition.size=16G/' "$config" || true
-              grep -q "disk.dataPartition.size" "$config" || echo "disk.dataPartition.size=16G" >> "$config"
-            fi
-          done
 
       - name: Download model files
         env:
@@ -163,6 +150,8 @@ jobs:
         with:
           api-level: ${{ env.API_LEVEL }}
           arch: ${{ env.ARCH }}
+          ram-size: ${{ env.RAM_SIZE }}M
+          disk-size: 16G
           force-avd-creation: false
           emulator-options: -no-snapshot-save ${{ env.EMULATOR_OPTIONS }}
           disable-animations: true
