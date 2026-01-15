@@ -21,6 +21,7 @@ on:
         options:
           - stories
           - llama
+          - qwen3
           - custom
         default: 'stories'
       custom_pte_url:

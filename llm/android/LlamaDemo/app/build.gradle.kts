@@ -13,7 +13,7 @@ plugins {
 
 // Model files configuration for instrumentation tests
 // Supported presets: stories, llama, custom
-val modelPreset: String = (project.findProperty("modelPreset") as? String) ?: "llama"
+val modelPreset: String = (project.findProperty("modelPreset") as? String) ?: "stories"
 
 // Preset configurations
 val modelPresets = mapOf(
@@ -27,6 +27,12 @@ val modelPresets = mapOf(
     "baseUrl" to "https://huggingface.co/executorch-community/Llama-3.2-1B-ET/resolve/main",
     "pteFile" to "llama3_2-1B.pte",
     "tokenizerFile" to "tokenizer.model",
+    "verifyChecksum" to false
+  ),
+  "qwen3" to mapOf(
+    "baseUrl" to "https://huggingface.co/pytorch/Qwen3-4B-INT8-INT4/resolve/main",
+    "pteFile" to "model.pte",
+    "tokenizerFile" to "tokenizer.json",
     "verifyChecksum" to false
   )
 )
