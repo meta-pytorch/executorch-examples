@@ -34,7 +34,11 @@ import androidx.test.core.app.ApplicationProvider;
 import androidx.test.espresso.action.ViewActions;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -179,14 +183,29 @@ public class UIWorkflowTest {
             // Wait 5 seconds for model to generate response
             Thread.sleep(5000);
 
-            // Verify there are messages in the list adapter
+            // Extract all messages from the list
             AtomicInteger messageCount = new AtomicInteger(0);
+            AtomicReference<String> responseText = new AtomicReference<>("");
             scenario.onActivity(activity -> {
                 ListView messagesView = activity.findViewById(R.id.messages_view);
                 if (messagesView != null && messagesView.getAdapter() != null) {
                     messageCount.set(messagesView.getAdapter().getCount());
+                    StringBuilder sb = new StringBuilder();
+                    for (int i = 0; i < messagesView.getAdapter().getCount(); i++) {
+                        Object item = messagesView.getAdapter().getItem(i);
+                        if (item instanceof Message) {
+                            Message message = (Message) item;
+                            sb.append(message.getIsSent() ? "User: " : "Model: ");
+                            sb.append(message.getText());
+                            sb.append("\n\n");
+                        }
+                    }
+                    responseText.set(sb.toString());
                 }
             });
+
+            // Write response to file for CI to pick up
+            writeResponseToFile(responseText.get());
 
             // Should have at least 2 messages: user message + model response (or system messages)
             assertThat("Message list should contain messages", messageCount.get(), greaterThan(0));
@@ -225,5 +244,19 @@ public class UIWorkflowTest {
             Thread.sleep(500); // Poll every 500ms
         }
         return false;
+    }
+
+    /**
+     * Writes the model response to a file that can be pulled from the device.
+     * The file is written to /data/local/tmp/llama/response.txt
+     */
+    private void writeResponseToFile(String response) {
+        File outputFile = new File("/data/local/tmp/llama/response.txt");
+        try (FileWriter writer = new FileWriter(outputFile)) {
+            writer.write(response);
+        } catch (IOException e) {
+            // Log but don't fail the test if we can't write the file
+            android.util.Log.e("UIWorkflowTest", "Failed to write response file", e);
+        }
     }
 }
