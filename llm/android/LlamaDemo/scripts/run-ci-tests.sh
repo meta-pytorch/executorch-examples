@@ -35,9 +35,16 @@ adb shell mkdir -p /data/local/tmp/llama
 # Push pre-downloaded model files to device
 echo "=== Pushing pre-downloaded model files to device ==="
 for file in /tmp/llama_models/*; do
-  echo "Pushing $(basename "$file")..."
+  filename=$(basename "$file")
+  echo "Pushing $filename..."
   adb push "$file" /data/local/tmp/llama/
+  echo "Successfully pushed $filename"
+  echo "Checking emulator responsiveness..."
+  adb shell getprop ro.build.version.sdk || echo "WARNING: Emulator may be unresponsive"
 done
+
+echo "=== Syncing filesystem ==="
+adb shell sync
 
 echo "=== Model directory contents ==="
 adb shell ls -la /data/local/tmp/llama/
