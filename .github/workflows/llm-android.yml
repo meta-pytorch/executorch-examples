@@ -52,13 +52,6 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install Android Emulator and system image
-        run: |
-          sdkmanager --install "emulator" "platform-tools" "platforms;android-${{ env.API_LEVEL }}" "system-images;android-${{ env.API_LEVEL }};default;${{ env.ARCH }}"
-
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
