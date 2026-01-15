@@ -209,7 +209,7 @@ tasks.register("pushModelFiles") {
 // Make all connected Android test tasks depend on pushModelFiles
 tasks.whenTaskAdded {
   if (name.startsWith("connected") && name.endsWith("AndroidTest")) {
-    // dependsOn("pushModelFiles")
+    dependsOn("pushModelFiles")
   }
 }
 
