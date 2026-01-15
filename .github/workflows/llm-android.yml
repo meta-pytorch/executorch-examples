@@ -14,24 +14,26 @@ on:
       - '.github/workflows/llm-android.yml'
   workflow_dispatch:
     inputs:
-      pte_url:
-        description: 'URL to download model .pte file'
+      model_preset:
+        description: 'Model preset to use'
+        required: true
+        type: choice
+        options:
+          - stories
+          - llama
+          - custom
+        default: 'stories'
+      custom_pte_url:
+        description: 'Custom URL for model .pte file (only used when model_preset is custom)'
         required: false
         type: string
-        default: 'https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114/stories110M.pte'
-      tokenizer_url:
-        description: 'URL to download tokenizer file'
+      custom_tokenizer_url:
+        description: 'Custom URL for tokenizer file (only used when model_preset is custom)'
         required: false
         type: string
-        default: 'https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114/tokenizer.model'
 
 permissions:
   contents: read
-
-env:
-  # Default URLs for pull_request trigger (workflow_dispatch inputs override these)
-  DEFAULT_PTE_URL: 'https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114/stories110M.pte'
-  DEFAULT_TOKENIZER_URL: 'https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114/tokenizer.model'
 
 jobs:
   instrumentation-test:
@@ -60,19 +62,6 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-
-      - name: Download model files
-        run: |
-          PTE_URL="${{ inputs.pte_url || env.DEFAULT_PTE_URL }}"
-          TOKENIZER_URL="${{ inputs.tokenizer_url || env.DEFAULT_TOKENIZER_URL }}"
-
-          mkdir -p /tmp/llama-models
-          echo "Downloading model from $PTE_URL"
-          curl -fL -o /tmp/llama-models/model.pte "$PTE_URL"
-          echo "Downloading tokenizer from $TOKENIZER_URL"
-          curl -fL -o /tmp/llama-models/tokenizer.model "$TOKENIZER_URL"
-
-          ls -la /tmp/llama-models/
 
       - name: AVD cache
         uses: actions/cache@v4
@@ -107,17 +96,22 @@ jobs:
           disable-animations: true
           working-directory: llm/android/LlamaDemo
           script: |
-            adb shell mkdir -p /data/local/tmp/llama/
-            adb push /tmp/llama-models/model.pte /data/local/tmp/llama/
-            adb push /tmp/llama-models/tokenizer.model /data/local/tmp/llama/
-
             # Start logcat in background and save to file
             adb logcat -c
             adb logcat > /tmp/logcat.txt &
             LOGCAT_PID=$!
 
-            # Run tests
-            ./gradlew connectedCheck -PskipModelDownload=true || TEST_EXIT_CODE=$?
+            # Build Gradle command with model preset
+            MODEL_PRESET="${{ inputs.model_preset || 'stories' }}"
+            GRADLE_ARGS="-PmodelPreset=$MODEL_PRESET"
+
+            # Add custom URLs if using custom preset
+            if [ "$MODEL_PRESET" = "custom" ]; then
+              GRADLE_ARGS="$GRADLE_ARGS -PcustomPteUrl=${{ inputs.custom_pte_url }} -PcustomTokenizerUrl=${{ inputs.custom_tokenizer_url }}"
+            fi
+
+            # Run tests (Gradle will download and push model files)
+            ./gradlew connectedCheck $GRADLE_ARGS || TEST_EXIT_CODE=$?
 
             # Stop logcat
             kill $LOGCAT_PID || true
