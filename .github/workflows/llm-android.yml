@@ -108,12 +108,54 @@ jobs:
             fi
           done
 
-      - name: Run instrumentation tests
-        uses: reactivecircus/android-emulator-runner@v2
+      - name: Download model files
         env:
           MODEL_PRESET: ${{ inputs.model_preset || 'stories' }}
           CUSTOM_PTE_URL: ${{ inputs.custom_pte_url }}
           CUSTOM_TOKENIZER_URL: ${{ inputs.custom_tokenizer_url }}
+        run: |
+          mkdir -p /tmp/llama_models
+
+          # Determine URLs based on preset
+          case "$MODEL_PRESET" in
+            llama)
+              PTE_URL="https://huggingface.co/executorch-community/Llama-3.2-1B-ET/resolve/main/llama3_2-1B.pte"
+              TOKENIZER_URL="https://huggingface.co/executorch-community/Llama-3.2-1B-ET/resolve/main/tokenizer.model"
+              ;;
+            qwen3)
+              PTE_URL="https://huggingface.co/pytorch/Qwen3-4B-INT8-INT4/resolve/main/model.pte"
+              TOKENIZER_URL="https://huggingface.co/pytorch/Qwen3-4B-INT8-INT4/resolve/main/tokenizer.json"
+              ;;
+            custom)
+              PTE_URL="$CUSTOM_PTE_URL"
+              TOKENIZER_URL="$CUSTOM_TOKENIZER_URL"
+              ;;
+            *)
+              PTE_URL="https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114/stories110M.pte"
+              TOKENIZER_URL="https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114/tokenizer.model"
+              ;;
+          esac
+
+          PTE_FILE=$(basename "$PTE_URL")
+          TOKENIZER_FILE=$(basename "$TOKENIZER_URL")
+
+          echo "Downloading model: $PTE_URL"
+          curl -fL --progress-bar -o "/tmp/llama_models/$PTE_FILE" "$PTE_URL"
+
+          echo "Downloading tokenizer: $TOKENIZER_URL"
+          curl -fL --progress-bar -o "/tmp/llama_models/$TOKENIZER_FILE" "$TOKENIZER_URL"
+
+          echo "Downloaded files:"
+          ls -lh /tmp/llama_models/
+
+          # Export filenames for later steps
+          echo "MODEL_FILE=$PTE_FILE" >> $GITHUB_ENV
+          echo "TOKENIZER_FILE=$TOKENIZER_FILE" >> $GITHUB_ENV
+
+      - name: Run instrumentation tests
+        uses: reactivecircus/android-emulator-runner@v2
+        env:
+          MODEL_PRESET: ${{ inputs.model_preset || 'stories' }}
         with:
           api-level: ${{ env.API_LEVEL }}
           arch: ${{ env.ARCH }}
@@ -124,11 +166,16 @@ jobs:
           script: |
             adb shell rm -rf /data/local/tmp/llama
             adb shell mkdir -p /data/local/tmp/llama
-            echo "=== Model directory after cleanup ==="
-            adb shell ls -la /data/local/tmp/llama/ || echo "Directory empty or not found"
+            echo "=== Pushing pre-downloaded model files to device ==="
+            adb push /tmp/llama_models/* /data/local/tmp/llama/
+            echo "=== Model directory contents ==="
+            adb shell ls -la /data/local/tmp/llama/
             adb logcat -c && adb logcat > /tmp/logcat.txt &
             LOGCAT_PID=$!
-            ./scripts/run-instrumentation-tests.sh "$MODEL_PRESET" "$CUSTOM_PTE_URL" "$CUSTOM_TOKENIZER_URL"
+            ./gradlew connectedCheck -PskipModelDownload=true \
+              -PmodelPreset="$MODEL_PRESET" \
+              -Pandroid.testInstrumentationRunnerArguments.modelFile="$MODEL_FILE" \
+              -Pandroid.testInstrumentationRunnerArguments.tokenizerFile="$TOKENIZER_FILE"
             TEST_EXIT_CODE=$?
             echo "=== Model directory after Gradle ==="
             adb shell ls -la /data/local/tmp/llama/
