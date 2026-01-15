@@ -25,6 +25,9 @@ echo "TOKENIZER_FILE: $TOKENIZER_FILE"
 echo "=== Emulator Memory Info ==="
 adb shell cat /proc/meminfo | head -5
 
+echo "=== Emulator Disk Space ==="
+adb shell df -h /data
+
 # Clean and prepare device directory
 adb shell rm -rf /data/local/tmp/llama
 adb shell mkdir -p /data/local/tmp/llama

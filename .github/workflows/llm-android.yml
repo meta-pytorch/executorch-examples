@@ -76,29 +76,6 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: AVD cache
-        uses: actions/cache@v4
-        id: avd-cache
-        with:
-          path: |
-            ~/.android/avd/*
-            ~/.android/adb*
-          key: avd-${{ env.API_LEVEL }}-${{ env.ARCH }}-ram${{ env.RAM_SIZE }}-disk16G
-
-      - name: Create AVD and generate snapshot for caching
-        if: steps.avd-cache.outputs.cache-hit != 'true'
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: ${{ env.API_LEVEL }}
-          arch: ${{ env.ARCH }}
-          ram-size: ${{ env.RAM_SIZE }}M
-          disk-size: 16G
-          force-avd-creation: true
-          emulator-options: ${{ env.EMULATOR_OPTIONS }}
-          disable-animations: false
-          working-directory: llm/android/LlamaDemo
-          script: echo "Generated AVD snapshot for caching."
-
       - name: Download model files
         env:
           MODEL_PRESET: ${{ inputs.model_preset || 'stories' }}
@@ -152,8 +129,8 @@ jobs:
           arch: ${{ env.ARCH }}
           ram-size: ${{ env.RAM_SIZE }}M
           disk-size: 16G
-          force-avd-creation: false
-          emulator-options: -no-snapshot-save ${{ env.EMULATOR_OPTIONS }}
+          force-avd-creation: true
+          emulator-options: ${{ env.EMULATOR_OPTIONS }}
           disable-animations: true
           working-directory: llm/android/LlamaDemo
           script: bash ./scripts/run-ci-tests.sh "$MODEL_PRESET" "$MODEL_FILE" "$TOKENIZER_FILE"
