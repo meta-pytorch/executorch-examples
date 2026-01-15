@@ -13,54 +13,11 @@ on:
       - 'llm/android/**'
       - '.github/workflows/llm-android.yml'
   workflow_dispatch:
-    inputs:
-      local_aar:
-        description: 'URL to download a local AAR file. When set, the workflow will download the AAR and use it instead of the Maven dependency.'
-        required: false
-        type: string
 
 permissions:
   contents: read
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-    name: Build LlamaDemo
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
-      - name: Download local AAR
-        if: ${{ inputs.local_aar }}
-        run: |
-          mkdir -p llm/android/LlamaDemo/app/libs
-          curl -fL -o llm/android/LlamaDemo/app/libs/executorch.aar "${{ inputs.local_aar }}"
-
-      - name: Build with Gradle
-        working-directory: llm/android/LlamaDemo
-        run: |
-          if [ -n "${{ inputs.local_aar }}" ]; then
-            ./gradlew build --no-daemon -PuseLocalAar=true
-          else
-            ./gradlew build --no-daemon
-          fi
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: LlamaDemo-apk
-          path: llm/android/LlamaDemo/app/build/outputs/apk/
-          if-no-files-found: warn
-
   instrumentation-test:
     runs-on: ubuntu-latest
     env:
@@ -104,7 +61,7 @@ jobs:
           api-level: ${{ env.API_LEVEL }}
           arch: ${{ env.ARCH }}
           force-avd-creation: false
-          ram-size: 16384M
+          ram-size: 6144M
           emulator-options: ${{ env.EMULATOR_OPTIONS }}
           disable-animations: false
           working-directory: llm/android/LlamaDemo
