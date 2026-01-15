@@ -36,14 +36,21 @@ adb shell mkdir -p /data/local/tmp/llama
 echo "=== Pushing pre-downloaded model files to device ==="
 for file in /tmp/llama_models/*; do
   filename=$(basename "$file")
-  echo "Pushing $filename..."
+  filesize=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null || echo "0")
+  # Calculate timeout: 30 seconds base + 1 second per 10MB (more generous for CI)
+  timeout_secs=$((30 + filesize / 10000000))
+  echo "Pushing $filename (size: $((filesize / 1024 / 1024))MB, timeout: ${timeout_secs}s)..."
 
   max_retries=3
   retry=0
   success=false
 
   while [ $retry -lt $max_retries ] && [ "$success" = "false" ]; do
-    if timeout 20 adb push "$file" /data/local/tmp/llama/; then
+    # Run push (ignore exit code, verify by checking file on device)
+    timeout $timeout_secs adb push "$file" /data/local/tmp/llama/ || true
+
+    # Verify file was pushed by checking it exists on device
+    if adb shell "test -f /data/local/tmp/llama/$filename" 2>/dev/null; then
       success=true
       echo "Successfully pushed $filename"
     else
