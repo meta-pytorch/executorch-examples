@@ -80,11 +80,17 @@ tasks.register("pushModelFiles") {
     val verifyChecksum: Boolean
 
     if (modelPreset == "custom") {
-      pteUrl = customPteUrl ?: throw GradleException("customPteUrl is required when modelPreset is 'custom'")
-      tokenizerUrl = customTokenizerUrl ?: throw GradleException("customTokenizerUrl is required when modelPreset is 'custom'")
+      if (customPteUrl.isNullOrEmpty()) {
+        throw GradleException("customPteUrl is required when modelPreset is 'custom'")
+      }
+      if (customTokenizerUrl.isNullOrEmpty()) {
+        throw GradleException("customTokenizerUrl is required when modelPreset is 'custom'")
+      }
+      pteUrl = customPteUrl
+      tokenizerUrl = customTokenizerUrl
       verifyChecksum = false
     } else {
-      val preset = modelPresets[modelPreset] ?: throw GradleException("Unknown model preset: $modelPreset. Valid options: stories, llama, custom")
+      val preset = modelPresets[modelPreset] ?: throw GradleException("Unknown model preset: $modelPreset. Valid options: stories, llama, qwen3, custom")
       val baseUrl = preset["baseUrl"] as String
       pteUrl = "$baseUrl/${preset["pteFile"]}"
       tokenizerUrl = "$baseUrl/${preset["tokenizerFile"]}"
