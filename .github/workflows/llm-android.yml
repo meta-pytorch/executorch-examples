@@ -14,37 +14,52 @@ on:
       - '.github/workflows/llm-android.yml'
   workflow_dispatch:
     inputs:
-      pte_url:
-        description: 'URL to download model .pte file'
+      model_preset:
+        description: 'Model preset to use'
+        required: true
+        type: choice
+        options:
+          - stories
+          - llama
+          - qwen3
+          - custom
+        default: 'stories'
+      custom_pte_url:
+        description: 'Custom URL for model .pte file (only used when model_preset is custom)'
         required: false
         type: string
-        default: 'https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114/stories110M.pte'
-      tokenizer_url:
-        description: 'URL to download tokenizer file'
+      custom_tokenizer_url:
+        description: 'Custom URL for tokenizer file (only used when model_preset is custom)'
         required: false
         type: string
-        default: 'https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114/tokenizer.model'
 
 permissions:
   contents: read
 
-env:
-  # Default URLs for pull_request trigger (workflow_dispatch inputs override these)
-  DEFAULT_PTE_URL: 'https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114/stories110M.pte'
-  DEFAULT_TOKENIZER_URL: 'https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114/tokenizer.model'
-
 jobs:
   instrumentation-test:
-    runs-on: ubuntu-latest
+    runs-on: 8-core-ubuntu
     env:
       API_LEVEL: 34
       ARCH: x86_64
       EMULATOR_OPTIONS: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+      RAM_SIZE: 16384
 
     name: Instrumentation Test LlamaDemo
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Write job summary
+        run: |
+          echo "## Test Configuration" >> $GITHUB_STEP_SUMMARY
+          echo "| Parameter | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Model Preset | \`${{ inputs.model_preset || 'stories' }}\` |" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.model_preset }}" = "custom" ]; then
+            echo "| Custom PTE URL | \`${{ inputs.custom_pte_url }}\` |" >> $GITHUB_STEP_SUMMARY
+            echo "| Custom Tokenizer URL | \`${{ inputs.custom_tokenizer_url }}\` |" >> $GITHUB_STEP_SUMMARY
+          fi
 
       - name: Enable KVM group perms
         run: |
@@ -61,19 +76,6 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Download model files
-        run: |
-          PTE_URL="${{ inputs.pte_url || env.DEFAULT_PTE_URL }}"
-          TOKENIZER_URL="${{ inputs.tokenizer_url || env.DEFAULT_TOKENIZER_URL }}"
-
-          mkdir -p /tmp/llama-models
-          echo "Downloading model from $PTE_URL"
-          curl -fL -o /tmp/llama-models/model.pte "$PTE_URL"
-          echo "Downloading tokenizer from $TOKENIZER_URL"
-          curl -fL -o /tmp/llama-models/tokenizer.model "$TOKENIZER_URL"
-
-          ls -la /tmp/llama-models/
-
       - name: AVD cache
         uses: actions/cache@v4
         id: avd-cache
@@ -81,7 +83,7 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-${{ env.API_LEVEL }}-${{ env.ARCH }}
+          key: avd-${{ env.API_LEVEL }}-${{ env.ARCH }}-ram${{ env.RAM_SIZE }}
 
       - name: Create AVD and generate snapshot for caching
         if: steps.avd-cache.outputs.cache-hit != 'true'
@@ -89,25 +91,48 @@ jobs:
         with:
           api-level: ${{ env.API_LEVEL }}
           arch: ${{ env.ARCH }}
-          force-avd-creation: false
-          ram-size: 6144M
+          force-avd-creation: true
           emulator-options: ${{ env.EMULATOR_OPTIONS }}
           disable-animations: false
           working-directory: llm/android/LlamaDemo
           script: echo "Generated AVD snapshot for caching."
 
+      - name: Configure AVD RAM
+        run: |
+          AVD_DIR="$HOME/.android/avd"
+          for config in "$AVD_DIR"/*.avd/config.ini; do
+            if [ -f "$config" ]; then
+              echo "Updating RAM in $config"
+              sed -i 's/hw.ramSize=.*/hw.ramSize=${{ env.RAM_SIZE }}/' "$config" || true
+              grep -q "hw.ramSize" "$config" || echo "hw.ramSize=${{ env.RAM_SIZE }}" >> "$config"
+            fi
+          done
+
       - name: Run instrumentation tests
         uses: reactivecircus/android-emulator-runner@v2
+        env:
+          MODEL_PRESET: ${{ inputs.model_preset || 'stories' }}
+          CUSTOM_PTE_URL: ${{ inputs.custom_pte_url }}
+          CUSTOM_TOKENIZER_URL: ${{ inputs.custom_tokenizer_url }}
         with:
           api-level: ${{ env.API_LEVEL }}
           arch: ${{ env.ARCH }}
           force-avd-creation: false
-          ram-size: 6144M
           emulator-options: -no-snapshot-save ${{ env.EMULATOR_OPTIONS }}
           disable-animations: true
           working-directory: llm/android/LlamaDemo
           script: |
-            adb shell mkdir -p /data/local/tmp/llama/
-            adb push /tmp/llama-models/model.pte /data/local/tmp/llama/
-            adb push /tmp/llama-models/tokenizer.model /data/local/tmp/llama/
-            ./gradlew connectedCheck -PskipModelDownload=true
+            adb shell rm -rf /data/local/tmp/llama
+            adb shell mkdir -p /data/local/tmp/llama
+            adb logcat -c && adb logcat > /tmp/logcat.txt &
+            LOGCAT_PID=$!
+            if [ "$MODEL_PRESET" = "custom" ]; then GRADLE_ARGS="-PmodelPreset=$MODEL_PRESET -PcustomPteUrl=$CUSTOM_PTE_URL -PcustomTokenizerUrl=$CUSTOM_TOKENIZER_URL"; else GRADLE_ARGS="-PmodelPreset=$MODEL_PRESET"; fi
+            ./gradlew connectedCheck $GRADLE_ARGS; TEST_EXIT_CODE=$?; kill $LOGCAT_PID || true; exit $TEST_EXIT_CODE
+
+      - name: Upload logcat
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logcat
+          path: /tmp/logcat.txt
+          retention-days: 7

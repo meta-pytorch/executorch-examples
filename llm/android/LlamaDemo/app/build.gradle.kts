@@ -12,12 +12,36 @@ plugins {
 }
 
 // Model files configuration for instrumentation tests
-val modelFilesBaseUrl = "https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114"
-val deviceModelDir = "/data/local/tmp/llama"
-val modelFiles = mapOf(
-  "stories110M.pte" to "model.pte",
-  "tokenizer.model" to "tokenizer.model"
+// Supported presets: stories, llama, custom
+val modelPreset: String = (project.findProperty("modelPreset") as? String) ?: "stories"
+
+// Preset configurations
+val modelPresets = mapOf(
+  "stories" to mapOf(
+    "baseUrl" to "https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114",
+    "pteFile" to "stories110M.pte",
+    "tokenizerFile" to "tokenizer.model",
+    "verifyChecksum" to true
+  ),
+  "llama" to mapOf(
+    "baseUrl" to "https://huggingface.co/executorch-community/Llama-3.2-1B-ET/resolve/main",
+    "pteFile" to "llama3_2-1B.pte",
+    "tokenizerFile" to "tokenizer.model",
+    "verifyChecksum" to false
+  ),
+  "qwen3" to mapOf(
+    "baseUrl" to "https://huggingface.co/pytorch/Qwen3-4B-INT8-INT4/resolve/main",
+    "pteFile" to "model.pte",
+    "tokenizerFile" to "tokenizer.json",
+    "verifyChecksum" to false
+  )
 )
+
+// Custom URLs (used when modelPreset is "custom")
+val customPteUrl: String? = project.findProperty("customPteUrl") as? String
+val customTokenizerUrl: String? = project.findProperty("customTokenizerUrl") as? String
+
+val deviceModelDir = "/data/local/tmp/llama"
 val skipModelDownload: Boolean = (project.findProperty("skipModelDownload") as? String)?.toBoolean() ?: false
 
 fun execCmd(vararg args: String): String {
@@ -39,7 +63,7 @@ fun execCmdWithExitCode(vararg args: String): Pair<Int, String> {
 }
 
 tasks.register("pushModelFiles") {
-  description = "Download model files from S3 and push to connected Android device if not present"
+  description = "Download model files and push to connected Android device if not present"
   group = "verification"
 
   doLast {
@@ -47,6 +71,31 @@ tasks.register("pushModelFiles") {
       logger.lifecycle("Skipping model download (skipModelDownload=true)")
       return@doLast
     }
+
+    logger.lifecycle("Using model preset: $modelPreset")
+
+    // Determine URLs based on preset
+    val pteUrl: String
+    val tokenizerUrl: String
+    val verifyChecksum: Boolean
+
+    if (modelPreset == "custom") {
+      pteUrl = customPteUrl ?: throw GradleException("customPteUrl is required when modelPreset is 'custom'")
+      tokenizerUrl = customTokenizerUrl ?: throw GradleException("customTokenizerUrl is required when modelPreset is 'custom'")
+      verifyChecksum = false
+    } else {
+      val preset = modelPresets[modelPreset] ?: throw GradleException("Unknown model preset: $modelPreset. Valid options: stories, llama, custom")
+      val baseUrl = preset["baseUrl"] as String
+      pteUrl = "$baseUrl/${preset["pteFile"]}"
+      tokenizerUrl = "$baseUrl/${preset["tokenizerFile"]}"
+      verifyChecksum = preset["verifyChecksum"] as Boolean
+    }
+
+    // Files to download: source URL -> target name on device
+    val filesToDownload = mapOf(
+      pteUrl to "model.pte",
+      tokenizerUrl to "tokenizer.model"
+    )
 
     // Check if adb is available
     val adbPath = android.adbExecutable.absolutePath
@@ -56,7 +105,7 @@ tasks.register("pushModelFiles") {
     }
 
     // Check which files need to be pushed
-    val filesToPush = modelFiles.filter { (_, targetName) ->
+    val filesToPush = filesToDownload.filter { (_, targetName) ->
       val devicePath = "$deviceModelDir/$targetName"
       val (exitCode, _) = execCmdWithExitCode(adbPath, "shell", "test -f $devicePath && echo exists")
       exitCode != 0
@@ -77,43 +126,51 @@ tasks.register("pushModelFiles") {
       // Create device directory
       execCmd(adbPath, "shell", "mkdir -p $deviceModelDir")
 
-      for ((sourceName, targetName) in filesToPush) {
+      for ((sourceUrl, targetName) in filesToPush) {
         val localPath = "$tempDir/$targetName"
-        val checksumPath = "$tempDir/$sourceName.sha256sums"
         val devicePath = "$deviceModelDir/$targetName"
 
-        // Download file (with original name for checksum verification, then rename)
-        val downloadPath = "$tempDir/$sourceName"
-        logger.lifecycle("Downloading $sourceName...")
+        // Download file
+        logger.lifecycle("Downloading from $sourceUrl...")
         val (dlCode, dlOutput) = execCmdWithExitCode(
-          "curl", "-fL", "-o", downloadPath, "$modelFilesBaseUrl/$sourceName"
+          "curl", "-fL", "-o", localPath, sourceUrl
         )
         if (dlCode != 0) {
-          throw GradleException("Failed to download $sourceName: $dlOutput")
+          throw GradleException("Failed to download from $sourceUrl: $dlOutput")
         }
 
-        // Download and verify checksum
-        logger.lifecycle("Verifying checksum for $sourceName...")
-        val (csDownloadCode, csDownloadOutput) = execCmdWithExitCode(
-          "curl", "-fL", "-o", checksumPath, "$modelFilesBaseUrl/$sourceName.sha256sums"
-        )
-        if (csDownloadCode != 0) {
-          throw GradleException("Failed to download checksum for $sourceName: $csDownloadOutput")
-        }
+        // Verify checksum if enabled and available (only for stories preset)
+        if (verifyChecksum && modelPreset == "stories") {
+          val sourceName = sourceUrl.substringAfterLast("/")
+          val checksumPath = "$tempDir/$sourceName.sha256sums"
+          val checksumUrl = "$sourceUrl.sha256sums"
 
-        // Verify checksum (run sha256sum in the temp directory)
-        val (verifyCode, verifyOutput) = execCmdWithExitCode(
-          "bash", "-c", "cd $tempDir && sha256sum -c $sourceName.sha256sums"
-        )
-        if (verifyCode != 0) {
-          throw GradleException("Checksum verification failed for $sourceName: $verifyOutput")
-        }
-        logger.lifecycle("Checksum verified for $sourceName")
+          logger.lifecycle("Verifying checksum for $sourceName...")
+          val (csDownloadCode, _) = execCmdWithExitCode(
+            "curl", "-fL", "-o", checksumPath, checksumUrl
+          )
+          if (csDownloadCode == 0) {
+            // Copy file to original name for checksum verification if needed
+            val tempForChecksum = "$tempDir/$sourceName"
+            val needsCopy = localPath != tempForChecksum
+            if (needsCopy) {
+              execCmd("cp", localPath, tempForChecksum)
+            }
 
-        // Rename file if needed
-        if (sourceName != targetName) {
-          execCmd("mv", downloadPath, localPath)
-          logger.lifecycle("Renamed $sourceName to $targetName")
+            val (verifyCode, verifyOutput) = execCmdWithExitCode(
+              "bash", "-c", "cd $tempDir && sha256sum -c $sourceName.sha256sums"
+            )
+            if (verifyCode != 0) {
+              throw GradleException("Checksum verification failed for $sourceName: $verifyOutput")
+            }
+            logger.lifecycle("Checksum verified for $sourceName")
+            // Only delete the temp copy if we made one
+            if (needsCopy) {
+              execCmd("rm", "-f", tempForChecksum)
+            }
+          } else {
+            logger.lifecycle("Checksum file not available, skipping verification")
+          }
         }
 
         // Push to device

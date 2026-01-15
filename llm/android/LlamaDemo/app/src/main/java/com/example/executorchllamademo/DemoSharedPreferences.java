@@ -62,7 +62,9 @@ public class DemoSharedPreferences {
   public void saveLogs() {
     SharedPreferences.Editor editor = sharedPreferences.edit();
     Gson gson = new Gson();
-    String msgJSON = gson.toJson(ETLogging.getInstance().getLogs());
+    // Create a copy to avoid ConcurrentModificationException if logs are added during serialization
+    ArrayList<AppLog> logsCopy = new ArrayList<>(ETLogging.getInstance().getLogs());
+    String msgJSON = gson.toJson(logsCopy);
     editor.putString(context.getString(R.string.logs_json_key), msgJSON);
     editor.apply();
   }
