@@ -124,11 +124,19 @@ jobs:
           script: |
             adb shell rm -rf /data/local/tmp/llama
             adb shell mkdir -p /data/local/tmp/llama
+            echo "=== Model directory after cleanup ==="
+            adb shell ls -la /data/local/tmp/llama/ || echo "Directory empty or not found"
             adb logcat -c && adb logcat > /tmp/logcat.txt &
             LOGCAT_PID=$!
             if [ "$MODEL_PRESET" = "custom" ]; then GRADLE_ARGS="-PmodelPreset=$MODEL_PRESET -PcustomPteUrl=$CUSTOM_PTE_URL -PcustomTokenizerUrl=$CUSTOM_TOKENIZER_URL"; else GRADLE_ARGS="-PmodelPreset=$MODEL_PRESET"; fi
+            echo "=== Running Gradle with preset: $MODEL_PRESET ==="
             ./gradlew connectedCheck $GRADLE_ARGS; TEST_EXIT_CODE=$?
+            echo "=== Model directory after Gradle ==="
+            adb shell ls -la /data/local/tmp/llama/
             kill $LOGCAT_PID || true
+            # Show which model was used
+            echo "=== Model configuration used by test ==="
+            grep "UIWorkflowTest.*Using model" /tmp/logcat.txt || echo "Model config not found in logcat"
             # Extract response from logcat
             echo "=== Searching for LLAMA_RESPONSE in logcat ==="
             grep "LLAMA_RESPONSE" /tmp/logcat.txt || echo "No LLAMA_RESPONSE found in logcat"

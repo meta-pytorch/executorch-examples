@@ -12,7 +12,7 @@ plugins {
 }
 
 // Model files configuration for instrumentation tests
-// Supported presets: stories, llama, custom
+// Supported presets: stories, llama, qwen3, custom
 val modelPreset: String = (project.findProperty("modelPreset") as? String) ?: "stories"
 
 // Preset configurations
@@ -40,6 +40,18 @@ val modelPresets = mapOf(
 // Custom URLs (used when modelPreset is "custom")
 val customPteUrl: String? = project.findProperty("customPteUrl") as? String
 val customTokenizerUrl: String? = project.findProperty("customTokenizerUrl") as? String
+
+// Get the filenames for the current preset (used for instrumentation test args)
+val currentPteFile: String
+val currentTokenizerFile: String
+if (modelPreset == "custom") {
+  currentPteFile = customPteUrl?.substringAfterLast("/") ?: "model.pte"
+  currentTokenizerFile = customTokenizerUrl?.substringAfterLast("/") ?: "tokenizer.model"
+} else {
+  val preset = modelPresets[modelPreset] ?: modelPresets["stories"]!!
+  currentPteFile = preset["pteFile"] as String
+  currentTokenizerFile = preset["tokenizerFile"] as String
+}
 
 val deviceModelDir = "/data/local/tmp/llama"
 val skipModelDownload: Boolean = (project.findProperty("skipModelDownload") as? String)?.toBoolean() ?: false
@@ -91,10 +103,10 @@ tasks.register("pushModelFiles") {
       verifyChecksum = preset["verifyChecksum"] as Boolean
     }
 
-    // Files to download: source URL -> target name on device
+    // Files to download: source URL -> target name on device (keep original filenames)
     val filesToDownload = mapOf(
-      pteUrl to "model.pte",
-      tokenizerUrl to "tokenizer.model"
+      pteUrl to pteUrl.substringAfterLast("/"),
+      tokenizerUrl to tokenizerUrl.substringAfterLast("/")
     )
 
     // Check if adb is available
@@ -214,6 +226,9 @@ android {
     versionName = "1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    // Pass model filenames to instrumentation tests
+    testInstrumentationRunnerArguments["modelFile"] = currentPteFile
+    testInstrumentationRunnerArguments["tokenizerFile"] = currentTokenizerFile
     vectorDrawables { useSupportLibrary = true }
     externalNativeBuild { cmake { cppFlags += "" } }
   }

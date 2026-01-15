@@ -28,12 +28,14 @@ import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Bundle;
 import android.widget.ListView;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.core.app.ApplicationProvider;
 import androidx.test.espresso.action.ViewActions;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.filters.LargeTest;
+import androidx.test.platform.app.InstrumentationRegistry;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -55,13 +57,30 @@ import org.junit.runner.RunWith;
  * - File selection dialogs display pushed files
  * - User can select model and tokenizer files
  * - User can click the load model button
+ *
+ * Model filenames can be configured via instrumentation arguments:
+ * - modelFile: name of the .pte file (default: stories110M.pte)
+ * - tokenizerFile: name of the tokenizer file (default: tokenizer.model)
  */
 @RunWith(AndroidJUnit4.class)
 @LargeTest
 public class UIWorkflowTest {
 
+    // Default filenames (stories preset)
+    private static final String DEFAULT_MODEL_FILE = "stories110M.pte";
+    private static final String DEFAULT_TOKENIZER_FILE = "tokenizer.model";
+
+    private String modelFile;
+    private String tokenizerFile;
+
     @Before
-    public void clearSharedPreferences() {
+    public void setUp() {
+        // Read model filenames from instrumentation arguments
+        Bundle args = InstrumentationRegistry.getArguments();
+        modelFile = args.getString("modelFile", DEFAULT_MODEL_FILE);
+        tokenizerFile = args.getString("tokenizerFile", DEFAULT_TOKENIZER_FILE);
+        android.util.Log.i("UIWorkflowTest", "Using model: " + modelFile + ", tokenizer: " + tokenizerFile);
+
         // Clear SharedPreferences before each test to ensure a clean state
         Context context = ApplicationProvider.getApplicationContext();
         SharedPreferences prefs = context.getSharedPreferences(
@@ -96,15 +115,15 @@ public class UIWorkflowTest {
             onView(withId(R.id.modelTextView)).check(matches(withText("no model selected")));
             onView(withId(R.id.tokenizerTextView)).check(matches(withText("no tokenizer selected")));
 
-            // Step 3: Click model selection button and select model.pte
+            // Step 3: Click model selection button and select the model file
             onView(withId(R.id.modelImageButton)).perform(click());
-            // Select the model file containing "model.pte"
-            onData(hasToString(containsString("model.pte"))).inRoot(isDialog()).perform(click());
+            // Select the model file matching the configured filename
+            onData(hasToString(containsString(modelFile))).inRoot(isDialog()).perform(click());
 
-            // Step 4: Click tokenizer selection button and select tokenizer.model
+            // Step 4: Click tokenizer selection button and select the tokenizer file
             onView(withId(R.id.tokenizerImageButton)).perform(click());
-            // Select the tokenizer file containing "tokenizer.model"
-            onData(hasToString(containsString("tokenizer.model"))).inRoot(isDialog()).perform(click());
+            // Select the tokenizer file matching the configured filename
+            onData(hasToString(containsString(tokenizerFile))).inRoot(isDialog()).perform(click());
 
             // Step 5: Click load model button
             onView(withId(R.id.loadModelButton)).perform(click());
@@ -143,16 +162,16 @@ public class UIWorkflowTest {
             // Verify load button is initially disabled (no model/tokenizer selected)
             onView(withId(R.id.loadModelButton)).check(matches(not(isEnabled())));
 
-            // Select model - choose model.pte
+            // Select model - choose the configured model file
             onView(withId(R.id.modelImageButton)).perform(click());
             Thread.sleep(300); // Wait for dialog to appear
-            onData(hasToString(containsString("model.pte"))).inRoot(isDialog()).perform(click());
+            onData(hasToString(containsString(modelFile))).inRoot(isDialog()).perform(click());
             Thread.sleep(300); // Wait for dialog to dismiss and UI to update
 
-            // Select tokenizer - choose tokenizer.model
+            // Select tokenizer - choose the configured tokenizer file
             onView(withId(R.id.tokenizerImageButton)).perform(click());
             Thread.sleep(300); // Wait for dialog to appear
-            onData(hasToString(containsString("tokenizer.model"))).inRoot(isDialog()).perform(click());
+            onData(hasToString(containsString(tokenizerFile))).inRoot(isDialog()).perform(click());
             Thread.sleep(300); // Wait for dialog to dismiss and UI to update
 
             // Verify load button is now enabled

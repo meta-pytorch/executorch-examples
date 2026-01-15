@@ -239,5 +239,33 @@ Run a specific test class:
 ./gradlew connectedAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.executorchllamademo.UIWorkflowTest
 ```
 
+### Running Tests with Model Presets
+
+You can run instrumentation tests with pre-configured model presets using `connectedCheck`. This automatically downloads the model and tokenizer files before running tests:
+
+```sh
+# Run with stories model (default, smallest and fastest)
+./gradlew connectedCheck -PmodelPreset=stories
+
+# Run with Llama 3.2 1B model
+./gradlew connectedCheck -PmodelPreset=llama
+
+# Run with Qwen3 4B model
+./gradlew connectedCheck -PmodelPreset=qwen3
+
+# Run with custom model URLs
+./gradlew connectedCheck -PmodelPreset=custom \
+  -PcustomPteUrl=https://example.com/model.pte \
+  -PcustomTokenizerUrl=https://example.com/tokenizer.model
+```
+
+Available presets:
+| Preset | Model | Description |
+|--------|-------|-------------|
+| `stories` | stories110M | Tiny model for quick testing |
+| `llama` | Llama 3.2 1B | Production-quality Llama model |
+| `qwen3` | Qwen3 4B | Qwen3 model with INT8/INT4 quantization |
+| `custom` | User-provided | Specify custom URLs for model and tokenizer |
+
 ## Reporting Issues
 If you encountered any bugs or issues following this tutorial, please file a bug/issue here on [GitHub](https://github.com/pytorch/executorch/issues/new), or join our Discord [here](https://lnkd.in/gWCM4ViK).
