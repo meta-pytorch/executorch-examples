@@ -14,10 +14,11 @@ plugins {
 // Model files configuration for instrumentation tests
 val modelFilesBaseUrl = "https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114"
 val deviceModelDir = "/data/local/tmp/llama"
-val modelFiles = listOf(
-  "stories110M.pte",
-  "tokenizer.model"
+val modelFiles = mapOf(
+  "stories110M.pte" to "model.pte",
+  "tokenizer.model" to "tokenizer.model"
 )
+val skipModelDownload: Boolean = (project.findProperty("skipModelDownload") as? String)?.toBoolean() ?: false
 
 fun execCmd(vararg args: String): String {
   val process = ProcessBuilder(*args)
@@ -42,6 +43,11 @@ tasks.register("pushModelFiles") {
   group = "verification"
 
   doLast {
+    if (skipModelDownload) {
+      logger.lifecycle("Skipping model download (skipModelDownload=true)")
+      return@doLast
+    }
+
     // Check if adb is available
     val adbPath = android.adbExecutable.absolutePath
     val (adbCheckCode, _) = execCmdWithExitCode(adbPath, "devices")
@@ -50,8 +56,8 @@ tasks.register("pushModelFiles") {
     }
 
     // Check which files need to be pushed
-    val filesToPush = modelFiles.filter { fileName ->
-      val devicePath = "$deviceModelDir/$fileName"
+    val filesToPush = modelFiles.filter { (_, targetName) ->
+      val devicePath = "$deviceModelDir/$targetName"
       val (exitCode, _) = execCmdWithExitCode(adbPath, "shell", "test -f $devicePath && echo exists")
       exitCode != 0
     }
@@ -61,7 +67,7 @@ tasks.register("pushModelFiles") {
       return@doLast
     }
 
-    logger.lifecycle("Need to push ${filesToPush.size} model file(s): ${filesToPush.joinToString(", ")}")
+    logger.lifecycle("Need to push ${filesToPush.size} model file(s): ${filesToPush.values.joinToString(", ")}")
 
     // Create temp directory using mktemp
     val tempDir = execCmd("mktemp", "-d")
@@ -71,45 +77,52 @@ tasks.register("pushModelFiles") {
       // Create device directory
       execCmd(adbPath, "shell", "mkdir -p $deviceModelDir")
 
-      for (fileName in filesToPush) {
-        val localPath = "$tempDir/$fileName"
-        val checksumPath = "$tempDir/$fileName.sha256sums"
-        val devicePath = "$deviceModelDir/$fileName"
+      for ((sourceName, targetName) in filesToPush) {
+        val localPath = "$tempDir/$targetName"
+        val checksumPath = "$tempDir/$sourceName.sha256sums"
+        val devicePath = "$deviceModelDir/$targetName"
 
-        // Download file
-        logger.lifecycle("Downloading $fileName...")
+        // Download file (with original name for checksum verification, then rename)
+        val downloadPath = "$tempDir/$sourceName"
+        logger.lifecycle("Downloading $sourceName...")
         val (dlCode, dlOutput) = execCmdWithExitCode(
-          "curl", "-fL", "-o", localPath, "$modelFilesBaseUrl/$fileName"
+          "curl", "-fL", "-o", downloadPath, "$modelFilesBaseUrl/$sourceName"
         )
         if (dlCode != 0) {
-          throw GradleException("Failed to download $fileName: $dlOutput")
+          throw GradleException("Failed to download $sourceName: $dlOutput")
         }
 
         // Download and verify checksum
-        logger.lifecycle("Verifying checksum for $fileName...")
+        logger.lifecycle("Verifying checksum for $sourceName...")
         val (csDownloadCode, csDownloadOutput) = execCmdWithExitCode(
-          "curl", "-fL", "-o", checksumPath, "$modelFilesBaseUrl/$fileName.sha256sums"
+          "curl", "-fL", "-o", checksumPath, "$modelFilesBaseUrl/$sourceName.sha256sums"
         )
         if (csDownloadCode != 0) {
-          throw GradleException("Failed to download checksum for $fileName: $csDownloadOutput")
+          throw GradleException("Failed to download checksum for $sourceName: $csDownloadOutput")
         }
 
         // Verify checksum (run sha256sum in the temp directory)
         val (verifyCode, verifyOutput) = execCmdWithExitCode(
-          "bash", "-c", "cd $tempDir && sha256sum -c $fileName.sha256sums"
+          "bash", "-c", "cd $tempDir && sha256sum -c $sourceName.sha256sums"
         )
         if (verifyCode != 0) {
-          throw GradleException("Checksum verification failed for $fileName: $verifyOutput")
+          throw GradleException("Checksum verification failed for $sourceName: $verifyOutput")
         }
-        logger.lifecycle("Checksum verified for $fileName")
+        logger.lifecycle("Checksum verified for $sourceName")
+
+        // Rename file if needed
+        if (sourceName != targetName) {
+          execCmd("mv", downloadPath, localPath)
+          logger.lifecycle("Renamed $sourceName to $targetName")
+        }
 
         // Push to device
-        logger.lifecycle("Pushing $fileName to device...")
+        logger.lifecycle("Pushing $targetName to device...")
         val (pushCode, pushOutput) = execCmdWithExitCode(adbPath, "push", localPath, devicePath)
         if (pushCode != 0) {
-          throw GradleException("Failed to push $fileName to device: $pushOutput")
+          throw GradleException("Failed to push $targetName to device: $pushOutput")
         }
-        logger.lifecycle("Successfully pushed $fileName")
+        logger.lifecycle("Successfully pushed $targetName")
       }
     } finally {
       // Clean up temp directory

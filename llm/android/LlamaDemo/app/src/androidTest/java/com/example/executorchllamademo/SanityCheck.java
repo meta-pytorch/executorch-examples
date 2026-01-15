@@ -25,7 +25,7 @@ public class SanityCheck implements LlmCallback {
 
   private static final String RESOURCE_PATH = "/data/local/tmp/llama/";
   private static final String TOKENIZER_PATH = "tokenizer.model";
-  private static final String MODEL_PATH = "stories110M.pte";
+  private static final String MODEL_PATH = "model.pte";
 
   private final List<String> results = new ArrayList<>();
 
