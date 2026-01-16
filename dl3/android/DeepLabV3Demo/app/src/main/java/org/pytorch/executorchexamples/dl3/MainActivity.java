@@ -11,6 +11,7 @@ package org.pytorch.executorchexamples.dl3;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -33,8 +34,13 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.ArrayList;
+
 import org.pytorch.executorch.EValue;
 import org.pytorch.executorch.Module;
 import org.pytorch.executorch.Tensor;
@@ -42,143 +48,103 @@ import org.pytorch.executorch.Tensor;
 public class MainActivity extends Activity implements Runnable {
   private ImageView mImageView;
   private Button mButtonXnnpack;
+  private Button mDownloadModelButton;
   private ProgressBar mProgressBar;
+  private android.widget.TextView mInferenceTimeText;
+  private android.widget.TextView mModelStatusText;
   private Bitmap mBitmap = null;
   private Module mModule = null;
-  private String mImagename = "corgi.jpeg";
+  private long mInferenceTime = 0;
 
-  private final ArrayList<String> mImageFiles = new ArrayList<>();
+  // Model download configuration
+  private static final String MODEL_URL = "https://ossci-android.s3.amazonaws.com/executorch/models/snapshot-20260116/dl3_xnnpack_fp32.pte";
+  private static final String MODEL_FILENAME = "dl3_xnnpack_fp32.pte";
+  private String mModelPath; // Will be set in onCreate using getFilesDir()
 
-  private int mCurrentImageIndex = 0;
+  // Sample images from assets
+  private static final String[] SAMPLE_IMAGES = {"corgi.jpeg", "deeplab.jpg", "dog.jpg"};
+  private int mCurrentSampleIndex = 0;
 
-  private static final int REQUEST_READ_EXTERNAL_STORAGE = 1001;
-  private static final String LOCAL_IMAGE_DIR = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES).getAbsolutePath() + "/";
+  private static final int REQUEST_PICK_IMAGE = 1002;
 
   // see http://host.robots.ox.ac.uk:8080/pascal/VOC/voc2007/segexamples/index.html for the list of
   // classes with indexes
   private static final int CLASSNUM = 21;
-  private static final int DOG = 12;
-  private static final int PERSON = 15;
-  private static final int SHEEP = 17;
 
-  private void checkAndRequestStoragePermission() {
-    if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-            != PackageManager.PERMISSION_GRANTED) {
-      // Permission is not granted, request it
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // Android 13+
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES)
-                != PackageManager.PERMISSION_GRANTED) {
-          ActivityCompat.requestPermissions(this,
-                  new String[]{Manifest.permission.READ_MEDIA_IMAGES},
-                  REQUEST_READ_EXTERNAL_STORAGE);
-        } else {
-          // Permission already granted, proceed with file access
-          loadImagesFromLocal();
-        }
-      } else {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-          ActivityCompat.requestPermissions(this,
-                  new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
-                  REQUEST_READ_EXTERNAL_STORAGE);
-        } else {
-          // Permission already granted, proceed with file access
-          loadImagesFromLocal();
-        }
-      }
-    } else {
-      // Permission already granted, proceed with file access
-      loadImagesFromLocal();
-    }
-  }
+  // Colors for all 21 PASCAL VOC classes
+  private static final int[] CLASS_COLORS = {
+      0x00000000, // 0: Background (transparent)
+      0xFFE6194B, // 1: Aeroplane (red)
+      0xFF3CB44B, // 2: Bicycle (green)
+      0xFFFFE119, // 3: Bird (yellow)
+      0xFF4363D8, // 4: Boat (blue)
+      0xFFF58231, // 5: Bottle (orange)
+      0xFF911EB4, // 6: Bus (purple)
+      0xFF46F0F0, // 7: Car (cyan)
+      0xFFF032E6, // 8: Cat (magenta)
+      0xFFBCF60C, // 9: Chair (lime)
+      0xFFFABEBE, // 10: Cow (pink)
+      0xFF008080, // 11: Dining Table (teal)
+      0xFF00FF00, // 12: Dog (bright green)
+      0xFF9A6324, // 13: Horse (brown)
+      0xFFFFD8B1, // 14: Motorbike (peach)
+      0xFFFF0000, // 15: Person (red)
+      0xFF800000, // 16: Potted Plant (maroon)
+      0xFF0000FF, // 17: Sheep (blue)
+      0xFF808000, // 18: Sofa (olive)
+      0xFFE6BEFF, // 19: Train (lavender)
+      0xFFAA6E28, // 20: TV/Monitor (tan)
+  };
 
-  // Handle the permission request result
+  // Handle image picker result
   @Override
-  public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-    super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-    if (requestCode == REQUEST_READ_EXTERNAL_STORAGE) {
-      if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-        // Permission granted
-        loadImagesFromLocal();
-      } else {
-        // Permission denied, show a message or fallback
-        showUIMessage(this, "Permission denied to read external storage");
+  protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    super.onActivityResult(requestCode, resultCode, data);
+    if (requestCode == REQUEST_PICK_IMAGE && resultCode == RESULT_OK && data != null) {
+      try {
+        android.net.Uri imageUri = data.getData();
+        if (imageUri != null) {
+          InputStream inputStream = getContentResolver().openInputStream(imageUri);
+          Bitmap selectedBitmap = BitmapFactory.decodeStream(inputStream);
+          if (selectedBitmap != null) {
+            // Resize to 224x224 for the model
+            mBitmap = Bitmap.createScaledBitmap(selectedBitmap, 224, 224, true);
+            mImageView.setImageBitmap(mBitmap);
+            mInferenceTimeText.setVisibility(View.INVISIBLE);
+            mModelStatusText.setVisibility(View.GONE);
+            findViewById(R.id.resetImage).setEnabled(false);
+            showUIMessage(this, "Image loaded - tap Run to segment");
+          }
+          if (inputStream != null) {
+            inputStream.close();
+          }
+        }
+      } catch (Exception e) {
+        Log.e("MainActivity", "Error loading picked image", e);
+        showUIMessage(this, "Failed to load image");
       }
     }
-
-    // Load images from assets anyways
-    populateImagePathFromAssets();
   }
 
-  private void loadImagesFromLocal() {
-    // Load images from /data/local & /sdcard/Pictures
-    boolean hasAnyLocalFiles = populateImagePathFromLocal();
-    boolean isImageShown = showImage();
-    if (hasAnyLocalFiles && isImageShown) {
-      showUIMessage(this, "Refreshed images from external storage and/or Assets folder");
-    }
-  }
-
-  private boolean showImage() {
-    boolean isImageShown = false;
-    if (mImagename == null) {
-      showUIMessage(this, "No image to display");
-      mImageView.setImageBitmap(null);
-      return isImageShown;
-    }
+  private void loadSampleImage() {
     try {
-      if (mImagename.startsWith("/")) {
-        mBitmap = BitmapFactory.decodeFile(mImagename);
-      } else {
-        mBitmap = BitmapFactory.decodeStream(getAssets().open(mImagename));
-      }
+      String imageName = SAMPLE_IMAGES[mCurrentSampleIndex];
+      mBitmap = BitmapFactory.decodeStream(getAssets().open(imageName));
       if (mBitmap != null) {
         mBitmap = Bitmap.createScaledBitmap(mBitmap, 224, 224, true);
         mImageView.setImageBitmap(mBitmap);
-        isImageShown = true;
+        mImageView.setImageBitmap(mBitmap);
+        mInferenceTimeText.setVisibility(View.INVISIBLE);
+        findViewById(R.id.resetImage).setEnabled(false);
       }
     } catch (IOException e) {
-      Log.e("ImageSegmentation", "Error reading image", e);
-      mImageView.setImageBitmap(null);
+      Log.e("MainActivity", "Error loading sample image", e);
     }
-    return isImageShown;
   }
 
-  private boolean populateImagePathFromLocal() {
-    boolean hasLocalFiles = false;
-    File dir = new File(LOCAL_IMAGE_DIR);
-    File[] files = dir.listFiles((d, name) ->
-            name.endsWith(".jpg") || name.endsWith(".jpeg") || name.endsWith(".png"));
-    ArrayList<String> imageList = new ArrayList<>();
-    if (files != null && files.length > 0) {
-      for (int i = 0; i < files.length; i++) {
-        mImageFiles.add(files[i].getAbsolutePath());
-        hasLocalFiles = true;
-      }
-      mImagename = mImageFiles.get(0);
-    } else {
-      mImagename = null;
-    }
-
-    return hasLocalFiles;
-  }
-
-  private void populateImagePathFromAssets() {
-    try {
-      String[] allFiles = getAssets().list("");
-      if (allFiles != null && allFiles.length > 0) {
-        for (String file : allFiles) {
-          if (file.endsWith(".jpg") || file.endsWith(".jpeg") || file.endsWith(".png")) {
-            mImageFiles.add(file);
-          }
-        }
-        mCurrentImageIndex = 0;
-        mImagename = !mImageFiles.isEmpty() ? mImageFiles.get(0) : null;
-      }
-    } catch (IOException e) {
-      Log.e("ImageSegmentation", "Error listing assets", e);
-      finish();
-    }
+  private void nextSampleImage() {
+    mCurrentSampleIndex = (mCurrentSampleIndex + 1) % SAMPLE_IMAGES.length;
+    loadSampleImage();
   }
 
   @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
@@ -194,61 +160,61 @@ public class MainActivity extends Activity implements Runnable {
       finish();
     }
 
-    // Initialize all views first!
+    // Initialize all views
     mImageView = findViewById(R.id.imageView);
     mButtonXnnpack = findViewById(R.id.xnnpackButton);
+    mDownloadModelButton = findViewById(R.id.downloadModelButton);
     mProgressBar = findViewById(R.id.progressBar);
+    mInferenceTimeText = findViewById(R.id.inferenceTimeText);
+    mInferenceTimeText = findViewById(R.id.inferenceTimeText);
+    mModelStatusText = findViewById(R.id.modelStatusText);
 
-    populateImagePathFromAssets();
-    showImage();
+    // Hide control buttons initially
+    setButtonsVisibility(View.GONE);
 
-    mModule = Module.load("/data/local/tmp/dl3_xnnpack_fp32.pte");
-    mImageView.setImageBitmap(mBitmap);
+    // Set model path to app's private storage
+    mModelPath = getFilesDir().getAbsolutePath() + "/" + MODEL_FILENAME;
 
+    // Load first sample image
+    loadSampleImage();
+
+    // Check if model exists and load it, otherwise show download button
+    loadModelOrShowDownloadButton();
+
+    // Download button click handler
+    mDownloadModelButton.setOnClickListener(v -> downloadModel());
+
+    // Next sample image button
     final Button buttonNext = findViewById(R.id.nextButton);
-    buttonNext.setOnClickListener(
-        new View.OnClickListener() {
-          public void onClick(View v) {
-            if (mImageFiles == null || mImageFiles.isEmpty()) {
-              // No images available
-              return;
-            }
-            // Move to the next image, wrap around if at the end
-            mCurrentImageIndex = (mCurrentImageIndex + 1) % mImageFiles.size();
-            mImagename = mImageFiles.get(mCurrentImageIndex);
-            showImage();
-          }
-        });
+    buttonNext.setOnClickListener(v -> nextSampleImage());
 
-    mButtonXnnpack.setOnClickListener(
-        new View.OnClickListener() {
-          public void onClick(View v) {
-            mModule.destroy();
-            mModule = Module.load("/data/local/tmp/dl3_xnnpack_fp32.pte");
-            mButtonXnnpack.setEnabled(false);
-            mProgressBar.setVisibility(ProgressBar.VISIBLE);
-            mButtonXnnpack.setText(getString(R.string.run_model));
+    // Run segmentation button
+    mButtonXnnpack.setOnClickListener(v -> {
+      mButtonXnnpack.setEnabled(false);
+      mProgressBar.setVisibility(ProgressBar.VISIBLE);
+      mInferenceTimeText.setVisibility(View.INVISIBLE);
+      mButtonXnnpack.setText(getString(R.string.run_model));
+      new Thread(MainActivity.this).start();
+    });
 
-            Thread thread = new Thread(MainActivity.this);
-            thread.start();
-          }
-        });
-
+    // Reset to current sample image
     final Button resetImage = findViewById(R.id.resetImage);
-    resetImage.setOnClickListener(
-            v -> showImage());
+    resetImage.setOnClickListener(v -> loadSampleImage());
 
-    // Refresh Button for External Storage
-    final Button loadAndRefreshButton = findViewById(R.id.loadAndRefreshButton);
-    loadAndRefreshButton.setOnClickListener(
-        v -> {
-          mImageFiles.clear();
-          checkAndRequestStoragePermission();
+    // Pick Image from gallery
+    final Button pickImageButton = findViewById(R.id.loadAndRefreshButton);
+    pickImageButton.setOnClickListener(v -> {
+      Intent intent = new Intent(Intent.ACTION_PICK);
+      intent.setType("image/*");
+      startActivityForResult(intent, REQUEST_PICK_IMAGE);
+    });
+  }
 
-          populateImagePathFromAssets();
-          showImage();
-        }
-    );
+  private void setButtonsVisibility(int visibility) {
+    findViewById(R.id.nextButton).setVisibility(visibility);
+    findViewById(R.id.loadAndRefreshButton).setVisibility(visibility);
+    findViewById(R.id.xnnpackButton).setVisibility(visibility);
+    findViewById(R.id.resetImage).setVisibility(visibility);
   }
 
   @Override
@@ -262,32 +228,38 @@ public class MainActivity extends Activity implements Runnable {
     boolean imageSegementationSuccess = false;
     final long startTime = SystemClock.elapsedRealtime();
     Tensor outputTensor = mModule.forward(EValue.from(inputTensor))[0].toTensor();
-    final long inferenceTime = SystemClock.elapsedRealtime() - startTime;
-    Log.d("ImageSegmentation", "inference time (ms): " + inferenceTime);
+    mInferenceTime = SystemClock.elapsedRealtime() - startTime;
+    Log.d("ImageSegmentation", "inference time (ms): " + mInferenceTime);
 
     final float[] scores = outputTensor.getDataAsFloatArray();
     int width = mBitmap.getWidth();
     int height = mBitmap.getHeight();
 
+    // Get original pixels for blending
+    int[] originalPixels = new int[width * height];
+    mBitmap.getPixels(originalPixels, 0, width, 0, 0, width, height);
+
     int[] intValues = new int[width * height];
     for (int j = 0; j < height; j++) {
       for (int k = 0; k < width; k++) {
-        int maxi = 0, maxj = 0, maxk = 0;
+        int maxi = 0;
         double maxnum = -Double.MAX_VALUE;
         for (int i = 0; i < CLASSNUM; i++) {
           float score = scores[i * (width * height) + j * width + k];
           if (score > maxnum) {
             maxnum = score;
             maxi = i;
-            maxj = j;
-            maxk = k;
           }
         }
-        if (maxi == PERSON) intValues[maxj * width + maxk] = 0xFFFF0000; // R
-        else if (maxi == DOG) intValues[maxj * width + maxk] = 0xFF00FF00; // G
-        else if (maxi == SHEEP) intValues[maxj * width + maxk] = 0xFF0000FF; // B
-        else intValues[maxj * width + maxk] = 0xFF000000;
-        if (maxi == PERSON || maxi == DOG || maxi == SHEEP) {
+        int pixelIndex = j * width + k;
+        int classColor = CLASS_COLORS[maxi];
+        
+        if (maxi == 0) {
+          // Background: show original image
+          intValues[pixelIndex] = originalPixels[pixelIndex];
+        } else {
+          // Blend segmentation color with original at 50% opacity
+          intValues[pixelIndex] = blendColors(originalPixels[pixelIndex], classColor, 0.5f);
           imageSegementationSuccess = true;
         }
       }
@@ -310,12 +282,15 @@ public class MainActivity extends Activity implements Runnable {
     runOnUiThread(
             () -> {
               if (showUserIndicationOnImgSegFail) {
-                Toast.makeText(this, "ImageSegmentation Failed", Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, "No objects detected", Toast.LENGTH_SHORT).show();
               }
               mImageView.setImageBitmap(transferredBitmap);
               mButtonXnnpack.setEnabled(true);
               mButtonXnnpack.setText(R.string.run_xnnpack);
               mProgressBar.setVisibility(ProgressBar.INVISIBLE);
+              findViewById(R.id.resetImage).setEnabled(true);
+              mInferenceTimeText.setText("Inference: " + mInferenceTime + " ms");
+              mInferenceTimeText.setVisibility(View.VISIBLE);
             });
   }
 
@@ -325,5 +300,94 @@ public class MainActivity extends Activity implements Runnable {
         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show();
       }
     });
+  }
+
+  // Blend two colors with given alpha for the overlay
+  private int blendColors(int background, int foreground, float alpha) {
+    int bgR = (background >> 16) & 0xFF;
+    int bgG = (background >> 8) & 0xFF;
+    int bgB = background & 0xFF;
+    int fgR = (foreground >> 16) & 0xFF;
+    int fgG = (foreground >> 8) & 0xFF;
+    int fgB = foreground & 0xFF;
+    int r = (int) (bgR * (1 - alpha) + fgR * alpha);
+    int g = (int) (bgG * (1 - alpha) + fgG * alpha);
+    int b = (int) (bgB * (1 - alpha) + fgB * alpha);
+    return 0xFF000000 | (r << 16) | (g << 8) | b;
+  }
+
+  private void loadModelOrShowDownloadButton() {
+    File modelFile = new File(mModelPath);
+    if (modelFile.exists()) {
+      try {
+        mModule = Module.load(mModelPath);
+        mButtonXnnpack.setEnabled(true);
+        mDownloadModelButton.setEnabled(false);
+        mDownloadModelButton.setText("Model Ready");
+        mModelStatusText.setVisibility(View.GONE);
+        setButtonsVisibility(View.VISIBLE);
+      } catch (Exception e) {
+        Log.e("MainActivity", "Failed to load model", e);
+        showUIMessage(this, "Failed to load model: " + e.getMessage());
+        mButtonXnnpack.setEnabled(false);
+        mDownloadModelButton.setVisibility(View.VISIBLE);
+        setButtonsVisibility(View.GONE); // Hide buttons if model load fails
+        // mModelStatusText.setText("Model load failed");
+        mModelStatusText.setVisibility(View.VISIBLE); // Show model status text
+      }
+    } else {
+      mButtonXnnpack.setEnabled(false);
+      mDownloadModelButton.setVisibility(View.VISIBLE);
+      setButtonsVisibility(View.GONE); // Hide buttons if model not found (download needed)
+      // mModelStatusText.setText("Model not found");
+      // mModelStatusText.setVisibility(View.VISIBLE);
+    }
+  }
+
+  private void downloadModel() {
+    mDownloadModelButton.setEnabled(false);
+    mDownloadModelButton.setText(R.string.downloading);
+    mProgressBar.setVisibility(View.VISIBLE);
+    mModelStatusText.setText("Downloading...");
+
+    new Thread(() -> {
+      try {
+        URL url = new URL(MODEL_URL);
+        HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        connection.setRequestMethod("GET");
+        connection.setInstanceFollowRedirects(true);
+        connection.connect();
+
+        if (connection.getResponseCode() != HttpURLConnection.HTTP_OK) {
+          throw new IOException("Server returned HTTP " + connection.getResponseCode());
+        }
+
+        // Download the .pte file directly
+        try (InputStream input = connection.getInputStream();
+             FileOutputStream output = new FileOutputStream(mModelPath)) {
+          byte[] buffer = new byte[4096];
+          int bytesRead;
+          while ((bytesRead = input.read(buffer)) != -1) {
+            output.write(buffer, 0, bytesRead);
+          }
+        }
+
+        runOnUiThread(() -> {
+          mDownloadModelButton.setText(R.string.download_model);
+          mProgressBar.setVisibility(View.INVISIBLE);
+          loadModelOrShowDownloadButton();
+          showUIMessage(this, "Model downloaded successfully!");
+        });
+      } catch (Exception e) {
+        Log.e("MainActivity", "Failed to download model", e);
+        runOnUiThread(() -> {
+          mDownloadModelButton.setEnabled(true);
+          mDownloadModelButton.setText(R.string.download_model);
+          mProgressBar.setVisibility(View.INVISIBLE);
+          mModelStatusText.setText("Download failed");
+          showUIMessage(this, "Download failed: " + e.getMessage());
+        });
+      }
+    }).start();
   }
 }

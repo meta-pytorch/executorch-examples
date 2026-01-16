@@ -1,4 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.DeepLabV3Demo" parent="android:Theme.Light" />
+    <style name="Theme.DeepLabV3Demo" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Brand Colors mapped to Material slots -->
+        <item name="colorPrimary">@color/primaryBlue</item>
+        <item name="colorOnPrimary">@color/white</item>
+        <item name="android:statusBarColor">@color/primaryBlueDark</item>
+    </style>
 </resources>
