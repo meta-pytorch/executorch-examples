@@ -374,16 +374,21 @@ public class SettingsActivity extends AppCompatActivity {
     AlertDialog.Builder modelPathBuilder = new AlertDialog.Builder(this);
     modelPathBuilder.setTitle("Select model path");
 
-    modelPathBuilder.setSingleChoiceItems(
-        pteFiles,
-        -1,
-        (dialog, item) -> {
-          mSettingsFields.saveModelPath(pteFiles[item]);
-          mModelTextView.setText(getFilenameFromPath(pteFiles[item]));
-          autoSelectModelType(pteFiles[item]);
-          updateLoadModelButtonState();
-          dialog.dismiss();
-        });
+    if (pteFiles.length == 0) {
+      modelPathBuilder.setMessage("No model files (.pte) found in /data/local/tmp/llama/\n\nPlease push model files using:\nadb push <model>.pte /data/local/tmp/llama/");
+      modelPathBuilder.setPositiveButton(android.R.string.ok, null);
+    } else {
+      modelPathBuilder.setSingleChoiceItems(
+          pteFiles,
+          -1,
+          (dialog, item) -> {
+            mSettingsFields.saveModelPath(pteFiles[item]);
+            mModelTextView.setText(getFilenameFromPath(pteFiles[item]));
+            autoSelectModelType(pteFiles[item]);
+            updateLoadModelButtonState();
+            dialog.dismiss();
+          });
+    }
 
     modelPathBuilder.create().show();
   }
@@ -403,24 +408,35 @@ public class SettingsActivity extends AppCompatActivity {
     AlertDialog.Builder dataPathBuilder = new AlertDialog.Builder(this);
     dataPathBuilder.setTitle("Select data path");
 
-    String[] dataPathOptions = new String[dataPathFiles.length + 1];
-    System.arraycopy(dataPathFiles, 0, dataPathOptions, 0, dataPathFiles.length);
-    dataPathOptions[dataPathOptions.length - 1] = "(unused)";
+    if (dataPathFiles.length == 0) {
+      // No .ptd files found, show message with "(unused)" option
+      dataPathBuilder.setMessage("No data files (.ptd) found in /data/local/tmp/llama/\n\nData files are optional. You can proceed without one, or push data files using:\nadb push <data>.ptd /data/local/tmp/llama/");
+      dataPathBuilder.setPositiveButton("Use no data path", (dialog, which) -> {
+        mSettingsFields.saveDataPath(null);
+        mDataPathTextView.setText("no data path selected");
+        updateLoadModelButtonState();
+      });
+      dataPathBuilder.setNegativeButton(android.R.string.cancel, null);
+    } else {
+      String[] dataPathOptions = new String[dataPathFiles.length + 1];
+      System.arraycopy(dataPathFiles, 0, dataPathOptions, 0, dataPathFiles.length);
+      dataPathOptions[dataPathOptions.length - 1] = "(unused)";
 
-    dataPathBuilder.setSingleChoiceItems(
-        dataPathOptions,
-        -1,
-        (dialog, item) -> {
-          if (dataPathOptions[item] != "(unused)") {
-            mSettingsFields.saveDataPath(dataPathOptions[item]);
-            mDataPathTextView.setText(getFilenameFromPath(dataPathOptions[item]));
-          } else {
-            mSettingsFields.saveDataPath(null);
-            mDataPathTextView.setText(getFilenameFromPath("no data path selected"));
-          }
-          updateLoadModelButtonState();
-          dialog.dismiss();
-        });
+      dataPathBuilder.setSingleChoiceItems(
+          dataPathOptions,
+          -1,
+          (dialog, item) -> {
+            if (!dataPathOptions[item].equals("(unused)")) {
+              mSettingsFields.saveDataPath(dataPathOptions[item]);
+              mDataPathTextView.setText(getFilenameFromPath(dataPathOptions[item]));
+            } else {
+              mSettingsFields.saveDataPath(null);
+              mDataPathTextView.setText("no data path selected");
+            }
+            updateLoadModelButtonState();
+            dialog.dismiss();
+          });
+    }
 
     dataPathBuilder.create().show();
   }
@@ -474,15 +490,21 @@ public class SettingsActivity extends AppCompatActivity {
         listLocalFile("/data/local/tmp/llama/", new String[] {".bin", ".json", ".model"});
     AlertDialog.Builder tokenizerPathBuilder = new AlertDialog.Builder(this);
     tokenizerPathBuilder.setTitle("Select tokenizer path");
-    tokenizerPathBuilder.setSingleChoiceItems(
-        tokenizerFiles,
-        -1,
-        (dialog, item) -> {
-          mSettingsFields.saveTokenizerPath(tokenizerFiles[item]);
-          mTokenizerTextView.setText(getFilenameFromPath(tokenizerFiles[item]));
-          updateLoadModelButtonState();
-          dialog.dismiss();
-        });
+
+    if (tokenizerFiles.length == 0) {
+      tokenizerPathBuilder.setMessage("No tokenizer files (.bin, .json, .model) found in /data/local/tmp/llama/\n\nPlease push tokenizer files using:\nadb push <tokenizer> /data/local/tmp/llama/");
+      tokenizerPathBuilder.setPositiveButton(android.R.string.ok, null);
+    } else {
+      tokenizerPathBuilder.setSingleChoiceItems(
+          tokenizerFiles,
+          -1,
+          (dialog, item) -> {
+            mSettingsFields.saveTokenizerPath(tokenizerFiles[item]);
+            mTokenizerTextView.setText(getFilenameFromPath(tokenizerFiles[item]));
+            updateLoadModelButtonState();
+            dialog.dismiss();
+          });
+    }
 
     tokenizerPathBuilder.create().show();
   }
