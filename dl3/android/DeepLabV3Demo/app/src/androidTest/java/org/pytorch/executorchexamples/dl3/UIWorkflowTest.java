@@ -32,7 +32,7 @@ import org.junit.runner.RunWith;
  * UI workflow test that simulates the image segmentation workflow.
  *
  * Prerequisites:
- * - Push a .pte model file to app's private storage or ensure model can be downloaded
+ * - Model will be downloaded automatically by the app during the test
  *
  * This test validates:
  * - Model download/loading workflow
@@ -41,9 +41,9 @@ import org.junit.runner.RunWith;
  * - Reset image button functionality
  * - Inference time display after segmentation
  *
- * Note: This test assumes the model is already present or can be downloaded automatically.
- * For CI/CD, you may need to push the model file before running tests:
- * adb push dl3_xnnpack_fp32.pte /data/local/tmp/
+ * Note: The test downloads the model from the same URL as MainActivity uses,
+ * storing it in the app's private storage (package storage), not /data/local/tmp.
+ * This ensures the test mimics the actual user workflow.
  */
 @RunWith(AndroidJUnit4.class)
 @LargeTest
