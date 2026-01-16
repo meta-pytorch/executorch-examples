@@ -100,4 +100,14 @@ The app detects all 21 PASCAL VOC classes with distinct color overlays:
 ```
 
 ### Using Android Studio
-Open `app/src/androidTest/java/org/pytorch/executorchexamples/dl3/SanityCheck.java` and click the Play button.
+Open `app/src/androidTest/java/org/pytorch/executorchexamples/dl3/SanityCheck.java` or `UIWorkflowTest.java` and click the Play button.
+
+### Test Files
+- **SanityCheck.java**: Basic module forward pass test
+- **UIWorkflowTest.java**: Complete UI workflow tests including:
+  - Initial UI state verification
+  - Next sample image button functionality
+  - Run segmentation workflow
+  - Reset image functionality
+  - Complete end-to-end workflow
+  - Model download button states
