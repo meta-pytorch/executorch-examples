@@ -40,8 +40,7 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+
 import org.pytorch.executorch.EValue;
 import org.pytorch.executorch.Module;
 import org.pytorch.executorch.Tensor;
@@ -58,7 +57,7 @@ public class MainActivity extends Activity implements Runnable {
   private long mInferenceTime = 0;
 
   // Model download configuration
-  private static final String MODEL_URL = "TODO";
+  private static final String MODEL_URL = "https://ossci-android.s3.amazonaws.com/executorch/models/snapshot-20260116/dl3_xnnpack_fp32.pte";
   private static final String MODEL_FILENAME = "dl3_xnnpack_fp32.pte";
   private String mModelPath; // Will be set in onCreate using getFilesDir()
 
@@ -363,30 +362,13 @@ public class MainActivity extends Activity implements Runnable {
           throw new IOException("Server returned HTTP " + connection.getResponseCode());
         }
 
-        // Download is a zip file, extract the .pte file
+        // Download the .pte file directly
         try (InputStream input = connection.getInputStream();
-             ZipInputStream zipIn = new ZipInputStream(input)) {
-          ZipEntry entry;
-          boolean found = false;
-          while ((entry = zipIn.getNextEntry()) != null) {
-            String fileName = entry.getName();
-            // Look for the .pte file
-            if (fileName.endsWith(".pte")) {
-              File outputFile = new File(mModelPath);
-              try (FileOutputStream output = new FileOutputStream(outputFile)) {
-                byte[] buffer = new byte[4096];
-                int bytesRead;
-                while ((bytesRead = zipIn.read(buffer)) != -1) {
-                  output.write(buffer, 0, bytesRead);
-                }
-              }
-              found = true;
-              break;
-            }
-            zipIn.closeEntry();
-          }
-          if (!found) {
-            throw new IOException("No .pte file found in zip");
+             FileOutputStream output = new FileOutputStream(mModelPath)) {
+          byte[] buffer = new byte[4096];
+          int bytesRead;
+          while ((bytesRead = input.read(buffer)) != -1) {
+            output.write(buffer, 0, bytesRead);
           }
         }
 
