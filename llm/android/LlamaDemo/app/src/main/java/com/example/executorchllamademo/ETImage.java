@@ -51,7 +51,7 @@ public class ETImage {
     // the runner expects an int array as input.
     int[] intArray = new int[bytes.length];
     for (int i = 0; i < bytes.length; i++) {
-      intArray[i] = (bytes[i++] & 0xFF);
+      intArray[i] = (bytes[i] & 0xFF);
     }
     return intArray;
   }
@@ -59,7 +59,7 @@ public class ETImage {
   public float[] getFloats() {
     float[] floatArray = new float[bytes.length];
     for (int i = 0; i < bytes.length; i++) {
-      floatArray[i] = (((bytes[i++] & 0xFF) / 255.0f) - 0.5f) / 0.5f;
+      floatArray[i] = (((bytes[i] & 0xFF) / 255.0f) - 0.5f) / 0.5f;
     }
     return floatArray;
   }
