@@ -6,11 +6,14 @@ This guide explains how to setup ExecuTorch for Android using a demo app. The ap
 * Download and install [Android Studio and SDK 34](https://developer.android.com/studio).
 * (For exporting the DL3 model) Python 3.10+ with `executorch` package installed.
 
-## Step 1: Export the model
-Run the script in `dl3/python/export.py` to export the model.
+## Step 1: Export the model (Optional)
+The app can download the model automatically. If you want to export it yourself, run:
+```bash
+python dl3/python/export.py
+```
 
 ## Step 2: Set up your device or emulator
-You can run the app on either a physical device or an emulator. To set up your device or emulator, follow these steps:
+You can run the app on either a physical device or an emulator.
 
 ### Using a Physical Device
 * Connect your device to your computer via USB.
@@ -20,52 +23,54 @@ You can run the app on either a physical device or an emulator. To set up your d
 * Open Android Studio and create a new virtual device.
 * Start the emulator by clicking the "Play" button next to the device name.
 
-## Step 3: Build, install, and run the app on your phone
+## Step 3: Build, install, and run the app
 ### On your terminal
-(`cd dl3/android/DeepLabV3Demo` first)
-```
+```bash
+cd dl3/android/DeepLabV3Demo
 ./gradlew installDebug
 adb shell am start -W -S -n org.pytorch.executorchexamples.dl3/.MainActivity
 ```
 
 ### On Android Studio
 Open Android Studio and open the project path `dl3/android/DeepLabV3Demo`. Wait for gradle sync to complete.
-Then simply press "Run app" button (Control + r) to run the app either on physical device / emulator.
+Then simply press "Run app" button (Control + r) to run the app.
 
-## Step 4: Push the model to the phone or emulator
-The app loads a hardcoded model path (`/data/local/tmp/dl3_xnnpack_fp32.pte`) on the phone.
-Run the following adb command to push the model.
-```
+## Step 4: Download or Push the model
+
+### Option A: Download from the app (Recommended)
+The app includes a **"Download Model"** button that automatically downloads and extracts the model. Simply tap the button and wait for the download to complete.
+
+### Option B: Push manually via adb
+If you exported the model yourself or want to use a custom model:
+```bash
 adb push dl3_xnnpack_fp32.pte /data/local/tmp/dl3_xnnpack_fp32.pte
 ```
 
-Note: If you want to use a QNN lowered model, you mush modify the maven executorch dependency to [executorch-qnn](https://mvnrepository.com/artifact/org.pytorch/executorch-android-qnn) and rebuild the app.
+> **Note:** If you want to use a QNN lowered model, modify the maven executorch dependency to [executorch-qnn](https://mvnrepository.com/artifact/org.pytorch/executorch-android-qnn) and rebuild the app.
 
-## Step 5: Load and Test Custom Images (No APK Rebuild Needed)
-You can now test image segmentation on your own images (supported formats: .jpg, .jpeg, .png) without rebuilding the APK. The app supports loading .jpg, .jpeg, and .png images from the /sdcard/Pictures/ directory, with user-granted permissions.
+## Step 5: Load and Test Custom Images
+You can test image segmentation on your own images (supported formats: .jpg, .jpeg, .png) without rebuilding the APK.
 
 ### How to Use
-#### a. Push your image to the device:
-```
-adb push <path to your image> /sdcard/Pictures/
+1. Push your image to the device:
+   ```bash
+   adb push <path to your image> /sdcard/Pictures/
+   ```
 
-```
-#### b. After the push, In the app:
-- Tap the "Load And Refresh" button.
-- If prompted, grant the app permission to access the /sdcard/Pictures/ folder.
-- The image should appear immediately in the app.
-- You can now run dynamic image segmentation and view the results.
+2. In the app:
+   - Tap the **"Load And Refresh"** button
+   - If prompted, grant permission to access the /sdcard/Pictures/ folder
+   - The image should appear immediately
+   - Tap **"Run"** to perform segmentation
 
-Tip: You can use images containing Dog, Sheep, Person, or any combination of these classes.
-
-This feature enhances the testing/validation process by allowing users to quickly test different images without the need to rebuild the application.
+### Supported Classes
+The app detects all 21 PASCAL VOC classes including: Person, Dog, Cat, Car, Bicycle, Bird, and more. Each class is highlighted with a distinct color overlay.
 
 ## Step 6: Run unit test
 ### On your terminal
-```
+```bash
 ./gradlew connectedAndroidTest
 ```
 
 ### On Android Studio
-In Android Studio project, open file `app/src/androidTest/java/org/pytorch/executorchexamples/dl3/SanityCheck.java`,
-and click the "Play" button for `public class SanityCheck` (Control + Shift + r).
+Open `app/src/androidTest/java/org/pytorch/executorchexamples/dl3/SanityCheck.java` and click the "Play" button for `public class SanityCheck`.

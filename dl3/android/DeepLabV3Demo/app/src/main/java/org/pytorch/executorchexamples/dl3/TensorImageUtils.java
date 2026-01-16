@@ -70,10 +70,6 @@ public final class TensorImageUtils {
     bitmap.getPixels(pixels, 0, width, x, y, width, height);
     final int offset_g = pixelsCount;
     final int offset_b = 2 * pixelsCount;
-    for (int i = 0; i < 100; i++) {
-      final int c = pixels[i];
-      Log.i("Image", ": " + i + " " + ((c >> 16) & 0xff));
-    }
     for (int i = 0; i < pixelsCount; i++) {
       final int c = pixels[i];
       float r = ((c >> 16) & 0xff) / 255.0f;

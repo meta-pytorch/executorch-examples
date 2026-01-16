@@ -4,76 +4,153 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#FAFAFA"
+    android:padding="12dp"
     tools:context=".MainActivity">
 
-    <!-- ImageView at the top -->
+    <!-- ImageView takes remaining space at top -->
     <ImageView
         android:id="@+id/imageView"
-        android:layout_width="388dp"
-        android:layout_height="405dp"
-        android:layout_marginTop="30dp"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
         android:contentDescription="@string/image_view"
+        android:scaleType="centerCrop"
+        app:layout_constraintBottom_toTopOf="@+id/progressBar"
         app:layout_constraintDimensionRatio="1:1"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.478"
+        app:layout_constraintHeight_max="400dp"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0"
+        app:layout_constraintVertical_chainStyle="packed" />
 
-    <!-- ProgressBar below ImageView -->
+    <!-- ProgressBar -->
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="10dp"
         android:visibility="invisible"
-        app:layout_constraintTop_toBottomOf="@+id/imageView"
+        app:layout_constraintBottom_toTopOf="@+id/inferenceTimeText"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/imageView" />
 
-    <!-- Row 1: Next and Reset buttons side by side -->
+    <!-- Inference Time Display -->
+    <TextView
+        android:id="@+id/inferenceTimeText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/inference_time_placeholder"
+        android:textColor="#2196F3"
+        android:textSize="14sp"
+        android:textStyle="bold"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toTopOf="@+id/nextButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/progressBar" />
+
+    <!-- Row 1: Next | Pick Image -->
     <Button
         android:id="@+id/nextButton"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginEnd="4dp"
+        android:background="@drawable/btn_secondary"
         android:text="@string/next"
         android:textAllCaps="false"
-        app:layout_constraintTop_toBottomOf="@+id/progressBar"
+        android:textColor="#424242"
+        android:textSize="13sp"
+        app:layout_constraintBottom_toTopOf="@+id/xnnpackButton"
+        app:layout_constraintEnd_toStartOf="@+id/loadAndRefreshButton"
+        app:layout_constraintHeight_percent="0.06"
+        app:layout_constraintHorizontal_chainStyle="spread"
         app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/inferenceTimeText" />
+
+    <Button
+        android:id="@+id/loadAndRefreshButton"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginStart="4dp"
+        android:background="@drawable/btn_secondary"
+        android:text="@string/load_and_refresh"
+        android:textAllCaps="false"
+        android:textColor="#424242"
+        android:textSize="13sp"
+        app:layout_constraintBottom_toTopOf="@+id/xnnpackButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHeight_percent="0.06"
+        app:layout_constraintStart_toEndOf="@+id/nextButton"
+        app:layout_constraintTop_toBottomOf="@+id/inferenceTimeText" />
+
+    <!-- Row 2: Run | Reset -->
+    <Button
+        android:id="@+id/xnnpackButton"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="4dp"
+        android:background="@drawable/btn_success"
+        android:text="@string/run_xnnpack"
+        android:textAllCaps="false"
+        android:textColor="#FFFFFF"
+        android:textSize="15sp"
+        android:textStyle="bold"
+        app:layout_constraintBottom_toTopOf="@+id/modelStatusText"
         app:layout_constraintEnd_toStartOf="@+id/resetImage"
-        app:layout_constraintHorizontal_weight="1" />
+        app:layout_constraintHeight_percent="0.06"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/nextButton" />
 
     <Button
         android:id="@+id/resetImage"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginStart="4dp"
+        android:background="@drawable/btn_secondary"
         android:text="@string/reset"
         android:textAllCaps="false"
-        app:layout_constraintTop_toBottomOf="@+id/progressBar"
-        app:layout_constraintStart_toEndOf="@+id/nextButton"
+        android:textColor="#424242"
+        android:textSize="13sp"
+        app:layout_constraintBottom_toTopOf="@+id/modelStatusText"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_weight="1" />
+        app:layout_constraintHeight_percent="0.06"
+        app:layout_constraintStart_toEndOf="@+id/xnnpackButton"
+        app:layout_constraintTop_toBottomOf="@+id/nextButton" />
 
-    <!-- Row 2: Single button spanning width of two above -->
-    <Button
-        android:id="@+id/loadAndRefreshButton"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:text="@string/load_and_refresh"
-        android:textAllCaps="false"
-        app:layout_constraintTop_toBottomOf="@+id/nextButton"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
-
-    <!-- Row 3: xnnpackButton Centered Run button -->
-    <Button
-        android:id="@+id/xnnpackButton"
+    <!-- Model Status Text -->
+    <TextView
+        android:id="@+id/modelStatusText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
-        android:text="@string/run_xnnpack"
-        android:textAllCaps="false"
-        app:layout_constraintTop_toBottomOf="@+id/loadAndRefreshButton"
+        android:layout_marginTop="4dp"
+        android:text="@string/model_status_placeholder"
+        android:textColor="#757575"
+        android:textSize="12sp"
+        android:visibility="invisible"
+        app:layout_constraintBottom_toTopOf="@+id/downloadModelButton"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/xnnpackButton" />
+
+    <!-- Download Model Button -->
+    <Button
+        android:id="@+id/downloadModelButton"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginTop="4dp"
+        android:background="@drawable/btn_primary"
+        android:text="@string/download_model"
+        android:textAllCaps="false"
+        android:textColor="#FFFFFF"
+        android:textSize="13sp"
+        android:visibility="visible"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHeight_percent="0.06"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/modelStatusText" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
