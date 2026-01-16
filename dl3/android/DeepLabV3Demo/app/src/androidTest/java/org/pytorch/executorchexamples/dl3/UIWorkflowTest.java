@@ -358,13 +358,21 @@ public class UIWorkflowTest {
 
         // If download button is available and enabled, click it
         if (downloadEnabled.get() && buttonText.get().equals("Download Model")) {
+            android.util.Log.i("UIWorkflowTest", "Clicking download button to download model");
             onView(withId(R.id.downloadModelButton)).perform(click());
             
-            // Wait for download to complete (max 60 seconds)
-            boolean downloadComplete = waitForModelReady(scenario, 60000);
+            // Wait for download to complete (max 120 seconds for CI environment)
+            android.util.Log.i("UIWorkflowTest", "Waiting for model download to complete...");
+            boolean downloadComplete = waitForModelReady(scenario, 120000);
+            if (downloadComplete) {
+                android.util.Log.i("UIWorkflowTest", "Model download completed successfully");
+            } else {
+                android.util.Log.e("UIWorkflowTest", "Model download timed out after 120 seconds");
+            }
             return downloadComplete;
         }
 
+        android.util.Log.w("UIWorkflowTest", "Download button not available or not enabled. Button text: " + buttonText.get());
         return false;
     }
 
@@ -377,19 +385,37 @@ public class UIWorkflowTest {
      */
     private boolean waitForModelReady(ActivityScenario<MainActivity> scenario, long timeoutMs) throws InterruptedException {
         long startTime = System.currentTimeMillis();
+        int pollCount = 0;
         while (System.currentTimeMillis() - startTime < timeoutMs) {
             AtomicBoolean modelReady = new AtomicBoolean(false);
+            AtomicReference<String> downloadButtonText = new AtomicReference<>("");
             scenario.onActivity(activity -> {
                 // Model is ready when Run button is visible and enabled
                 android.view.View runButton = activity.findViewById(R.id.xnnpackButton);
                 modelReady.set(runButton.getVisibility() == android.view.View.VISIBLE && runButton.isEnabled());
+                
+                // Also check download button state for debugging
+                android.widget.Button downloadButton = activity.findViewById(R.id.downloadModelButton);
+                if (downloadButton != null) {
+                    downloadButtonText.set(downloadButton.getText().toString());
+                }
             });
             
             if (modelReady.get()) {
+                android.util.Log.i("UIWorkflowTest", "Model ready after " + (System.currentTimeMillis() - startTime) + "ms");
                 return true;
             }
+            
+            // Log progress every 10 seconds
+            pollCount++;
+            if (pollCount % 10 == 0) {
+                long elapsed = System.currentTimeMillis() - startTime;
+                android.util.Log.i("UIWorkflowTest", "Still waiting for model... elapsed: " + elapsed + "ms, download button: " + downloadButtonText.get());
+            }
+            
             Thread.sleep(1000); // Poll every second
         }
+        android.util.Log.e("UIWorkflowTest", "Timeout waiting for model after " + timeoutMs + "ms");
         return false;
     }
 
