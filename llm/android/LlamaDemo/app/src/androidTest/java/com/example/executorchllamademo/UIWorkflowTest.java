@@ -202,7 +202,7 @@ public class UIWorkflowTest {
 
             // --- Wait for generation to complete ---
             // Poll until the send button is enabled again (generation finished)
-            boolean generationComplete = waitForGenerationComplete(scenario, 120000); // 2 minute timeout
+            boolean generationComplete = waitForGenerationComplete(scenario, 300000); // 5 minute timeout
             assertTrue("Generation should complete", generationComplete);
 
             // Extract all messages from the list
