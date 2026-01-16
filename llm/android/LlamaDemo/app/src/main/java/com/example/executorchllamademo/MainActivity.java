@@ -776,7 +776,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
   }
 
   private void onModelRunStarted() {
-    mSendButton.setClickable(false);
+    mSendButton.setClickable(true);
     mSendButton.setImageResource(R.drawable.baseline_stop_24);
     mSendButton.setOnClickListener(
         view -> {
