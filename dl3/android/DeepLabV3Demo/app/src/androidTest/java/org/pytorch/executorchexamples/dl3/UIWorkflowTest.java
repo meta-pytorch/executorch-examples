@@ -106,12 +106,14 @@ public class UIWorkflowTest {
             onView(withId(R.id.nextButton)).check(matches(isDisplayed()));
             onView(withId(R.id.nextButton)).check(matches(isEnabled()));
 
-            // Get the initial image
-            AtomicReference<android.graphics.Bitmap> initialBitmap = new AtomicReference<>();
+            // Get the initial image properties (width, height, and first pixel for simple comparison)
+            AtomicReference<String> initialImageInfo = new AtomicReference<>();
             scenario.onActivity(activity -> {
                 ImageView imageView = activity.findViewById(R.id.imageView);
                 if (imageView.getDrawable() instanceof BitmapDrawable) {
-                    initialBitmap.set(((BitmapDrawable) imageView.getDrawable()).getBitmap());
+                    android.graphics.Bitmap bitmap = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
+                    // Store basic image properties as a string
+                    initialImageInfo.set(bitmap.getWidth() + "x" + bitmap.getHeight() + "@" + bitmap.getPixel(0, 0));
                 }
             });
 
@@ -119,14 +121,15 @@ public class UIWorkflowTest {
             onView(withId(R.id.nextButton)).perform(click());
             Thread.sleep(500);
 
-            // Verify image changed
+            // Verify image changed by comparing properties
             AtomicBoolean imageChanged = new AtomicBoolean(false);
             scenario.onActivity(activity -> {
                 ImageView imageView = activity.findViewById(R.id.imageView);
                 if (imageView.getDrawable() instanceof BitmapDrawable) {
-                    android.graphics.Bitmap newBitmap = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
-                    // Check if bitmap reference changed (different sample loaded)
-                    imageChanged.set(newBitmap != initialBitmap.get());
+                    android.graphics.Bitmap bitmap = ((BitmapDrawable) imageView.getDrawable()).getBitmap();
+                    String currentImageInfo = bitmap.getWidth() + "x" + bitmap.getHeight() + "@" + bitmap.getPixel(0, 0);
+                    // Check if image properties changed (different sample loaded)
+                    imageChanged.set(!currentImageInfo.equals(initialImageInfo.get()));
                 }
             });
 
