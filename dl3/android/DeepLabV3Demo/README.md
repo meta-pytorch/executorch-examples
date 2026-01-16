@@ -51,13 +51,17 @@ adb shell am start -n org.pytorch.executorchexamples.dl3/.MainActivity
 When the app launches, tap the **"Download Model"** button. The model will be downloaded and extracted automatically.
 
 ### Option B: Export and Push Manually
-If you exported the model yourself:
-```bash
-adb push dl3_xnnpack_fp32.pte /data/local/tmp/dl3_xnnpack_fp32.pte
-```
-> **Note:** The app stores downloaded models in its private storage. Manually pushed models go to `/data/local/tmp/`.
+If you exported the model yourself or want to use a custom model, you need to copy it to the app's private storage. Since the app is built in debug mode, we can use `run-as`:
 
-> **Note:** For QNN backend, change the maven dependency to [executorch-qnn](https://mvnrepository.com/artifact/org.pytorch/executorch-android-qnn) and rebuild.
+```bash
+# 1. Push to device temporary storage
+adb push dl3_xnnpack_fp32.pte /data/local/tmp/
+
+# 2. Copy to app's private storage using run-as
+adb shell "run-as org.pytorch.executorchexamples.dl3 cp /data/local/tmp/dl3_xnnpack_fp32.pte files/"
+```
+
+> **Note:** For QNN backend, change the maven dependency to [executorch-qnn](https://mvnrepository.com/artifact/org.pytorch/executorch-android-qnn) and rebuild the app.
 
 ## Step 5: Using the App
 
