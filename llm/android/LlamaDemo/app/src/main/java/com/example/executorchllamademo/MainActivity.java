@@ -808,6 +808,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
     mIsGenerating = true;
     mSendButton.setEnabled(true);
     mSendButton.setAlpha(1.0f);
+    mSendButton.setClickable(true);
     mSendButton.setImageResource(R.drawable.baseline_stop_24);
     mSendButton.setOnClickListener(
         view -> {
