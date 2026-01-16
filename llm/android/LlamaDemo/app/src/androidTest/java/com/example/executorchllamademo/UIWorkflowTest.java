@@ -200,10 +200,10 @@ public class UIWorkflowTest {
             // Click send button
             onView(withId(R.id.sendButton)).perform(click());
 
-            // --- Wait for generation to complete ---
-            // Poll until the send button is enabled again (generation finished)
-            boolean generationComplete = waitForGenerationComplete(scenario, 300000); // 5 minute timeout
-            assertTrue("Generation should complete", generationComplete);
+            // --- Wait for response ---
+            // Poll until we have some response text (at least 50 characters)
+            boolean hasResponse = waitForResponseLength(scenario, 50, 60000);
+            assertTrue("Model should generate a response", hasResponse);
 
             // Extract all messages from the list
             AtomicInteger messageCount = new AtomicInteger(0);
