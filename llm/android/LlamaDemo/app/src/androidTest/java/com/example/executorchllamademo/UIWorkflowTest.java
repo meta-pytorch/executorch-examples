@@ -19,7 +19,7 @@ import static androidx.test.espresso.matcher.ViewMatchers.isEnabled;
 import static androidx.test.espresso.matcher.ViewMatchers.withId;
 import static androidx.test.espresso.matcher.ViewMatchers.withText;
 import static org.hamcrest.Matchers.anything;
-import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.hasToString;
 import static org.hamcrest.Matchers.not;
@@ -29,6 +29,7 @@ import static org.junit.Assert.assertTrue;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.widget.ImageButton;
 import android.widget.ListView;
 import androidx.test.core.app.ActivityScenario;
 import androidx.test.core.app.ApplicationProvider;
@@ -41,6 +42,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -118,12 +120,12 @@ public class UIWorkflowTest {
             // Step 3: Click model selection button and select the model file
             onView(withId(R.id.modelImageButton)).perform(click());
             // Select the model file matching the configured filename
-            onData(hasToString(containsString(modelFile))).inRoot(isDialog()).perform(click());
+            onData(hasToString(endsWith(modelFile))).inRoot(isDialog()).perform(click());
 
             // Step 4: Click tokenizer selection button and select the tokenizer file
             onView(withId(R.id.tokenizerImageButton)).perform(click());
             // Select the tokenizer file matching the configured filename
-            onData(hasToString(containsString(tokenizerFile))).inRoot(isDialog()).perform(click());
+            onData(hasToString(endsWith(tokenizerFile))).inRoot(isDialog()).perform(click());
 
             // Step 5: Click load model button
             onView(withId(R.id.loadModelButton)).perform(click());
@@ -165,13 +167,13 @@ public class UIWorkflowTest {
             // Select model - choose the configured model file
             onView(withId(R.id.modelImageButton)).perform(click());
             Thread.sleep(300); // Wait for dialog to appear
-            onData(hasToString(containsString(modelFile))).inRoot(isDialog()).perform(click());
+            onData(hasToString(endsWith(modelFile))).inRoot(isDialog()).perform(click());
             Thread.sleep(300); // Wait for dialog to dismiss and UI to update
 
             // Select tokenizer - choose the configured tokenizer file
             onView(withId(R.id.tokenizerImageButton)).perform(click());
             Thread.sleep(300); // Wait for dialog to appear
-            onData(hasToString(containsString(tokenizerFile))).inRoot(isDialog()).perform(click());
+            onData(hasToString(endsWith(tokenizerFile))).inRoot(isDialog()).perform(click());
             Thread.sleep(300); // Wait for dialog to dismiss and UI to update
 
             // Verify load button is now enabled
@@ -261,6 +263,121 @@ public class UIWorkflowTest {
                 return true;
             }
             Thread.sleep(500); // Poll every 500ms
+        }
+        return false;
+    }
+
+    /**
+     * Tests stopping generation mid-way:
+     * 1. Load model
+     * 2. Send a message to start generation
+     * 3. Wait for generation to start (button changes to stop mode)
+     * 4. Click stop button
+     * 5. Verify generation stops (button returns to send mode)
+     * 6. Verify partial response was received
+     */
+    @Test
+    public void testStopGeneration() throws Exception {
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            // Wait for activity to fully load
+            Thread.sleep(1000);
+
+            // Dismiss the "Please Select a Model" dialog
+            onView(withText(android.R.string.ok)).inRoot(isDialog()).perform(click());
+
+            // --- Load model ---
+            onView(withId(R.id.settings)).perform(click());
+            Thread.sleep(500);
+
+            // Select model
+            onView(withId(R.id.modelImageButton)).perform(click());
+            Thread.sleep(300);
+            onData(hasToString(endsWith(modelFile))).inRoot(isDialog()).perform(click());
+            Thread.sleep(300);
+
+            // Select tokenizer
+            onView(withId(R.id.tokenizerImageButton)).perform(click());
+            Thread.sleep(300);
+            onData(hasToString(endsWith(tokenizerFile))).inRoot(isDialog()).perform(click());
+            Thread.sleep(300);
+
+            // Load model
+            onView(withId(R.id.loadModelButton)).perform(click());
+            onView(withText(android.R.string.yes)).inRoot(isDialog()).perform(click());
+
+            // Wait for model to load
+            boolean modelLoaded = waitForModelLoaded(scenario, 60000);
+            assertTrue("Model should be loaded successfully", modelLoaded);
+
+            // --- Send a message to start generation ---
+            onView(withId(R.id.editTextMessage)).perform(typeText("Write a very long story about a brave knight"), ViewActions.closeSoftKeyboard());
+            onView(withId(R.id.sendButton)).perform(click());
+
+            // --- Wait for generation to start ---
+            // The button should become non-clickable when generation starts
+            boolean generationStarted = waitForButtonClickable(scenario, false, 10000);
+            assertTrue("Generation should start (button should become non-clickable)", generationStarted);
+
+            // Let some tokens generate
+            Thread.sleep(2000);
+
+            // --- Click stop button ---
+            onView(withId(R.id.sendButton)).perform(click());
+
+            // --- Verify generation stops ---
+            // Button should become clickable again
+            boolean generationStopped = waitForButtonClickable(scenario, true, 10000);
+            assertTrue("Generation should stop (button should become clickable)", generationStopped);
+
+            // --- Verify we got a partial response ---
+            AtomicReference<String> responseText = new AtomicReference<>("");
+            scenario.onActivity(activity -> {
+                ListView messagesView = activity.findViewById(R.id.messages_view);
+                if (messagesView != null && messagesView.getAdapter() != null) {
+                    for (int i = 0; i < messagesView.getAdapter().getCount(); i++) {
+                        Object item = messagesView.getAdapter().getItem(i);
+                        if (item instanceof Message) {
+                            Message message = (Message) item;
+                            // Find the model response (not sent by user, not system message)
+                            if (!message.getIsSent() && !message.getText().contains("Successfully loaded")) {
+                                responseText.set(message.getText());
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Log the partial response
+            android.util.Log.i("STOP_TEST", "Partial response after stop: " + responseText.get());
+
+            // We should have received some tokens before stopping
+            assertTrue("Should have received some response before stopping",
+                    responseText.get() != null && !responseText.get().isEmpty());
+        }
+    }
+
+    /**
+     * Waits for the send button to reach the expected clickable state.
+     *
+     * @param scenario the activity scenario
+     * @param expectedClickable the expected clickable state
+     * @param timeoutMs maximum time to wait in milliseconds
+     * @return true if button reached expected state, false if timeout
+     */
+    private boolean waitForButtonClickable(ActivityScenario<MainActivity> scenario, boolean expectedClickable, long timeoutMs) throws InterruptedException {
+        long startTime = System.currentTimeMillis();
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            AtomicBoolean isClickable = new AtomicBoolean(false);
+            scenario.onActivity(activity -> {
+                ImageButton sendButton = activity.findViewById(R.id.sendButton);
+                if (sendButton != null) {
+                    isClickable.set(sendButton.isClickable());
+                }
+            });
+            if (isClickable.get() == expectedClickable) {
+                return true;
+            }
+            Thread.sleep(200); // Poll every 200ms
         }
         return false;
     }

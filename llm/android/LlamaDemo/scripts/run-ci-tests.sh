@@ -92,9 +92,7 @@ LOGCAT_PID=$!
 echo "=== Starting Gradle ==="
 ./gradlew connectedCheck \
   -PskipModelDownload=true \
-  -PmodelPreset="$MODEL_PRESET" \
-  -Pandroid.testInstrumentationRunnerArguments.modelFile="$MODEL_FILE" \
-  -Pandroid.testInstrumentationRunnerArguments.tokenizerFile="$TOKENIZER_FILE"
+  -PmodelPreset="$MODEL_PRESET"
 TEST_EXIT_CODE=$?
 
 echo "=== Model directory after Gradle ==="

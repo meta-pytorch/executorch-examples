@@ -220,6 +220,14 @@ android {
     versionName = "1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+    // Automatically set instrumentation arguments based on model preset
+    val preset = modelPresets[modelPreset]
+    if (preset != null) {
+      testInstrumentationRunnerArguments["modelFile"] = preset["pteFile"] as String
+      testInstrumentationRunnerArguments["tokenizerFile"] = preset["tokenizerFile"] as String
+    }
+
     vectorDrawables { useSupportLibrary = true }
     externalNativeBuild { cmake { cppFlags += "" } }
   }
