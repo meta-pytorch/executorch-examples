@@ -2,18 +2,26 @@
 
 This guide explains how to setup ExecuTorch for Android using a demo app. The app employs a [DeepLab v3](https://pytorch.org/hub/pytorch_vision_deeplabv3_resnet101/) model for image segmentation tasks. Models are exported to ExecuTorch using [XNNPACK FP32 backend](https://pytorch.org/executorch/main/backends-xnnpack.html#xnnpack-backend).
 
+## Features
+- **Image Segmentation**: Detects and highlights all 21 PASCAL VOC classes (Person, Dog, Cat, Car, etc.)
+- **Overlay Visualization**: Segmentation mask blends with the original image at 50% opacity
+- **Inference Time Display**: Shows model inference latency in milliseconds
+- **In-App Model Download**: Download the model directly from the app
+- **Image Picker**: Select any image from your device's gallery
+- **Sample Images**: 3 built-in sample images for quick testing
+
 ## Prerequisites
 * Download and install [Android Studio and SDK 34](https://developer.android.com/studio).
 * (For exporting the DL3 model) Python 3.10+ with `executorch` package installed.
 
-## Step 1: Export the model (Optional)
-The app can download the model automatically. If you want to export it yourself, run:
+## Step 1: Export the Model (Optional)
+The app can download the model automatically. If you want to export it yourself:
 ```bash
-python dl3/python/export.py
+cd dl3/python
+python export.py
 ```
 
-## Step 2: Set up your device or emulator
-You can run the app on either a physical device or an emulator.
+## Step 2: Set Up Your Device or Emulator
 
 ### Using a Physical Device
 * Connect your device to your computer via USB.
@@ -23,54 +31,69 @@ You can run the app on either a physical device or an emulator.
 * Open Android Studio and create a new virtual device.
 * Start the emulator by clicking the "Play" button next to the device name.
 
-## Step 3: Build, install, and run the app
-### On your terminal
+## Step 3: Build and Run the App
+
+### Using Terminal
 ```bash
 cd dl3/android/DeepLabV3Demo
 ./gradlew installDebug
-adb shell am start -W -S -n org.pytorch.executorchexamples.dl3/.MainActivity
+adb shell am start -n org.pytorch.executorchexamples.dl3/.MainActivity
 ```
 
-### On Android Studio
-Open Android Studio and open the project path `dl3/android/DeepLabV3Demo`. Wait for gradle sync to complete.
-Then simply press "Run app" button (Control + r) to run the app.
+### Using Android Studio
+1. Open the project at `dl3/android/DeepLabV3Demo`
+2. Wait for Gradle sync to complete
+3. Click "Run app" (Control + R)
 
-## Step 4: Download or Push the model
+## Step 4: Get the Model
 
-### Option A: Download from the app (Recommended)
-The app includes a **"Download Model"** button that automatically downloads and extracts the model. Simply tap the button and wait for the download to complete.
+### Option A: Download from the App (Recommended)
+When the app launches, tap the **"Download Model"** button. The model will be downloaded and extracted automatically.
 
-### Option B: Push manually via adb
-If you exported the model yourself or want to use a custom model:
+### Option B: Export and Push Manually
+If you exported the model yourself:
 ```bash
 adb push dl3_xnnpack_fp32.pte /data/local/tmp/dl3_xnnpack_fp32.pte
 ```
+> **Note:** The app stores downloaded models in its private storage. Manually pushed models go to `/data/local/tmp/`.
 
-> **Note:** If you want to use a QNN lowered model, modify the maven executorch dependency to [executorch-qnn](https://mvnrepository.com/artifact/org.pytorch/executorch-android-qnn) and rebuild the app.
+> **Note:** For QNN backend, change the maven dependency to [executorch-qnn](https://mvnrepository.com/artifact/org.pytorch/executorch-android-qnn) and rebuild.
 
-## Step 5: Load and Test Custom Images
-You can test image segmentation on your own images (supported formats: .jpg, .jpeg, .png) without rebuilding the APK.
+## Step 5: Using the App
 
-### How to Use
-1. Push your image to the device:
-   ```bash
-   adb push <path to your image> /sdcard/Pictures/
-   ```
+### Sample Images
+Tap **"Next sample image"** to cycle through 3 built-in sample images.
 
-2. In the app:
-   - Tap the **"Load And Refresh"** button
-   - If prompted, grant permission to access the /sdcard/Pictures/ folder
-   - The image should appear immediately
-   - Tap **"Run"** to perform segmentation
+### Pick Your Own Image
+1. Tap **"Pick Image"** to open your device's gallery
+2. Select any image (it will be automatically resized to 224x224)
+3. Tap **"Run"** to perform segmentation
 
-### Supported Classes
-The app detects all 21 PASCAL VOC classes including: Person, Dog, Cat, Car, Bicycle, Bird, and more. Each class is highlighted with a distinct color overlay.
+### Run Segmentation
+1. Tap **"Run"** to start inference
+2. The segmentation overlay appears blended with the original image
+3. Inference time is displayed below the image
 
-## Step 6: Run unit test
-### On your terminal
+### Reset
+Tap **"Reset"** to restore the original image without the segmentation overlay.
+
+## Supported Classes
+The app detects all 21 PASCAL VOC classes with distinct color overlays:
+
+| Class | Color | Class | Color |
+|-------|-------|-------|-------|
+| Person | Red | Dog | Green |
+| Cat | Magenta | Car | Cyan |
+| Bird | Yellow | Bicycle | Green |
+| Boat | Blue | Bottle | Orange |
+| And 13 more... | | | |
+
+## Step 6: Run Unit Tests
+
+### Using Terminal
 ```bash
 ./gradlew connectedAndroidTest
 ```
 
-### On Android Studio
-Open `app/src/androidTest/java/org/pytorch/executorchexamples/dl3/SanityCheck.java` and click the "Play" button for `public class SanityCheck`.
+### Using Android Studio
+Open `app/src/androidTest/java/org/pytorch/executorchexamples/dl3/SanityCheck.java` and click the Play button.

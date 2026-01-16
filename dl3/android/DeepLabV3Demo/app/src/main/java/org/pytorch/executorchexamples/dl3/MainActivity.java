@@ -111,6 +111,7 @@ public class MainActivity extends Activity implements Runnable {
             // Resize to 224x224 for the model
             mBitmap = Bitmap.createScaledBitmap(selectedBitmap, 224, 224, true);
             mImageView.setImageBitmap(mBitmap);
+            mInferenceTimeText.setVisibility(View.INVISIBLE);
             showUIMessage(this, "Image loaded - tap Run to segment");
           }
           if (inputStream != null) {
@@ -131,6 +132,7 @@ public class MainActivity extends Activity implements Runnable {
       if (mBitmap != null) {
         mBitmap = Bitmap.createScaledBitmap(mBitmap, 224, 224, true);
         mImageView.setImageBitmap(mBitmap);
+        mInferenceTimeText.setVisibility(View.INVISIBLE);
       }
     } catch (IOException e) {
       Log.e("MainActivity", "Error loading sample image", e);
