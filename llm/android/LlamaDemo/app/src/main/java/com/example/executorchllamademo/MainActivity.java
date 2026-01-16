@@ -798,7 +798,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
   }
 
   private void updateSendButtonState() {
-    boolean hasText = mEditTextMessage.getText().length() > 0;
+    boolean hasText = mEditTextMessage.getText().toString().trim().length() > 0;
     boolean enabled = mIsModelReady && !mIsGenerating && hasText;
     mSendButton.setEnabled(enabled);
     mSendButton.setAlpha(enabled ? 1.0f : 0.3f);
