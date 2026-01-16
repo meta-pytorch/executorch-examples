@@ -112,6 +112,8 @@ public class MainActivity extends Activity implements Runnable {
             mBitmap = Bitmap.createScaledBitmap(selectedBitmap, 224, 224, true);
             mImageView.setImageBitmap(mBitmap);
             mInferenceTimeText.setVisibility(View.INVISIBLE);
+            mModelStatusText.setVisibility(View.GONE);
+            findViewById(R.id.resetImage).setEnabled(false);
             showUIMessage(this, "Image loaded - tap Run to segment");
           }
           if (inputStream != null) {
@@ -132,7 +134,9 @@ public class MainActivity extends Activity implements Runnable {
       if (mBitmap != null) {
         mBitmap = Bitmap.createScaledBitmap(mBitmap, 224, 224, true);
         mImageView.setImageBitmap(mBitmap);
+        mImageView.setImageBitmap(mBitmap);
         mInferenceTimeText.setVisibility(View.INVISIBLE);
+        findViewById(R.id.resetImage).setEnabled(false);
       }
     } catch (IOException e) {
       Log.e("MainActivity", "Error loading sample image", e);
@@ -163,7 +167,11 @@ public class MainActivity extends Activity implements Runnable {
     mDownloadModelButton = findViewById(R.id.downloadModelButton);
     mProgressBar = findViewById(R.id.progressBar);
     mInferenceTimeText = findViewById(R.id.inferenceTimeText);
+    mInferenceTimeText = findViewById(R.id.inferenceTimeText);
     mModelStatusText = findViewById(R.id.modelStatusText);
+
+    // Hide control buttons initially
+    setButtonsVisibility(View.GONE);
 
     // Set model path to app's private storage
     mModelPath = getFilesDir().getAbsolutePath() + "/" + MODEL_FILENAME;
@@ -201,6 +209,13 @@ public class MainActivity extends Activity implements Runnable {
       intent.setType("image/*");
       startActivityForResult(intent, REQUEST_PICK_IMAGE);
     });
+  }
+
+  private void setButtonsVisibility(int visibility) {
+    findViewById(R.id.nextButton).setVisibility(visibility);
+    findViewById(R.id.loadAndRefreshButton).setVisibility(visibility);
+    findViewById(R.id.xnnpackButton).setVisibility(visibility);
+    findViewById(R.id.resetImage).setVisibility(visibility);
   }
 
   @Override
@@ -274,6 +289,7 @@ public class MainActivity extends Activity implements Runnable {
               mButtonXnnpack.setEnabled(true);
               mButtonXnnpack.setText(R.string.run_xnnpack);
               mProgressBar.setVisibility(ProgressBar.INVISIBLE);
+              findViewById(R.id.resetImage).setEnabled(true);
               mInferenceTimeText.setText("Inference: " + mInferenceTime + " ms");
               mInferenceTimeText.setVisibility(View.VISIBLE);
             });
@@ -309,21 +325,23 @@ public class MainActivity extends Activity implements Runnable {
         mButtonXnnpack.setEnabled(true);
         mDownloadModelButton.setEnabled(false);
         mDownloadModelButton.setText("Model Ready");
-        mModelStatusText.setText("Model loaded");
-        mModelStatusText.setVisibility(View.VISIBLE);
+        mModelStatusText.setVisibility(View.GONE);
+        setButtonsVisibility(View.VISIBLE);
       } catch (Exception e) {
         Log.e("MainActivity", "Failed to load model", e);
         showUIMessage(this, "Failed to load model: " + e.getMessage());
         mButtonXnnpack.setEnabled(false);
         mDownloadModelButton.setVisibility(View.VISIBLE);
-        mModelStatusText.setText("Model load failed");
-        mModelStatusText.setVisibility(View.VISIBLE);
+        setButtonsVisibility(View.GONE); // Hide buttons if model load fails
+        // mModelStatusText.setText("Model load failed");
+        mModelStatusText.setVisibility(View.VISIBLE); // Show model status text
       }
     } else {
       mButtonXnnpack.setEnabled(false);
       mDownloadModelButton.setVisibility(View.VISIBLE);
-      mModelStatusText.setText("Model not found");
-      mModelStatusText.setVisibility(View.VISIBLE);
+      setButtonsVisibility(View.GONE); // Hide buttons if model not found (download needed)
+      // mModelStatusText.setText("Model not found");
+      // mModelStatusText.setVisibility(View.VISIBLE);
     }
   }
 

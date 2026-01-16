@@ -4,153 +4,129 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FAFAFA"
-    android:padding="12dp"
+    android:background="@color/backgroundLight"
+    android:padding="16dp"
     tools:context=".MainActivity">
 
-    <!-- ImageView takes remaining space at top -->
+    <!-- Center Image Display -->
     <ImageView
         android:id="@+id/imageView"
         android:layout_width="0dp"
         android:layout_height="0dp"
+        android:layout_marginBottom="16dp"
+        android:background="#E0E0E0"
         android:contentDescription="@string/image_view"
-        android:scaleType="centerCrop"
-        app:layout_constraintBottom_toTopOf="@+id/progressBar"
-        app:layout_constraintDimensionRatio="1:1"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHeight_max="400dp"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0"
-        app:layout_constraintVertical_chainStyle="packed" />
-
-    <!-- ProgressBar -->
-    <ProgressBar
-        android:id="@+id/progressBar"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:visibility="invisible"
+        android:scaleType="fitCenter"
         app:layout_constraintBottom_toTopOf="@+id/inferenceTimeText"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/imageView" />
+        app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Inference Time Display -->
+    <!-- Inference Time Display (Just above controls) -->
     <TextView
         android:id="@+id/inferenceTimeText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
         android:text="@string/inference_time_placeholder"
-        android:textColor="#2196F3"
+        android:textColor="@color/primaryBlue"
         android:textSize="14sp"
         android:textStyle="bold"
         android:visibility="invisible"
-        app:layout_constraintBottom_toTopOf="@+id/nextButton"
+        app:layout_constraintBottom_toTopOf="@+id/controlsScrollView"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/progressBar" />
+        app:layout_constraintStart_toStartOf="parent" />
 
-    <!-- Row 1: Next | Pick Image -->
-    <Button
-        android:id="@+id/nextButton"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginEnd="4dp"
-        android:background="@drawable/btn_secondary"
-        android:text="@string/next"
-        android:textAllCaps="false"
-        android:textColor="#424242"
-        android:textSize="13sp"
-        app:layout_constraintBottom_toTopOf="@+id/xnnpackButton"
-        app:layout_constraintEnd_toStartOf="@+id/loadAndRefreshButton"
-        app:layout_constraintHeight_percent="0.06"
-        app:layout_constraintHorizontal_chainStyle="spread"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/inferenceTimeText" />
-
-    <Button
-        android:id="@+id/loadAndRefreshButton"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginStart="4dp"
-        android:background="@drawable/btn_secondary"
-        android:text="@string/load_and_refresh"
-        android:textAllCaps="false"
-        android:textColor="#424242"
-        android:textSize="13sp"
-        app:layout_constraintBottom_toTopOf="@+id/xnnpackButton"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHeight_percent="0.06"
-        app:layout_constraintStart_toEndOf="@+id/nextButton"
-        app:layout_constraintTop_toBottomOf="@+id/inferenceTimeText" />
-
-    <!-- Row 2: Run | Reset -->
-    <Button
-        android:id="@+id/xnnpackButton"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginTop="4dp"
-        android:layout_marginEnd="4dp"
-        android:background="@drawable/btn_success"
-        android:text="@string/run_xnnpack"
-        android:textAllCaps="false"
-        android:textColor="#FFFFFF"
-        android:textSize="15sp"
-        android:textStyle="bold"
-        app:layout_constraintBottom_toTopOf="@+id/modelStatusText"
-        app:layout_constraintEnd_toStartOf="@+id/resetImage"
-        app:layout_constraintHeight_percent="0.06"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/nextButton" />
-
-    <Button
-        android:id="@+id/resetImage"
-        android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginTop="4dp"
-        android:layout_marginStart="4dp"
-        android:background="@drawable/btn_secondary"
-        android:text="@string/reset"
-        android:textAllCaps="false"
-        android:textColor="#424242"
-        android:textSize="13sp"
-        app:layout_constraintBottom_toTopOf="@+id/modelStatusText"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHeight_percent="0.06"
-        app:layout_constraintStart_toEndOf="@+id/xnnpackButton"
-        app:layout_constraintTop_toBottomOf="@+id/nextButton" />
-
-    <!-- Model Status Text -->
-    <TextView
-        android:id="@+id/modelStatusText"
+    <!-- Circular Progress (Centered on Image) -->
+    <com.google.android.material.progressindicator.CircularProgressIndicator
+        android:id="@+id/progressBar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:text="@string/model_status_placeholder"
-        android:textColor="#757575"
-        android:textSize="12sp"
+        android:indeterminate="true"
         android:visibility="invisible"
-        app:layout_constraintBottom_toTopOf="@+id/downloadModelButton"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/xnnpackButton" />
+        app:indicatorColor="@color/primaryBlue"
+        app:layout_constraintBottom_toBottomOf="@+id/imageView"
+        app:layout_constraintEnd_toEndOf="@+id/imageView"
+        app:layout_constraintStart_toStartOf="@+id/imageView"
+        app:layout_constraintTop_toTopOf="@+id/imageView" />
 
-    <!-- Download Model Button -->
-    <Button
-        android:id="@+id/downloadModelButton"
+    <!-- Controls Row (Horizontal Scrollable) -->
+    <HorizontalScrollView
+        android:id="@+id/controlsScrollView"
         android:layout_width="0dp"
-        android:layout_height="0dp"
-        android:layout_marginTop="4dp"
-        android:background="@drawable/btn_primary"
-        android:text="@string/download_model"
-        android:textAllCaps="false"
-        android:textColor="#FFFFFF"
-        android:textSize="13sp"
-        android:visibility="visible"
+        android:layout_height="wrap_content"
+        android:fillViewport="true"
+        android:scrollbars="none"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHeight_percent="0.06"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/modelStatusText" />
+        app:layout_constraintStart_toStartOf="parent">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <!-- 1. Download / Status -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/downloadModelButton"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:elevation="4dp"
+                android:text="@string/download_model" />
+            
+            <!-- Needed to keep logic working, though hidden if handled by button text -->
+            <TextView
+                android:id="@+id/modelStatusText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+
+            <!-- 2. Next Sample -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/nextButton"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:elevation="4dp"
+                android:text="Next"
+                tools:text="Next" />
+
+            <!-- 3. Pick Image -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/loadAndRefreshButton"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:elevation="4dp"
+                android:text="Pick"
+                tools:text="Pick" />
+
+            <!-- 4. Run -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/xnnpackButton"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:elevation="4dp"
+                android:text="@string/run_xnnpack" />
+
+            <!-- 5. Reset -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/resetImage"
+                style="@style/Widget.Material3.Button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:elevation="4dp"
+                android:enabled="false"
+                android:text="@string/reset" />
+
+        </LinearLayout>
+    </HorizontalScrollView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
