@@ -512,7 +512,15 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
     ImageButton addMediaButton = requireViewById(R.id.addMediaButton);
     addMediaButton.setOnClickListener(
         view -> {
-          mAddMediaLayout.setVisibility(View.VISIBLE);
+          if (mAddMediaLayout.getVisibility() == View.VISIBLE) {
+            // Collapse: hide the media layout and change icon back to +
+            mAddMediaLayout.setVisibility(View.GONE);
+            addMediaButton.setImageResource(R.drawable.baseline_add_24);
+          } else {
+            // Expand: show the media layout and change icon to collapse (down arrow)
+            mAddMediaLayout.setVisibility(View.VISIBLE);
+            addMediaButton.setImageResource(R.drawable.expand_circle_down);
+          }
         });
 
     mGalleryButton = requireViewById(R.id.galleryButton);
@@ -798,7 +806,7 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
   }
 
   private void updateSendButtonState() {
-    boolean hasText = mEditTextMessage.getText().length() > 0;
+    boolean hasText = mEditTextMessage.getText().toString().trim().length() > 0;
     boolean enabled = mIsModelReady && !mIsGenerating && hasText;
     mSendButton.setEnabled(enabled);
     mSendButton.setAlpha(enabled ? 1.0f : 0.3f);
@@ -808,7 +816,6 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
     mIsGenerating = true;
     mSendButton.setEnabled(true);
     mSendButton.setAlpha(1.0f);
-    mSendButton.setClickable(true);
     mSendButton.setImageResource(R.drawable.baseline_stop_24);
     mSendButton.setOnClickListener(
         view -> {

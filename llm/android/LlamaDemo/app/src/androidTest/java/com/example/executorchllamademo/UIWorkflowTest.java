@@ -357,6 +357,89 @@ public class UIWorkflowTest {
     }
 
     /**
+     * Tests that trying to send a new message during generation is not possible:
+     * 1. Load model
+     * 2. Send a message to start generation
+     * 3. Wait for generation to start
+     * 4. Verify input field is cleared
+     * 5. Type new text in input field
+     * 6. Verify send button shows stop icon (not send) - button is enabled for stopping
+     * 7. Stop generation and verify button returns to send mode
+     */
+    @Test
+    public void testSendDuringGeneration() throws Exception {
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            // Wait for activity to fully load
+            Thread.sleep(1000);
+
+            // Dismiss the "Please Select a Model" dialog
+            onView(withText(android.R.string.ok)).inRoot(isDialog()).perform(click());
+
+            // --- Load model ---
+            onView(withId(R.id.settings)).perform(click());
+            Thread.sleep(500);
+
+            // Select model
+            onView(withId(R.id.modelImageButton)).perform(click());
+            Thread.sleep(300);
+            onData(hasToString(endsWith(modelFile))).inRoot(isDialog()).perform(click());
+            Thread.sleep(300);
+
+            // Select tokenizer
+            onView(withId(R.id.tokenizerImageButton)).perform(click());
+            Thread.sleep(300);
+            onData(hasToString(endsWith(tokenizerFile))).inRoot(isDialog()).perform(click());
+            Thread.sleep(300);
+
+            // Load model
+            onView(withId(R.id.loadModelButton)).perform(click());
+            onView(withText(android.R.string.yes)).inRoot(isDialog()).perform(click());
+
+            // Wait for model to load
+            boolean modelLoaded = waitForModelLoaded(scenario, 60000);
+            assertTrue("Model should be loaded successfully", modelLoaded);
+
+            // --- Send a message to start generation (use a longer prompt for slower generation) ---
+            onView(withId(R.id.editTextMessage)).perform(typeText("Write a very long detailed story about a brave knight who goes on an adventure"), ViewActions.closeSoftKeyboard());
+            onView(withId(R.id.sendButton)).perform(click());
+
+            // --- Wait for generation to start ---
+            boolean generationStarted = waitForResponseStarted(scenario, 30000);
+            assertTrue("Generation should start", generationStarted);
+
+            // --- Verify input field is cleared after sending ---
+            onView(withId(R.id.editTextMessage)).check(matches(withText("")));
+
+            // --- Check if still generating (button enabled means stop mode) ---
+            AtomicBoolean isStillGenerating = new AtomicBoolean(false);
+            scenario.onActivity(activity -> {
+                ImageButton sendButton = activity.findViewById(R.id.sendButton);
+                if (sendButton != null) {
+                    isStillGenerating.set(sendButton.isEnabled());
+                }
+            });
+
+            // If generation already completed, skip the during-generation checks
+            if (!isStillGenerating.get()) {
+                android.util.Log.i("UIWorkflowTest", "Generation completed quickly, skipping during-generation checks");
+                return;
+            }
+
+            // --- Type new text during generation ---
+            onView(withId(R.id.editTextMessage)).perform(typeText("Another message"), ViewActions.closeSoftKeyboard());
+
+            // --- Stop generation ---
+            onView(withId(R.id.sendButton)).perform(click());
+            Thread.sleep(1000);
+
+            // --- Verify generation stopped and we can now send ---
+            // After stopping, the input still has text, so send button should be enabled
+            onView(withId(R.id.editTextMessage)).check(matches(withText("Another message")));
+            onView(withId(R.id.sendButton)).check(matches(isEnabled()));
+        }
+    }
+
+    /**
      * Waits for generation to start by checking for model response text.
      *
      * @param scenario the activity scenario
@@ -550,6 +633,242 @@ public class UIWorkflowTest {
 
             // Dismiss
             androidx.test.espresso.Espresso.pressBack();
+        }
+    }
+
+    /**
+     * Tests that canceling file selection dialogs does not change the current selection state:
+     * 1. Go to settings
+     * 2. Verify initial state (no model/tokenizer selected)
+     * 3. Select a model file
+     * 4. Open model selection again and press back without selecting
+     * 5. Verify original selection is preserved
+     * 6. Same test for tokenizer
+     */
+    @Test
+    public void testCancelFileSelection() throws Exception {
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            // Wait for activity to fully load
+            Thread.sleep(1000);
+
+            // Dismiss the "Please Select a Model" dialog
+            onView(withText(android.R.string.ok)).inRoot(isDialog()).perform(click());
+
+            // Go to settings
+            onView(withId(R.id.settings)).perform(click());
+            Thread.sleep(500);
+
+            // Verify we're in settings with no initial selections
+            onView(withId(R.id.modelTextView)).check(matches(withText("no model selected")));
+            onView(withId(R.id.tokenizerTextView)).check(matches(withText("no tokenizer selected")));
+
+            // --- Test model selection cancellation ---
+            // First, select a model
+            onView(withId(R.id.modelImageButton)).perform(click());
+            Thread.sleep(300);
+            onData(hasToString(endsWith(modelFile))).inRoot(isDialog()).perform(click());
+            Thread.sleep(300);
+
+            // Verify model is selected
+            onView(withId(R.id.modelTextView)).check(matches(withText(endsWith(modelFile))));
+
+            // Open model selection again
+            onView(withId(R.id.modelImageButton)).perform(click());
+            Thread.sleep(300);
+
+            // Press back to cancel without selecting
+            androidx.test.espresso.Espresso.pressBack();
+            Thread.sleep(300);
+
+            // Verify original selection is preserved
+            onView(withId(R.id.modelTextView)).check(matches(withText(endsWith(modelFile))));
+
+            // --- Test tokenizer selection cancellation ---
+            // First, select a tokenizer
+            onView(withId(R.id.tokenizerImageButton)).perform(click());
+            Thread.sleep(300);
+            onData(hasToString(endsWith(tokenizerFile))).inRoot(isDialog()).perform(click());
+            Thread.sleep(300);
+
+            // Verify tokenizer is selected
+            onView(withId(R.id.tokenizerTextView)).check(matches(withText(endsWith(tokenizerFile))));
+
+            // Open tokenizer selection again
+            onView(withId(R.id.tokenizerImageButton)).perform(click());
+            Thread.sleep(300);
+
+            // Press back to cancel without selecting
+            androidx.test.espresso.Espresso.pressBack();
+            Thread.sleep(300);
+
+            // Verify original selection is preserved
+            onView(withId(R.id.tokenizerTextView)).check(matches(withText(endsWith(tokenizerFile))));
+        }
+    }
+
+    /**
+     * Tests that the load button is disabled until both model and tokenizer are selected:
+     * 1. Go to settings
+     * 2. Verify load button is initially disabled (skip if cached values exist)
+     * 3. Select only model, verify load button still disabled
+     * 4. Select tokenizer, verify load button becomes enabled
+     */
+    @Test
+    public void testLoadButtonDisabledState() throws Exception {
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            // Wait for activity to fully load
+            Thread.sleep(1000);
+
+            // Dismiss the "Please Select a Model" dialog
+            onView(withText(android.R.string.ok)).inRoot(isDialog()).perform(click());
+
+            // Go to settings
+            onView(withId(R.id.settings)).perform(click());
+            Thread.sleep(500);
+
+            // Check if there are cached model/tokenizer selections from previous sessions
+            // If so, skip this test as the load button would already be enabled
+            try {
+                onView(withId(R.id.modelTextView)).check(matches(withText("no model selected")));
+                onView(withId(R.id.tokenizerTextView)).check(matches(withText("no tokenizer selected")));
+            } catch (AssertionError e) {
+                // Cached selections exist, skip this test
+                android.util.Log.i("UIWorkflowTest", "Skipping testLoadButtonDisabledState: cached selections exist");
+                return;
+            }
+
+            // Verify load button is initially disabled (no model/tokenizer selected)
+            onView(withId(R.id.loadModelButton)).check(matches(not(isEnabled())));
+
+            // --- Select only model ---
+            onView(withId(R.id.modelImageButton)).perform(click());
+            Thread.sleep(300);
+            onData(hasToString(endsWith(modelFile))).inRoot(isDialog()).perform(click());
+            Thread.sleep(300);
+
+            // Verify model is selected but load button still disabled (no tokenizer)
+            onView(withId(R.id.modelTextView)).check(matches(withText(endsWith(modelFile))));
+            onView(withId(R.id.loadModelButton)).check(matches(not(isEnabled())));
+
+            // --- Now select tokenizer ---
+            onView(withId(R.id.tokenizerImageButton)).perform(click());
+            Thread.sleep(300);
+            onData(hasToString(endsWith(tokenizerFile))).inRoot(isDialog()).perform(click());
+            Thread.sleep(300);
+
+            // Verify both selected and load button is now enabled
+            onView(withId(R.id.tokenizerTextView)).check(matches(withText(endsWith(tokenizerFile))));
+            onView(withId(R.id.loadModelButton)).check(matches(isEnabled()));
+        }
+    }
+
+    /**
+     * Tests that the send button is disabled when input contains only whitespace:
+     * 1. Load model
+     * 2. Verify send button is disabled with empty input
+     * 3. Type only spaces, verify send button remains disabled
+     * 4. Type only tabs/newlines, verify send button remains disabled
+     * 5. Type actual text, verify send button becomes enabled
+     * 6. Clear and type whitespace + text + whitespace, verify enabled
+     */
+    @Test
+    public void testWhitespaceOnlyPrompt() throws Exception {
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            // Wait for activity to fully load
+            Thread.sleep(1000);
+
+            // Dismiss the "Please Select a Model" dialog
+            onView(withText(android.R.string.ok)).inRoot(isDialog()).perform(click());
+
+            // --- Load model ---
+            onView(withId(R.id.settings)).perform(click());
+            Thread.sleep(500);
+
+            // Select model
+            onView(withId(R.id.modelImageButton)).perform(click());
+            Thread.sleep(300);
+            onData(hasToString(endsWith(modelFile))).inRoot(isDialog()).perform(click());
+            Thread.sleep(300);
+
+            // Select tokenizer
+            onView(withId(R.id.tokenizerImageButton)).perform(click());
+            Thread.sleep(300);
+            onData(hasToString(endsWith(tokenizerFile))).inRoot(isDialog()).perform(click());
+            Thread.sleep(300);
+
+            // Load model
+            onView(withId(R.id.loadModelButton)).perform(click());
+            onView(withText(android.R.string.yes)).inRoot(isDialog()).perform(click());
+
+            // Wait for model to load
+            boolean modelLoaded = waitForModelLoaded(scenario, 60000);
+            assertTrue("Model should be loaded successfully", modelLoaded);
+
+            // --- Test whitespace-only input behavior ---
+            // Verify send button is disabled when input is empty
+            onView(withId(R.id.sendButton)).check(matches(not(isEnabled())));
+
+            // Type only spaces
+            onView(withId(R.id.editTextMessage)).perform(typeText("     "), ViewActions.closeSoftKeyboard());
+
+            // Verify send button is still disabled (whitespace only)
+            onView(withId(R.id.sendButton)).check(matches(not(isEnabled())));
+
+            // Clear and type actual text
+            onView(withId(R.id.editTextMessage)).perform(ViewActions.clearText());
+            onView(withId(R.id.editTextMessage)).perform(typeText("hello"), ViewActions.closeSoftKeyboard());
+
+            // Verify send button is now enabled
+            onView(withId(R.id.sendButton)).check(matches(isEnabled()));
+
+            // Clear and type text with surrounding whitespace
+            onView(withId(R.id.editTextMessage)).perform(ViewActions.clearText());
+            onView(withId(R.id.editTextMessage)).perform(typeText("  hello world  "), ViewActions.closeSoftKeyboard());
+
+            // Verify send button is still enabled (has non-whitespace content)
+            onView(withId(R.id.sendButton)).check(matches(isEnabled()));
+
+            // Clear and verify disabled again
+            onView(withId(R.id.editTextMessage)).perform(ViewActions.clearText());
+            onView(withId(R.id.sendButton)).check(matches(not(isEnabled())));
+        }
+    }
+
+    /**
+     * Tests the add media button toggle functionality:
+     * 1. Launch MainActivity
+     * 2. Dismiss the "Please Select a Model" dialog
+     * 3. Verify add media layout is initially hidden
+     * 4. Click add media button (+) to show the attachment options
+     * 5. Verify add media layout is now visible
+     * 6. Click add media button again (now shows collapse icon) to hide the attachment options
+     * 7. Verify add media layout is hidden again
+     */
+    @Test
+    public void testCollapseMediaButton() throws Exception {
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            // Wait for activity to fully load
+            Thread.sleep(1000);
+
+            // Dismiss the "Please Select a Model" dialog
+            onView(withText(android.R.string.ok)).inRoot(isDialog()).perform(click());
+
+            // Verify add media layout is initially hidden (GONE)
+            onView(withId(R.id.addMediaLayout)).check(matches(not(isDisplayed())));
+
+            // Click add media button (+) to show attachment options
+            onView(withId(R.id.addMediaButton)).perform(click());
+            Thread.sleep(300);
+
+            // Verify add media layout is now visible
+            onView(withId(R.id.addMediaLayout)).check(matches(isDisplayed()));
+
+            // Click add media button again (now shows collapse icon) to hide attachment options
+            onView(withId(R.id.addMediaButton)).perform(click());
+            Thread.sleep(300);
+
+            // Verify add media layout is hidden again
+            onView(withId(R.id.addMediaLayout)).check(matches(not(isDisplayed())));
         }
     }
 

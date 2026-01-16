@@ -43,9 +43,6 @@ public class SettingsActivity extends AppCompatActivity {
   // mSettingsFields is the single source of truth for all settings
   public SettingsFields mSettingsFields;
 
-  // Store initial settings to detect changes
-  private SettingsFields mInitialSettingsFields;
-
   private DemoSharedPreferences mDemoSharedPreferences;
   public static double TEMPERATURE_MIN_VALUE = 0.0;
 
@@ -157,9 +154,6 @@ public class SettingsActivity extends AppCompatActivity {
       mBackendTextView.setText(backendType.toString());
       setBackendSettingMode();
     }
-
-    // Store initial values for change detection
-    storeInitialSettings();
 
     setupParameterSettings();
     setupPromptSettings();
@@ -520,21 +514,13 @@ public class SettingsActivity extends AppCompatActivity {
     return "";
   }
 
-  private void storeInitialSettings() {
-    mInitialSettingsFields = new SettingsFields(mSettingsFields);
-  }
-
-  private boolean hasSettingsChanged() {
-    return !mSettingsFields.equals(mInitialSettingsFields);
-  }
-
   private void updateLoadModelButtonState() {
-    // Enable button if settings changed OR if valid pre-filled paths are available
+    // Enable button only if valid model and tokenizer paths are selected
     String modelFilePath = mSettingsFields.getModelFilePath();
     String tokenizerFilePath = mSettingsFields.getTokenizerFilePath();
     boolean hasValidPaths = modelFilePath != null && !modelFilePath.isEmpty()
         && tokenizerFilePath != null && !tokenizerFilePath.isEmpty();
-    mLoadModelButton.setEnabled(hasSettingsChanged() || hasValidPaths);
+    mLoadModelButton.setEnabled(hasValidPaths);
   }
 
   private void setBackendSettingMode() {
