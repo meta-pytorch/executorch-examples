@@ -24,6 +24,8 @@ import android.os.Process;
 import android.provider.MediaStore;
 import android.system.ErrnoException;
 import android.system.Os;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
@@ -92,6 +94,8 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
   private boolean sawStartHeaderId = false;
   private String mAudioFileToPrefill;
   private boolean shouldAddSystemPrompt = true;
+  private boolean mIsModelReady = false;
+  private boolean mIsGenerating = false;
 
   @Override
   public void onResult(String result) {
@@ -160,7 +164,8 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
                 + dataPath);
     runOnUiThread(
         () -> {
-          mSendButton.setEnabled(false);
+          mIsModelReady = false;
+          updateSendButtonState();
           mMessageAdapter.add(modelLoadingMessage);
           mMessageAdapter.notifyDataSetChanged();
         });
@@ -245,7 +250,8 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
 
     runOnUiThread(
         () -> {
-          mSendButton.setEnabled(true);
+          mIsModelReady = true;
+          updateSendButtonState();
           mMessageAdapter.remove(modelLoadingMessage);
           mMessageAdapter.add(modelLoadedMessage);
           mMessageAdapter.notifyDataSetChanged();
@@ -300,6 +306,22 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
     mEditTextMessage = requireViewById(R.id.editTextMessage);
     mSendButton = requireViewById(R.id.sendButton);
     mSendButton.setEnabled(false);
+
+    // Add TextWatcher to enable/disable send button based on input
+    mEditTextMessage.addTextChangedListener(
+        new TextWatcher() {
+          @Override
+          public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+
+          @Override
+          public void onTextChanged(CharSequence s, int start, int before, int count) {}
+
+          @Override
+          public void afterTextChanged(Editable s) {
+            updateSendButtonState();
+          }
+        });
+
     mMessagesView = requireViewById(R.id.messages_view);
     mMessageAdapter = new MessageAdapter(this, R.layout.sent_message, new ArrayList<Message>());
     mMessagesView.setAdapter(mMessageAdapter);
@@ -775,7 +797,17 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
     mMessageAdapter.notifyDataSetChanged();
   }
 
+  private void updateSendButtonState() {
+    boolean hasText = mEditTextMessage.getText().length() > 0;
+    boolean enabled = mIsModelReady && !mIsGenerating && hasText;
+    mSendButton.setEnabled(enabled);
+    mSendButton.setAlpha(enabled ? 1.0f : 0.3f);
+  }
+
   private void onModelRunStarted() {
+    mIsGenerating = true;
+    mSendButton.setEnabled(true);
+    mSendButton.setAlpha(1.0f);
     mSendButton.setClickable(true);
     mSendButton.setImageResource(R.drawable.baseline_stop_24);
     mSendButton.setOnClickListener(
@@ -785,7 +817,8 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
   }
 
   private void onModelRunStopped() {
-    mSendButton.setClickable(true);
+    mIsGenerating = false;
+    updateSendButtonState();
     mSendButton.setImageResource(R.drawable.baseline_send_24);
     mSendButton.setOnClickListener(
         view -> {
