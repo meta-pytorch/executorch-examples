@@ -512,7 +512,15 @@ public class MainActivity extends AppCompatActivity implements Runnable, LlmCall
     ImageButton addMediaButton = requireViewById(R.id.addMediaButton);
     addMediaButton.setOnClickListener(
         view -> {
-          mAddMediaLayout.setVisibility(View.VISIBLE);
+          if (mAddMediaLayout.getVisibility() == View.VISIBLE) {
+            // Collapse: hide the media layout and change icon back to +
+            mAddMediaLayout.setVisibility(View.GONE);
+            addMediaButton.setImageResource(R.drawable.baseline_add_24);
+          } else {
+            // Expand: show the media layout and change icon to collapse (down arrow)
+            mAddMediaLayout.setVisibility(View.VISIBLE);
+            addMediaButton.setImageResource(R.drawable.expand_circle_down);
+          }
         });
 
     mGalleryButton = requireViewById(R.id.galleryButton);

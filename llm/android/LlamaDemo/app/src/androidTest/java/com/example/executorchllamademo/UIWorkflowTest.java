@@ -835,6 +835,44 @@ public class UIWorkflowTest {
     }
 
     /**
+     * Tests the add media button toggle functionality:
+     * 1. Launch MainActivity
+     * 2. Dismiss the "Please Select a Model" dialog
+     * 3. Verify add media layout is initially hidden
+     * 4. Click add media button (+) to show the attachment options
+     * 5. Verify add media layout is now visible
+     * 6. Click add media button again (now shows collapse icon) to hide the attachment options
+     * 7. Verify add media layout is hidden again
+     */
+    @Test
+    public void testCollapseMediaButton() throws Exception {
+        try (ActivityScenario<MainActivity> scenario = ActivityScenario.launch(MainActivity.class)) {
+            // Wait for activity to fully load
+            Thread.sleep(1000);
+
+            // Dismiss the "Please Select a Model" dialog
+            onView(withText(android.R.string.ok)).inRoot(isDialog()).perform(click());
+
+            // Verify add media layout is initially hidden (GONE)
+            onView(withId(R.id.addMediaLayout)).check(matches(not(isDisplayed())));
+
+            // Click add media button (+) to show attachment options
+            onView(withId(R.id.addMediaButton)).perform(click());
+            Thread.sleep(300);
+
+            // Verify add media layout is now visible
+            onView(withId(R.id.addMediaLayout)).check(matches(isDisplayed()));
+
+            // Click add media button again (now shows collapse icon) to hide attachment options
+            onView(withId(R.id.addMediaButton)).perform(click());
+            Thread.sleep(300);
+
+            // Verify add media layout is hidden again
+            onView(withId(R.id.addMediaLayout)).check(matches(not(isDisplayed())));
+        }
+    }
+
+    /**
      * Writes the model response to logcat with a special tag for extraction.
      * The response can be extracted from logcat using: grep "LLAMA_RESPONSE"
      */
