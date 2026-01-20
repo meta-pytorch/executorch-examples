@@ -20,6 +20,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import com.example.executorchllamademo.R
@@ -131,6 +133,7 @@ fun ChatInput(
         }
         
         // Send/Stop button
+        val sendButtonDescription = if (isGenerating) "Stop" else "Send"
         IconButton(
             onClick = onSendClick,
             enabled = isSendEnabled,
@@ -141,12 +144,13 @@ fun ChatInput(
                     shape = CircleShape
                 )
                 .testTag("sendButton")
+                .semantics { contentDescription = sendButtonDescription }
         ) {
             Icon(
                 painter = painterResource(
                     if (isGenerating) R.drawable.baseline_stop_24 else R.drawable.baseline_send_24
                 ),
-                contentDescription = if (isGenerating) "Stop" else "Send",
+                contentDescription = null,
                 tint = TextOnPrimary
             )
         }

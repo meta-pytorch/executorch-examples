@@ -21,6 +21,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.executorchllamademo.LogsActivity
 import com.example.executorchllamademo.R
@@ -77,11 +79,12 @@ fun ChatScreen(
                     IconButton(
                         onClick = {
                             context.startActivity(Intent(context, LogsActivity::class.java))
-                        }
+                        },
+                        modifier = Modifier.semantics { contentDescription = "Logs" }
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.baseline_article_24),
-                            contentDescription = "Logs",
+                            contentDescription = null,
                             tint = TextSecondary
                         )
                     }
@@ -89,11 +92,13 @@ fun ChatScreen(
                         onClick = {
                             context.startActivity(Intent(context, SettingsActivity::class.java))
                         },
-                        modifier = Modifier.testTag("settings")
+                        modifier = Modifier
+                            .testTag("settings")
+                            .semantics { contentDescription = "Settings" }
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.baseline_settings_24),
-                            contentDescription = "Settings",
+                            contentDescription = null,
                             tint = TextSecondary
                         )
                     }
