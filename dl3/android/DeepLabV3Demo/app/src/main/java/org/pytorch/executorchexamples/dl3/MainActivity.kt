@@ -362,7 +362,7 @@ class MainActivity : ComponentActivity() {
             )
 
             // Ensure module is loaded before running inference
-            val loadedModule = module ?: throw IllegalStateException("Module not loaded")
+            val loadedModule = module ?: throw IllegalStateException("Module not loaded. Please download the model first.")
             
             val startTime = SystemClock.elapsedRealtime()
             val outputTensor = loadedModule.forward(EValue.from(inputTensor))[0].toTensor()
