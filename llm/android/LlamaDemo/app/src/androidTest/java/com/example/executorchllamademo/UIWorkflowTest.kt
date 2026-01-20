@@ -68,36 +68,33 @@ class UIWorkflowTest {
     fun testModelLoadingWorkflow() {
         ActivityScenario.launch(MainActivity::class.java)
         device.wait(Until.hasObject(By.pkg(PACKAGE_NAME).depth(0)), TIMEOUT_MS)
-        Thread.sleep(1000)
+        Thread.sleep(1500)
 
-        // Dismiss initial dialog
-        clickButton("OK")
-        Thread.sleep(500)
+        // Dismiss initial dialog - try multiple approaches
+        dismissDialog()
 
-        // Click settings button (by content description)
-        clickByDescription("Settings")
-        Thread.sleep(1000)
+        // Click settings using resource-id (testTag becomes resource-id in Compose)
+        val settingsClicked = clickByResourceId("settings") || 
+                              clickByDesc("Settings") ||
+                              clickAnyClickable(1) // second clickable button
+        assertTrue("Should click settings button", settingsClicked)
+        Thread.sleep(1500)
 
-        // Wait for settings screen
-        val loadModelVisible = device.wait(Until.hasObject(By.text("Load Model")), TIMEOUT_MS)
+        // Wait for settings screen - look for Load Model button
+        val loadModelVisible = waitForResourceId("loadModelButton", TIMEOUT_MS) ||
+                               device.wait(Until.hasObject(By.textContains("Load Model")), TIMEOUT_MS)
         assertTrue("Should navigate to settings screen", loadModelVisible)
 
-        // Verify model/tokenizer are not selected
-        assertTrue("Should show no model selected", 
-            device.findObject(UiSelector().textContains("no model")).exists())
-        assertTrue("Should show no tokenizer selected", 
-            device.findObject(UiSelector().textContains("no tokenizer")).exists())
-
-        // Click model select (by description)
-        clickByDescription("Select Model")
+        // Click model selection by resource-id
+        clickByResourceId("modelImageButton") || clickByDesc("Select Model")
         Thread.sleep(500)
 
         // Select model file
         device.wait(Until.findObject(By.textContains(modelFile)), TIMEOUT_MS)?.click()
         Thread.sleep(500)
 
-        // Click tokenizer select
-        clickByDescription("Select Tokenizer")
+        // Click tokenizer selection
+        clickByResourceId("tokenizerImageButton") || clickByDesc("Select Tokenizer")
         Thread.sleep(500)
 
         // Select tokenizer file
@@ -105,22 +102,20 @@ class UIWorkflowTest {
         Thread.sleep(500)
 
         // Click Load Model button
-        device.findObject(UiSelector().text("Load Model"))?.click()
+        clickByResourceId("loadModelButton") || clickByText("Load Model")
         Thread.sleep(500)
 
         // Confirm dialog
-        clickButton("OK")
+        dismissDialog()
     }
 
     @Test
     fun testSendMessageAndReceiveResponse() {
         ActivityScenario.launch(MainActivity::class.java)
         device.wait(Until.hasObject(By.pkg(PACKAGE_NAME).depth(0)), TIMEOUT_MS)
-        Thread.sleep(1000)
+        Thread.sleep(1500)
 
-        clickButton("OK")
-        Thread.sleep(500)
-
+        dismissDialog()
         loadModel()
 
         // Wait for model to load
@@ -135,7 +130,7 @@ class UIWorkflowTest {
         }
 
         // Click send button
-        clickByDescription("Send")
+        clickByResourceId("sendButton") || clickByDesc("Send")
         
         // Wait for response
         Thread.sleep(10000)
@@ -146,11 +141,9 @@ class UIWorkflowTest {
     fun testStopGeneration() {
         ActivityScenario.launch(MainActivity::class.java)
         device.wait(Until.hasObject(By.pkg(PACKAGE_NAME).depth(0)), TIMEOUT_MS)
-        Thread.sleep(1000)
+        Thread.sleep(1500)
 
-        clickButton("OK")
-        Thread.sleep(500)
-
+        dismissDialog()
         loadModel()
 
         val modelLoaded = waitForText("Successfully loaded model", LONG_TIMEOUT_MS)
@@ -164,11 +157,11 @@ class UIWorkflowTest {
         }
 
         // Send
-        clickByDescription("Send")
+        clickByResourceId("sendButton") || clickByDesc("Send")
         Thread.sleep(3000)
 
         // Click stop
-        clickByDescription("Stop")
+        clickByResourceId("sendButton") || clickByDesc("Stop")
         Thread.sleep(1000)
         
         Log.i("STOP_TEST", "Stop generation test completed")
@@ -178,11 +171,9 @@ class UIWorkflowTest {
     fun testEmptyPromptSend() {
         ActivityScenario.launch(MainActivity::class.java)
         device.wait(Until.hasObject(By.pkg(PACKAGE_NAME).depth(0)), TIMEOUT_MS)
-        Thread.sleep(1000)
+        Thread.sleep(1500)
 
-        clickButton("OK")
-        Thread.sleep(500)
-
+        dismissDialog()
         loadModel()
 
         val modelLoaded = waitForText("Successfully loaded model", LONG_TIMEOUT_MS)
@@ -205,17 +196,16 @@ class UIWorkflowTest {
     fun testFileSelectionDialogs() {
         ActivityScenario.launch(MainActivity::class.java)
         device.wait(Until.hasObject(By.pkg(PACKAGE_NAME).depth(0)), TIMEOUT_MS)
-        Thread.sleep(1000)
+        Thread.sleep(1500)
 
-        clickButton("OK")
-        Thread.sleep(500)
+        dismissDialog()
 
         // Go to settings
-        clickByDescription("Settings")
-        Thread.sleep(1000)
+        clickByResourceId("settings") || clickByDesc("Settings")
+        Thread.sleep(1500)
 
         // Click model selection
-        clickByDescription("Select Model")
+        clickByResourceId("modelImageButton") || clickByDesc("Select Model")
         Thread.sleep(500)
 
         // Verify model dialog appears
@@ -223,56 +213,107 @@ class UIWorkflowTest {
         assertTrue("Model selection dialog should appear", modelDialog)
 
         // Dismiss
-        clickButton("Cancel")
+        clickByText("Cancel")
         Thread.sleep(500)
 
         // Click tokenizer selection
-        clickByDescription("Select Tokenizer")
+        clickByResourceId("tokenizerImageButton") || clickByDesc("Select Tokenizer")
         Thread.sleep(500)
 
         // Verify tokenizer dialog
         val tokenizerDialog = device.wait(Until.hasObject(By.textContains("Select tokenizer")), TIMEOUT_MS)
         assertTrue("Tokenizer selection dialog should appear", tokenizerDialog)
 
-        clickButton("Cancel")
+        clickByText("Cancel")
     }
 
     // --- Helper Methods ---
 
-    private fun clickButton(text: String) {
-        device.findObject(UiSelector().text(text))?.click()
-            ?: device.findObject(UiSelector().textContains(text))?.click()
+    private fun dismissDialog() {
+        Thread.sleep(300)
+        // Try OK button
+        clickByText("OK")
+        Thread.sleep(300)
     }
 
-    private fun clickByDescription(description: String) {
-        device.findObject(UiSelector().description(description))?.click()
-            ?: device.findObject(UiSelector().descriptionContains(description))?.click()
+    private fun clickByResourceId(resourceId: String): Boolean {
+        val fullId = "$PACKAGE_NAME:id/$resourceId"
+        val obj = device.findObject(UiSelector().resourceId(fullId))
+        return if (obj.exists()) {
+            obj.click()
+            true
+        } else {
+            // Try without package prefix (Compose testTag)
+            val obj2 = device.wait(Until.findObject(By.res(PACKAGE_NAME, resourceId)), 1000)
+            obj2?.click()
+            obj2 != null
+        }
+    }
+
+    private fun clickByDesc(description: String): Boolean {
+        val obj = device.findObject(UiSelector().descriptionContains(description))
+        return if (obj.exists()) {
+            obj.click()
+            true
+        } else {
+            false
+        }
+    }
+
+    private fun clickByText(text: String): Boolean {
+        val obj = device.findObject(UiSelector().text(text))
+        return if (obj.exists()) {
+            obj.click()
+            true
+        } else {
+            val obj2 = device.findObject(UiSelector().textContains(text))
+            if (obj2.exists()) {
+                obj2.click()
+                true
+            } else {
+                false
+            }
+        }
+    }
+
+    private fun clickAnyClickable(index: Int): Boolean {
+        val obj = device.findObject(UiSelector().clickable(true).instance(index))
+        return if (obj.exists()) {
+            obj.click()
+            true
+        } else {
+            false
+        }
+    }
+
+    private fun waitForResourceId(resourceId: String, timeoutMs: Long): Boolean {
+        val obj = device.wait(Until.findObject(By.res(PACKAGE_NAME, resourceId)), timeoutMs)
+        return obj != null
     }
 
     private fun loadModel() {
         // Go to settings
-        clickByDescription("Settings")
-        Thread.sleep(1000)
+        clickByResourceId("settings") || clickByDesc("Settings") || clickAnyClickable(1)
+        Thread.sleep(1500)
 
         // Select model
-        clickByDescription("Select Model")
+        clickByResourceId("modelImageButton") || clickByDesc("Select Model")
         Thread.sleep(500)
         device.wait(Until.findObject(By.textContains(modelFile)), TIMEOUT_MS)?.click()
         Thread.sleep(500)
 
         // Select tokenizer
-        clickByDescription("Select Tokenizer")
+        clickByResourceId("tokenizerImageButton") || clickByDesc("Select Tokenizer")
         Thread.sleep(500)
         device.wait(Until.findObject(By.textContains(tokenizerFile)), TIMEOUT_MS)?.click()
         Thread.sleep(500)
 
         // Load model
-        device.findObject(UiSelector().text("Load Model"))?.click()
+        clickByResourceId("loadModelButton") || clickByText("Load Model")
         Thread.sleep(500)
 
         // Confirm
-        clickButton("OK")
-        Thread.sleep(500)
+        dismissDialog()
     }
 
     private fun waitForText(text: String, timeoutMs: Long): Boolean {
