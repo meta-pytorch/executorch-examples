@@ -2,6 +2,8 @@
 
 This guide explains how to setup ExecuTorch for Android using a demo app. The app employs a [DeepLab v3](https://pytorch.org/hub/pytorch_vision_deeplabv3_resnet101/) model for image segmentation tasks. Models are exported to ExecuTorch using [XNNPACK FP32 backend](https://pytorch.org/executorch/main/backends-xnnpack.html#xnnpack-backend).
 
+The app is built with **Kotlin** and **Jetpack Compose**, providing a modern, declarative UI experience.
+
 ## Features
 - **Image Segmentation**: Detects and highlights all 21 PASCAL VOC classes (Person, Dog, Cat, Car, etc.)
 - **Overlay Visualization**: Segmentation mask blends with the original image at 50% opacity
@@ -100,4 +102,4 @@ The app detects all 21 PASCAL VOC classes with distinct color overlays:
 ```
 
 ### Using Android Studio
-Open `app/src/androidTest/java/org/pytorch/executorchexamples/dl3/SanityCheck.java` and click the Play button.
+Open `app/src/androidTest/java/org/pytorch/executorchexamples/dl3/SanityCheck.kt` and click the Play button.
