@@ -6,19 +6,15 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-package com.example.executorchllamademo;
+package com.example.executorchllamademo
 
 /**
  * A helper interface within the app for MainActivity and Benchmarking to handle callback from
  * ModelRunner.
  */
-public interface ModelRunnerCallback {
-
-  void onModelLoaded(int status);
-
-  void onTokenGenerated(String token);
-
-  void onStats(String stats);
-
-  void onGenerationStopped();
+interface ModelRunnerCallback {
+    fun onModelLoaded(status: Int)
+    fun onTokenGenerated(token: String)
+    fun onStats(stats: String)
+    fun onGenerationStopped()
 }
