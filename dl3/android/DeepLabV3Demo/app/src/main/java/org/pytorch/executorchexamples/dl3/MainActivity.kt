@@ -197,16 +197,15 @@ class MainActivity : ComponentActivity() {
                                     onClick = {
                                         scope.launch {
                                             isDownloading = true
-                                            downloadModel { success ->
-                                                isDownloading = false
-                                                if (success) {
-                                                    loadModelOrShowDownloadButton { ready ->
-                                                        modelReady = ready
-                                                    }
-                                                    showToast("Model downloaded successfully!")
-                                                } else {
-                                                    showToast("Download failed")
+                                            val success = downloadModel()
+                                            isDownloading = false
+                                            if (success) {
+                                                loadModelOrShowDownloadButton { ready ->
+                                                    modelReady = ready
                                                 }
+                                                showToast("Model downloaded successfully!")
+                                            } else {
+                                                showToast("Download failed")
                                             }
                                         }
                                     },
@@ -322,7 +321,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private suspend fun downloadModel(onResult: (Boolean) -> Unit) = withContext(Dispatchers.IO) {
+    private suspend fun downloadModel(): Boolean = withContext(Dispatchers.IO) {
         try {
             val url = URL(MODEL_URL)
             val connection = url.openConnection() as HttpURLConnection
@@ -343,13 +342,13 @@ class MainActivity : ComponentActivity() {
                     }
                 }
             }
-            onResult(true)
+            true
         } catch (e: Exception) {
             Log.e("MainActivity", "Failed to download model", e)
             withContext(Dispatchers.Main) {
                 showToast("Download failed: ${e.message}")
             }
-            onResult(false)
+            false
         }
     }
 
