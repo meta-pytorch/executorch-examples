@@ -255,6 +255,20 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
         currentImageUri.value = uri
     }
     
+    fun isVisionModel(): Boolean {
+        return settingsFields.value.modelType?.let {
+            it == ModelType.LLAVA_1_5 || it == ModelType.GEMMA_3
+        } ?: false
+    }
+
+    fun isAudioModel(): Boolean {
+        return settingsFields.value.modelType == ModelType.VOXTRAL
+    }
+
+    fun canAttachMedia(): Boolean {
+        return isVisionModel() || isAudioModel()
+    }
+    
     override fun onCleared() {
         super.onCleared()
         saveMessages()

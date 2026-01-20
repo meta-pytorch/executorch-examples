@@ -16,6 +16,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.executorchllamademo.BackendType
 import com.example.executorchllamademo.R
@@ -48,7 +49,7 @@ fun SettingsScreen(
     // Dialogs
     if (showModelDialog) {
         FileSelectionDialog(
-            title = "Select model path",
+            title = stringResource(R.string.select_model_path),
             files = modelFiles,
             onDismiss = { viewModel.showModelDialog.value = false },
             onFileSelected = { viewModel.selectModelFile(it) }
@@ -57,7 +58,7 @@ fun SettingsScreen(
     
     if (showTokenizerDialog) {
         FileSelectionDialog(
-            title = "Select tokenizer path",
+            title = stringResource(R.string.select_tokenizer_path),
             files = tokenizerFiles,
             onDismiss = { viewModel.showTokenizerDialog.value = false },
             onFileSelected = { viewModel.selectTokenizerFile(it) }
@@ -66,7 +67,7 @@ fun SettingsScreen(
     
     if (showDataPathDialog) {
         FileSelectionDialog(
-            title = "Select data path",
+            title = stringResource(R.string.select_data_path),
             files = dataFiles,
             onDismiss = { viewModel.showDataPathDialog.value = false },
             onFileSelected = { viewModel.selectDataFile(it) }
@@ -75,7 +76,7 @@ fun SettingsScreen(
     
     if (showSystemPromptDialog) {
         TextInputDialog(
-            title = "System Prompt",
+            title = stringResource(R.string.system_prompt_title),
             initialValue = settingsFields.systemPrompt,
             onDismiss = { viewModel.showSystemPromptDialog.value = false },
             onConfirm = { viewModel.updateSystemPrompt(it) }
@@ -84,7 +85,7 @@ fun SettingsScreen(
     
     if (showUserPromptDialog) {
         TextInputDialog(
-            title = "User Prompt",
+            title = stringResource(R.string.user_prompt_title),
             initialValue = settingsFields.userPrompt,
             onDismiss = { viewModel.showUserPromptDialog.value = false },
             onConfirm = { viewModel.updateUserPrompt(it) }
@@ -93,8 +94,8 @@ fun SettingsScreen(
     
     if (showLoadModelDialog) {
         ConfirmationDialog(
-            title = "Load Model",
-            message = "Are you sure you want to load the selected model? This will replace the currently loaded model.",
+            title = stringResource(R.string.load_model),
+            message = stringResource(R.string.load_model_dialog_message),
             onDismiss = { viewModel.showLoadModelDialog.value = false },
             onConfirm = {
                 viewModel.showLoadModelDialog.value = false
@@ -107,8 +108,8 @@ fun SettingsScreen(
     
     if (showClearHistoryDialog) {
         ConfirmationDialog(
-            title = "Clear Chat History",
-            message = "Are you sure you want to clear all chat history?",
+            title = stringResource(R.string.clear_history),
+            message = stringResource(R.string.clear_history_dialog_message),
             onDismiss = { viewModel.showClearHistoryDialog.value = false },
             onConfirm = {
                 viewModel.showClearHistoryDialog.value = false
@@ -126,19 +127,22 @@ fun SettingsScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "Settings",
+                        text = stringResource(R.string.settings_title),
                         style = MaterialTheme.typography.titleLarge,
                         color = TextPrimary
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = {
-                        viewModel.saveSettings()
-                        onNavigateBack()
-                    }) {
+                    IconButton(
+                        onClick = {
+                            viewModel.saveSettings()
+                            onNavigateBack()
+                        },
+                        modifier = Modifier.testTag("backButton")
+                    ) {
                         Icon(
                             painter = painterResource(R.drawable.baseline_close_24),
-                            contentDescription = "Back",
+                            contentDescription = stringResource(R.string.back_description),
                             tint = TextPrimary
                         )
                     }
@@ -156,9 +160,9 @@ fun SettingsScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             // Model Section
-            SettingsSection(title = "Model") {
+            SettingsSection(title = stringResource(R.string.select_model)) {
                 FilePickerRow(
-                    label = "Model",
+                    label = stringResource(R.string.select_model),
                     value = viewModel.getModelFileName(),
                     onClick = { viewModel.showModelDialog.value = true },
                     textViewTestTag = "modelTextView",
@@ -168,7 +172,7 @@ fun SettingsScreen(
                 SettingsDivider()
                 
                 FilePickerRow(
-                    label = "Tokenizer",
+                    label = stringResource(R.string.select_tokenizer),
                     value = viewModel.getTokenizerFileName(),
                     onClick = { viewModel.showTokenizerDialog.value = true },
                     textViewTestTag = "tokenizerTextView",
@@ -187,7 +191,7 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(16.dp))
             
             // Backend Section
-            SettingsSection(title = "Backend") {
+            SettingsSection(title = stringResource(R.string.backend_section)) {
                 BackendSelector(
                     selectedBackend = settingsFields.backendType,
                     onBackendSelected = { viewModel.updateBackendType(it) }
@@ -197,7 +201,7 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(16.dp))
             
             // Parameters Section
-            SettingsSection(title = "Parameters") {
+            SettingsSection(title = stringResource(R.string.parameters_section)) {
                 TemperatureSlider(
                     value = settingsFields.temperature.toFloat(),
                     onValueChange = { viewModel.updateTemperature(it) }
@@ -207,7 +211,7 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(16.dp))
             
             // Prompts Section
-            SettingsSection(title = "Prompts") {
+            SettingsSection(title = stringResource(R.string.prompts_section)) {
                 SettingsRow(
                     label = "System Prompt",
                     value = settingsFields.systemPrompt.take(50).let { 
@@ -231,15 +235,16 @@ fun SettingsScreen(
             
             // Action Buttons
             ActionButton(
-                text = "Load Model",
+                text = stringResource(R.string.load_model),
                 onClick = { viewModel.showLoadModelDialog.value = true },
                 enabled = isLoadModelEnabled,
                 testTag = "loadModelButton"
             )
             
             ActionButton(
-                text = "Clear Chat History",
-                onClick = { viewModel.showClearHistoryDialog.value = true }
+                text = stringResource(R.string.clear_history),
+                onClick = { viewModel.showClearHistoryDialog.value = true },
+                testTag = "clearHistoryButton"
             )
             
             Spacer(modifier = Modifier.height(32.dp))

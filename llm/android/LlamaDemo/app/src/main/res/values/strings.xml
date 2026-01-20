@@ -4,4 +4,40 @@
     <string name="saved_messages_json_key">SavedMessagesJsonKey</string>
     <string name="settings_json_key">SettingsJsonKey</string>
     <string name="logs_json_key">LogsJsonKey</string>
+    
+    <string name="settings_title">Settings</string>
+    <string name="logs_title">Logs</string>
+    <string name="load_model">Load Model</string>
+    <string name="select_model">Select Model</string>
+    <string name="select_tokenizer">Select Tokenizer</string>
+    <string name="clear_history">Clear Chat History</string>
+    <string name="send_description">Send</string>
+    <string name="stop_description">Stop</string>
+    <string name="back_description">Back</string>
+    
+    <string name="initial_dialog_title">Please Select a Model</string>
+    <string name="initial_dialog_message">To get started, please go to Settings and select a model and tokenizer file.</string>
+    
+    <string name="think_mode">Think mode</string>
+    <string name="gallery_description">Gallery</string>
+    <string name="camera_description">Camera</string>
+    <string name="audio_description">Audio</string>
+    <string name="record_description">Record</string>
+    <string name="add_media_description">Add Media</string>
+    <string name="type_message_hint">Type a message</string>
+    
+    <string name="select_model_path">Select model path</string>
+    <string name="select_tokenizer_path">Select tokenizer path</string>
+    <string name="select_data_path">Select data path</string>
+    <string name="system_prompt_title">System Prompt</string>
+    <string name="user_prompt_title">User Prompt</string>
+    <string name="load_model_dialog_message">Are you sure you want to load the selected model? This will replace the currently loaded model.</string>
+    <string name="clear_history_dialog_message">Are you sure you want to clear all chat history?</string>
+    
+    <string name="temperature_label">Temperature</string>
+    <string name="no_files_found">No files found</string>
+    
+    <string name="backend_section">Backend</string>
+    <string name="parameters_section">Parameters</string>
+    <string name="prompts_section">Prompts</string>
 </resources>

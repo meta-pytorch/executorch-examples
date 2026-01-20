@@ -20,7 +20,8 @@ data class Message(
     private var _imagePath: String = "",
     var tokensPerSecond: Float = 0f,
     var totalGenerationTime: Long = 0L,
-    val timestamp: Long = if (messageType != MessageType.SYSTEM) System.currentTimeMillis() else 0L
+    val timestamp: Long = if (messageType != MessageType.SYSTEM) System.currentTimeMillis() else 0L,
+    val id: String = java.util.UUID.randomUUID().toString()
 ) {
     var text: String
         get() = _text

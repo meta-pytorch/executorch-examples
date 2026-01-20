@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -34,14 +35,19 @@ fun ChatInput(
     onSendClick: () -> Unit,
     onGalleryClick: () -> Unit,
     onCameraClick: () -> Unit,
+    onAudioClick: () -> Unit = {},
+    onRecordClick: () -> Unit = {},
     onThinkModeClick: () -> Unit,
     isGenerating: Boolean,
     isThinkingMode: Boolean,
     showMediaButtons: Boolean,
+    isVisionModel: Boolean = false,
+    isAudioModel: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val isSendEnabled = text.isNotBlank() || isGenerating
-    
+    var isExpanded by remember { mutableStateOf(false) }
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -62,37 +68,82 @@ fun ChatInput(
                     if (isThinkingMode) R.drawable.blue_lightbulb_24 
                     else R.drawable.baseline_lightbulb_24
                 ),
-                contentDescription = "Think mode",
+                contentDescription = stringResource(R.string.think_mode),
                 tint = if (isThinkingMode) Primary else TextSecondary
             )
         }
         
-        // Media buttons
+        // Media buttons with "+" toggle
         if (showMediaButtons) {
             IconButton(
-                onClick = onGalleryClick,
+                onClick = { isExpanded = !isExpanded },
                 modifier = Modifier
                     .size(40.dp)
-                    .testTag("galleryButton")
+                    .testTag("addMediaButton")
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.outline_image_48),
-                    contentDescription = "Gallery",
-                    tint = TextSecondary
+                    painter = painterResource(R.drawable.baseline_add_24),
+                    contentDescription = stringResource(R.string.add_media_description),
+                    tint = if (isExpanded) Primary else TextSecondary
                 )
             }
-            
-            IconButton(
-                onClick = onCameraClick,
-                modifier = Modifier
-                    .size(40.dp)
-                    .testTag("cameraButton")
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.outline_camera_alt_48),
-                    contentDescription = "Camera",
-                    tint = TextSecondary
-                )
+
+            if (isExpanded) {
+                if (isVisionModel) {
+                    IconButton(
+                        onClick = onGalleryClick,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .testTag("galleryButton")
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.outline_image_48),
+                            contentDescription = stringResource(R.string.gallery_description),
+                            tint = TextSecondary
+                        )
+                    }
+                    
+                    IconButton(
+                        onClick = onCameraClick,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .testTag("cameraButton")
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.outline_camera_alt_48),
+                            contentDescription = stringResource(R.string.camera_description),
+                            tint = TextSecondary
+                        )
+                    }
+                }
+
+                if (isAudioModel) {
+                    IconButton(
+                        onClick = onAudioClick,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .testTag("audioButton")
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.baseline_audio_file_48),
+                            contentDescription = stringResource(R.string.audio_description),
+                            tint = TextSecondary
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onRecordClick,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .testTag("recordButton")
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.outline_add_box_48), // Using this as placeholder for record
+                            contentDescription = stringResource(R.string.record_description),
+                            tint = TextSecondary
+                        )
+                    }
+                }
             }
         }
         
@@ -122,7 +173,7 @@ fun ChatInput(
                 decorationBox = { innerTextField ->
                     if (text.isEmpty()) {
                         Text(
-                            text = "Type a message",
+                            text = stringResource(R.string.type_message_hint),
                             style = MaterialTheme.typography.bodyMedium,
                             color = TextSecondary
                         )
@@ -133,7 +184,8 @@ fun ChatInput(
         }
         
         // Send/Stop button
-        val sendButtonDescription = if (isGenerating) "Stop" else "Send"
+        val sendDesc = stringResource(R.string.send_description)
+        val stopDesc = stringResource(R.string.stop_description)
         IconButton(
             onClick = onSendClick,
             enabled = isSendEnabled,
@@ -144,7 +196,9 @@ fun ChatInput(
                     shape = CircleShape
                 )
                 .testTag("sendButton")
-                .semantics { contentDescription = sendButtonDescription }
+                .semantics { 
+                    contentDescription = if (isGenerating) stopDesc else sendDesc 
+                }
         ) {
             Icon(
                 painter = painterResource(

@@ -141,8 +141,8 @@ class MainActivity : ComponentActivity() {
     
     private fun askUserToSelectModel() {
         AlertDialog.Builder(this)
-            .setTitle("Please Select a Model")
-            .setMessage("To get started, please go to Settings and select a model and tokenizer file.")
+            .setTitle(R.string.initial_dialog_title)
+            .setMessage(R.string.initial_dialog_message)
             .setPositiveButton(android.R.string.ok) { dialog, _ ->
                 dialog.dismiss()
             }

@@ -21,9 +21,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import com.example.executorchllamademo.MainActivity
 import com.example.executorchllamademo.LogsActivity
 import com.example.executorchllamademo.R
 import com.example.executorchllamademo.SettingsActivity
@@ -62,7 +64,7 @@ fun ChatScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = "LlamaDemo",
+                        text = stringResource(R.string.app_name),
                         style = MaterialTheme.typography.titleLarge,
                         color = TextPrimary
                     )
@@ -80,7 +82,7 @@ fun ChatScreen(
                         onClick = {
                             context.startActivity(Intent(context, LogsActivity::class.java))
                         },
-                        modifier = Modifier.semantics { contentDescription = "Logs" }
+                        modifier = Modifier.semantics { contentDescription = context.getString(R.string.logs_title) }
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.baseline_article_24),
@@ -94,7 +96,7 @@ fun ChatScreen(
                         },
                         modifier = Modifier
                             .testTag("settings")
-                            .semantics { contentDescription = "Settings" }
+                            .semantics { contentDescription = context.getString(R.string.settings_title) }
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.baseline_settings_24),
@@ -113,15 +115,16 @@ fun ChatScreen(
                 text = inputText,
                 onTextChange = { viewModel.setInputText(it) },
                 onSendClick = { viewModel.sendMessage() },
-                onGalleryClick = { /* Will be handled by activity */ },
-                onCameraClick = { /* Will be handled by activity */ },
+                onGalleryClick = { (context as? MainActivity)?.openGallery() },
+                onCameraClick = { (context as? MainActivity)?.openCamera() },
+                onAudioClick = { /* Handle Audio */ },
+                onRecordClick = { /* Handle Record */ },
                 onThinkModeClick = { viewModel.toggleThinkingMode() },
                 isGenerating = isGenerating,
                 isThinkingMode = isThinkingMode,
-                showMediaButtons = isModelLoaded && viewModel.settingsFields.value.modelType?.let {
-                    it == com.example.executorchllamademo.ModelType.LLAVA_1_5 ||
-                    it == com.example.executorchllamademo.ModelType.GEMMA_3
-                } ?: false
+                showMediaButtons = isModelLoaded && viewModel.canAttachMedia(),
+                isVisionModel = viewModel.isVisionModel(),
+                isAudioModel = viewModel.isAudioModel()
             )
         }
     ) { paddingValues ->
@@ -133,7 +136,7 @@ fun ChatScreen(
             state = listState,
             contentPadding = PaddingValues(vertical = 8.dp)
         ) {
-            items(messages, key = { "${it.promptID}_${it.timestamp}_${it.isSent}" }) { message ->
+            items(messages, key = { it.id }) { message ->
                 MessageBubble(message = message)
             }
         }

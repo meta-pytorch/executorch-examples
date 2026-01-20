@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
@@ -102,11 +103,11 @@ fun FilePickerRow(
         IconButton(
             onClick = onClick,
             modifier = (if (buttonTestTag.isNotEmpty()) Modifier.testTag(buttonTestTag) else Modifier)
-                .semantics { contentDescription = "Select $label" }
+                .semantics { contentDescription = label }
         ) {
             Icon(
                 painter = painterResource(R.drawable.outline_add_box_48),
-                contentDescription = "Select $label",
+                contentDescription = label,
                 tint = Primary
             )
         }
@@ -185,7 +186,7 @@ fun TemperatureSlider(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = "Temperature",
+                text = stringResource(R.string.temperature_label),
                 style = MaterialTheme.typography.bodyMedium,
                 color = TextPrimary
             )
@@ -230,13 +231,19 @@ fun TextInputDialog(
             )
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(text) }) {
-                Text("OK")
+            TextButton(
+                onClick = { onConfirm(text) },
+                modifier = Modifier.testTag("dialogConfirmButton")
+            ) {
+                Text(stringResource(android.R.string.ok))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.testTag("dialogDismissButton")
+            ) {
+                Text(stringResource(android.R.string.cancel))
             }
         }
     )
@@ -254,13 +261,19 @@ fun ConfirmationDialog(
         title = { Text(title) },
         text = { Text(message) },
         confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text("OK")
+            TextButton(
+                onClick = onConfirm,
+                modifier = Modifier.testTag("dialogConfirmButton")
+            ) {
+                Text(stringResource(android.R.string.ok))
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.testTag("dialogDismissButton")
+            ) {
+                Text(stringResource(android.R.string.cancel))
             }
         }
     )
@@ -280,7 +293,7 @@ fun FileSelectionDialog(
             Column {
                 if (files.isEmpty()) {
                     Text(
-                        text = "No files found",
+                        text = stringResource(R.string.no_files_found),
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextSecondary
                     )
@@ -300,8 +313,11 @@ fun FileSelectionDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
+            TextButton(
+                onClick = onDismiss,
+                modifier = Modifier.testTag("dialogDismissButton")
+            ) {
+                Text(stringResource(android.R.string.cancel))
             }
         }
     )
