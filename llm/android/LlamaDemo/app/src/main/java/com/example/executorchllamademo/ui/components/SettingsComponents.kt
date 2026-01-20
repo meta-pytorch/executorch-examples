@@ -19,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.example.executorchllamademo.R
 import com.example.executorchllamademo.ui.theme.*
@@ -99,7 +101,8 @@ fun FilePickerRow(
         }
         IconButton(
             onClick = onClick,
-            modifier = if (buttonTestTag.isNotEmpty()) Modifier.testTag(buttonTestTag) else Modifier
+            modifier = (if (buttonTestTag.isNotEmpty()) Modifier.testTag(buttonTestTag) else Modifier)
+                .semantics { contentDescription = "Select $label" }
         ) {
             Icon(
                 painter = painterResource(R.drawable.outline_add_box_48),
@@ -149,7 +152,8 @@ fun ActionButton(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier),
+            .then(if (testTag.isNotEmpty()) Modifier.testTag(testTag) else Modifier)
+            .semantics { contentDescription = text },
         colors = ButtonDefaults.buttonColors(
             containerColor = ButtonEnabled,
             disabledContainerColor = ButtonDisabled
