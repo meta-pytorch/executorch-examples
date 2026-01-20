@@ -1,24 +1,6 @@
 <resources>
-    <!-- Brand Colors -->
+    <!-- Colors used by theme -->
     <color name="primaryBlue">#2196F3</color>
     <color name="primaryBlueDark">#1565C0</color>
-    <color name="successGreen">#4CAF50</color>
-    <color name="successGreenDark">#388E3C</color>
-    
-    <!-- UI Utils -->
     <color name="white">#FFFFFF</color>
-    <color name="backgroundLight">#FAFAFA</color>
-    <color name="disabledGrey">#BDBDBD</color>
-    <color name="lightGrey">#E0E0E0</color>
-    <color name="borderGrey">#BDBDBD</color>
-    <color name="borderGreyDark">#9E9E9E</color>
-    
-    <!-- Text -->
-    <color name="textPrimary">#424242</color>
-    <color name="textSecondary">#757575</color>
-    
-    <!-- Legacy but kept if needed, though we will try to migrate -->
-    <color name="colorPrimary">#6200EE</color>
-    <color name="colorPrimaryDark">#3700B3</color>
-    <color name="colorAccent">#03DAC5</color>
 </resources>
