@@ -361,12 +361,15 @@ class MainActivity : ComponentActivity() {
                 TensorImageUtils.TORCHVISION_NORM_STD_RGB
             )
 
+            // Ensure module is loaded before running inference
+            val loadedModule = module ?: throw IllegalStateException("Module not loaded")
+            
             val startTime = SystemClock.elapsedRealtime()
-            val outputTensor = module?.forward(EValue.from(inputTensor))?.get(0)?.toTensor()
+            val outputTensor = loadedModule.forward(EValue.from(inputTensor))[0].toTensor()
             val inferenceTime = SystemClock.elapsedRealtime() - startTime
             Log.d("ImageSegmentation", "inference time (ms): $inferenceTime")
 
-            val scores = outputTensor?.dataAsFloatArray ?: floatArrayOf()
+            val scores = outputTensor.dataAsFloatArray
             val width = inputBitmap.width
             val height = inputBitmap.height
 
