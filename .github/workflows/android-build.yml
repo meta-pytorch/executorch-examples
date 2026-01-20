@@ -61,6 +61,17 @@ jobs:
             ./gradlew build --no-daemon
           fi
 
+      - name: Rename APKs with demo name
+        working-directory: ${{ matrix.path }}/app/build/outputs/apk/
+        run: |
+          find . -name "*.apk" -type f -print0 | while IFS= read -r -d '' apk; do
+            dir=$(dirname "$apk")
+            filename=$(basename "$apk")
+            new_name=$(echo "$filename" | sed "s/\.apk$/-${{ matrix.name }}.apk/")
+            echo "Renaming $apk to $dir/$new_name"
+            mv "$apk" "$dir/$new_name"
+          done
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -95,8 +106,8 @@ jobs:
             Automated nightly build of Android demo applications.
 
             ## Apps included:
-            - LlamaDemo APK
-            - DeepLabV3Demo APK
+            - LlamaDemo APKs (`app-debug-LlamaDemo.apk`, `app-release-unsigned-LlamaDemo.apk`)
+            - DeepLabV3Demo APKs (`app-debug-DeepLabV3Demo.apk`, `app-release-unsigned-DeepLabV3Demo.apk`)
 
             **Build Date:** ${{ steps.tag.outputs.build_date }}
             **Commit:** ${{ github.sha }}
