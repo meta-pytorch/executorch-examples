@@ -64,7 +64,7 @@ jobs:
       - name: Rename APKs with demo name
         working-directory: ${{ matrix.path }}/app/build/outputs/apk/
         run: |
-          find . -name "*.apk" -type f | while read apk; do
+          find . -name "*.apk" -type f -print0 | while IFS= read -r -d '' apk; do
             dir=$(dirname "$apk")
             filename=$(basename "$apk")
             new_name=$(echo "$filename" | sed "s/\.apk$/-${{ matrix.name }}.apk/")
