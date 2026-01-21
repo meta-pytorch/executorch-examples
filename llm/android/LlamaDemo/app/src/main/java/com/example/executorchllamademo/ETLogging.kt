@@ -11,16 +11,19 @@ package com.example.executorchllamademo
 import android.app.Application
 import android.util.Log
 
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.snapshots.SnapshotStateList
+
 class ETLogging : Application() {
 
-    private lateinit var logs: ArrayList<AppLog>
+    private val logs = mutableStateListOf<AppLog>()
     private lateinit var demoSharedPreferences: DemoSharedPreferences
 
     override fun onCreate() {
         super.onCreate()
         setInstance(this)
         demoSharedPreferences = DemoSharedPreferences(applicationContext)
-        logs = demoSharedPreferences.getSavedLogs()
+        logs.addAll(demoSharedPreferences.getSavedLogs())
     }
 
     fun log(message: String) {
@@ -29,7 +32,7 @@ class ETLogging : Application() {
         Log.d("ETLogging", appLog.message)
     }
 
-    fun getLogs(): ArrayList<AppLog> = logs
+    fun getLogs(): SnapshotStateList<AppLog> = logs
 
     fun clearLogs() {
         logs.clear()

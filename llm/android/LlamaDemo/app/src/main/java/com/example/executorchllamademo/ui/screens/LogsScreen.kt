@@ -28,7 +28,7 @@ fun LogsScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var logs by remember { mutableStateOf(ETLogging.getInstance().getLogs().toList()) }
+    val logs = remember { ETLogging.getInstance().getLogs() }
     var showClearDialog by remember { mutableStateOf(false) }
     
     if (showClearDialog) {
@@ -38,7 +38,6 @@ fun LogsScreen(
             onDismiss = { showClearDialog = false },
             onConfirm = {
                 ETLogging.getInstance().clearLogs()
-                logs = emptyList()
                 showClearDialog = false
             }
         )

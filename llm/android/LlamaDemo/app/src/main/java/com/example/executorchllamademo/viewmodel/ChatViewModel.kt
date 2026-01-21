@@ -48,6 +48,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     private var currentPromptId = 0
     private var currentResponseMessage: Message? = null
     private var generationStartTime = 0L
+    private var promptCharsToSkip = 0
     
     init {
         loadSavedMessages()
@@ -101,12 +102,16 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                 withContext(Dispatchers.IO) {
                     llmModule?.stop()
                     llmModule = LlmModule(modelPath, tokenizerPath, temperature)
+                    val startTime = System.currentTimeMillis()
                     val status = llmModule?.load() ?: -1
+                    val loadTime = (System.currentTimeMillis() - startTime) / 1000f
                     
                     withContext(Dispatchers.Main) {
                         if (status == 0) {
                             isModelLoaded.value = true
-                            addSystemMessage("Successfully loaded model")
+                            val modelName = java.io.File(modelPath).name
+                            val tokenizerName = java.io.File(tokenizerPath).name
+                            addSystemMessage("Successfully loaded model $modelName and $tokenizerName in $loadTime seconds")
                             onResult(true, "Model loaded successfully")
                         } else {
                             addSystemMessage("Failed to load model (status: $status)")
@@ -163,8 +168,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
         generationStartTime = System.currentTimeMillis()
         
         // Create response message
-        currentResponseMessage = Message.textMessage("", isSent = false, promptID = currentPromptId)
-        currentResponseMessage?.let { messages.add(it) }
+        val response = Message.textMessage("", isSent = false, promptID = currentPromptId)
+        currentResponseMessage = response
+        messages.add(response)
         
         // Format prompt based on model type
         val formattedPrompt = settingsFields.value.getFormattedUserPrompt(prompt, isThinkingMode.value)
@@ -173,6 +179,8 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
         } else {
             formattedPrompt
         }
+        
+        promptCharsToSkip = fullPrompt.length
         
         viewModelScope.launch(Dispatchers.IO) {
             try {
@@ -183,9 +191,18 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                 }
             } finally {
                 withContext(Dispatchers.Main) {
+                    val responseMsg = currentResponseMessage
+                    if (responseMsg != null) {
+                        val updatedMsg = responseMsg.copy(
+                            totalGenerationTime = System.currentTimeMillis() - generationStartTime
+                        )
+                        currentResponseMessage = updatedMsg
+                        val index = messages.indexOfFirst { it.id == updatedMsg.id }
+                        if (index >= 0) {
+                            messages[index] = updatedMsg
+                        }
+                    }
                     isGenerating.value = false
-                    currentResponseMessage?.totalGenerationTime = 
-                        System.currentTimeMillis() - generationStartTime
                     saveMessages()
                 }
             }
@@ -199,11 +216,27 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     
     override fun onResult(result: String) {
         viewModelScope.launch(Dispatchers.Main) {
-            currentResponseMessage?.appendText(result)
-            // Force recomposition by creating a new list reference
-            val index = messages.indexOf(currentResponseMessage)
+            var responseMsg = currentResponseMessage ?: return@launch
+            
+            if (promptCharsToSkip > 0) {
+                // Determine how much of this token is part of the prompt
+                val skipCount = minOf(result.length, promptCharsToSkip)
+                promptCharsToSkip -= skipCount
+                
+                // If there's remaining text in the token, append it
+                if (skipCount < result.length) {
+                    val actualToken = result.substring(skipCount)
+                    responseMsg = responseMsg.appendText(actualToken)
+                }
+            } else {
+                responseMsg = responseMsg.appendText(result)
+            }
+            
+            // Update the reference and the list to trigger recomposition
+            currentResponseMessage = responseMsg
+            val index = messages.indexOfFirst { it.id == responseMsg.id }
             if (index >= 0) {
-                messages[index] = currentResponseMessage!!
+                messages[index] = responseMsg
             }
         }
     }
@@ -217,7 +250,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
             val tps = numGeneratedTokens.toFloat() / (inferenceEndMs - promptEvalEndMs) * 1000
             
             viewModelScope.launch(Dispatchers.Main) {
-                currentResponseMessage?.tokensPerSecond = tps
+                var responseMsg = currentResponseMessage ?: return@launch
+                responseMsg = responseMsg.copy(tokensPerSecond = tps)
+                currentResponseMessage = responseMsg
+                
+                val index = messages.indexOfFirst { it.id == responseMsg.id }
+                if (index >= 0) {
+                    messages[index] = responseMsg
+                }
             }
         } catch (e: JSONException) {
             // Ignore parse errors

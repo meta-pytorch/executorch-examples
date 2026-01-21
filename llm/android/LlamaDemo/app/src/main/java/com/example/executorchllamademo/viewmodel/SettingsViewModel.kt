@@ -127,6 +127,13 @@ class SettingsViewModel(application: Application) : AndroidViewModel(application
     fun updateBackendType(backendType: BackendType) {
         settingsFields.value = settingsFields.value.copy(backendType = backendType)
     }
+
+    fun updateModelType(modelType: ModelType) {
+        settingsFields.value = settingsFields.value.copy(
+            modelType = modelType,
+            userPrompt = PromptFormat.getUserPromptTemplate(modelType)
+        )
+    }
     
     fun setLoadModelFlag(shouldLoad: Boolean) {
         settingsFields.value = settingsFields.value.copy(isLoadModel = shouldLoad)

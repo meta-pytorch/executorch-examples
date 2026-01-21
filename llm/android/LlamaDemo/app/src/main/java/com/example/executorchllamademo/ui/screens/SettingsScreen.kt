@@ -186,6 +186,20 @@ fun SettingsScreen(
                     value = viewModel.getDataFileName(),
                     onClick = { viewModel.showDataPathDialog.value = true }
                 )
+
+                SettingsDivider()
+
+                Text(
+                    text = "Model Type",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+
+                ModelTypeSelector(
+                    selectedType = settingsFields.modelType,
+                    onTypeSelected = { viewModel.updateModelType(it) }
+                )
             }
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -248,6 +262,33 @@ fun SettingsScreen(
             )
             
             Spacer(modifier = Modifier.height(32.dp))
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ModelTypeSelector(
+    selectedType: com.example.executorchllamademo.ModelType,
+    onTypeSelected: (com.example.executorchllamademo.ModelType) -> Unit
+) {
+    FlowRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        com.example.executorchllamademo.ModelType.values().forEach { type ->
+            FilterChip(
+                selected = selectedType == type,
+                onClick = { onTypeSelected(type) },
+                label = { Text(type.name) },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = Primary,
+                    selectedLabelColor = TextOnPrimary
+                )
+            )
         }
     }
 }
