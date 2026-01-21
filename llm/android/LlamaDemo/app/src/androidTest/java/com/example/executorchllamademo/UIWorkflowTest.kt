@@ -199,22 +199,30 @@ class UIWorkflowTest {
     /**
      * Verifies that the model generated a non-empty response by checking for
      * tokens per second metrics (e.g., "t/s") which only appear in model responses.
+     * Uses retry logic for CI stability.
      */
-    private fun assertModelResponseNotEmpty() {
-        composeTestRule.waitForIdle()
-        try {
-            // Model responses show tokens per second metric
-            composeTestRule.onNodeWithText("t/s", substring = true).assertExists()
-            Log.i(TAG, "Model response verified - found t/s metric")
-        } catch (e: AssertionError) {
-            // Try alternative: check for generation time
+    private fun assertModelResponseNotEmpty(timeoutMs: Long = 5000) {
+        val startTime = System.currentTimeMillis()
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            composeTestRule.waitForIdle()
             try {
-                composeTestRule.onNodeWithText("s", substring = true).assertExists()
-                Log.i(TAG, "Model response verified - found timing metric")
-            } catch (e2: AssertionError) {
-                throw AssertionError("Model response appears to be empty - no generation metrics found")
+                // Model responses show tokens per second metric
+                composeTestRule.onNodeWithText("t/s", substring = true).assertExists()
+                Log.i(TAG, "Model response verified - found t/s metric")
+                return
+            } catch (e: AssertionError) {
+                // Try alternative: check for generation time
+                try {
+                    composeTestRule.onNodeWithText("tok/s", substring = true).assertExists()
+                    Log.i(TAG, "Model response verified - found tok/s metric")
+                    return
+                } catch (e2: AssertionError) {
+                    // Keep trying
+                    Thread.sleep(500)
+                }
             }
         }
+        throw AssertionError("Model response appears to be empty - no generation metrics found after ${timeoutMs}ms")
     }
 
     /**
@@ -385,6 +393,10 @@ class UIWorkflowTest {
         val generationComplete = waitForGenerationComplete(120000)
         assertTrue("Generation should complete", generationComplete)
 
+        // Wait for UI to stabilize after generation
+        Thread.sleep(1000)
+        composeTestRule.waitForIdle()
+
         // Verify that a response was generated
         assertModelResponseNotEmpty()
 
@@ -407,17 +419,29 @@ class UIWorkflowTest {
         val modelLoaded = waitForModelLoaded(90000)
         assertTrue("Model should be loaded successfully", modelLoaded)
 
+        // Wait for UI to stabilize after model load
+        Thread.sleep(1000)
+        composeTestRule.waitForIdle()
+
         // Verify send button is disabled with empty input
         composeTestRule.onNodeWithContentDescription("Send").assertIsNotEnabled()
 
         // Type some text using testTag
         typeInChatInput("hello")
 
+        // Wait for UI to update
+        Thread.sleep(500)
+        composeTestRule.waitForIdle()
+
         // Verify send button is now enabled
         composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
 
         // Clear the text
         clearChatInput()
+
+        // Wait for UI to update
+        Thread.sleep(500)
+        composeTestRule.waitForIdle()
 
         // Verify send button is disabled again
         composeTestRule.onNodeWithContentDescription("Send").assertIsNotEnabled()
@@ -598,28 +622,42 @@ class UIWorkflowTest {
         assertTrue("Model should be loaded successfully", modelLoaded)
 
         // --- Send first message ---
-        val firstMessage = "Hello"
+        // Use unique message unlikely to appear in model response
+        val firstMessage = "XYZTEST123"
         typeInChatInput(firstMessage)
         composeTestRule.onNodeWithContentDescription("Send").performClick()
         composeTestRule.waitForIdle()
 
-        // Wait for first response to complete (send button becomes enabled again)
+        // Wait for first response to complete
         val firstResponseComplete = waitForGenerationComplete(120000)
         assertTrue("First response should complete", firstResponseComplete)
+
+        // Wait for UI to stabilize
+        Thread.sleep(1000)
+        composeTestRule.waitForIdle()
 
         // Verify first user message is visible and model response is not empty
         composeTestRule.onNodeWithText(firstMessage, substring = true).assertExists()
         assertModelResponseNotEmpty()
 
         // --- Send second message ---
-        val secondMessage = "Tell me more"
+        val secondMessage = "ABCTEST456"
         typeInChatInput(secondMessage)
+
+        // Wait for send button to be enabled
+        Thread.sleep(500)
+        composeTestRule.waitForIdle()
+
         composeTestRule.onNodeWithContentDescription("Send").performClick()
         composeTestRule.waitForIdle()
 
         // Wait for second response to complete
         val secondResponseComplete = waitForGenerationComplete(120000)
         assertTrue("Second response should complete", secondResponseComplete)
+
+        // Wait for UI to stabilize
+        Thread.sleep(1000)
+        composeTestRule.waitForIdle()
 
         // Verify both user messages are visible in conversation
         composeTestRule.onNodeWithText(firstMessage, substring = true).assertExists()
