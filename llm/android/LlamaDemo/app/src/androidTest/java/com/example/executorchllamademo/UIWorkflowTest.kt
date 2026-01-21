@@ -515,7 +515,7 @@ class UIWorkflowTest {
 
         // Go to settings
         composeTestRule.onNodeWithContentDescription("Settings").performClick()
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5018) {
             composeTestRule.onAllNodesWithText("Settings").fetchSemanticsNodes().isNotEmpty()
         }
 
@@ -524,13 +524,13 @@ class UIWorkflowTest {
 
         // Select only model
         composeTestRule.onNodeWithText("Model").performClick()
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5019) {
             composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isNotEmpty()
         }
         composeTestRule.onNodeWithText(modelFile, substring = true).performClick()
 
         // Wait for dialog to close
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5020) {
             composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isEmpty()
         }
 
@@ -539,13 +539,13 @@ class UIWorkflowTest {
 
         // Select tokenizer
         composeTestRule.onNodeWithText("Tokenizer").performClick()
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5021) {
             composeTestRule.onAllNodesWithText("Select tokenizer path").fetchSemanticsNodes().isNotEmpty()
         }
         composeTestRule.onNodeWithText(tokenizerFile, substring = true).performClick()
 
         // Wait for dialog to close
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5022) {
             composeTestRule.onAllNodesWithText("Select tokenizer path").fetchSemanticsNodes().isEmpty()
         }
 
@@ -569,7 +569,7 @@ class UIWorkflowTest {
         assertTrue("Model should be loaded successfully", modelLoaded)
 
         // Wait for send button to appear
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5023) {
             composeTestRule.onAllNodes(hasContentDescription("Send"))
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -641,7 +641,7 @@ class UIWorkflowTest {
         typeInChatInput(secondMessage)
 
         // Wait for send button to be enabled
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5024) {
             try {
                 composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
                 true
