@@ -13,6 +13,7 @@ import android.util.Log
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -104,13 +105,15 @@ class UIWorkflowTest {
     private fun loadModel(): Boolean {
         // Click settings button
         composeTestRule.onNodeWithContentDescription("Settings").performClick()
-        composeTestRule.waitForIdle()
-        Thread.sleep(500)
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Settings").fetchSemanticsNodes().isNotEmpty()
+        }
 
         // Click model row to open model selection dialog
         composeTestRule.onNodeWithText("Model").performClick()
-        composeTestRule.waitForIdle()
-        Thread.sleep(300)
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isNotEmpty()
+        }
 
         // Select the model file
         try {
@@ -120,12 +123,12 @@ class UIWorkflowTest {
             return false
         }
         composeTestRule.waitForIdle()
-        Thread.sleep(300)
 
         // Click tokenizer row to open tokenizer selection dialog
         composeTestRule.onNodeWithText("Tokenizer").performClick()
-        composeTestRule.waitForIdle()
-        Thread.sleep(300)
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Select tokenizer path").fetchSemanticsNodes().isNotEmpty()
+        }
 
         // Select the tokenizer file
         try {
@@ -135,11 +138,12 @@ class UIWorkflowTest {
             return false
         }
         composeTestRule.waitForIdle()
-        Thread.sleep(300)
 
         // Click Load Model button
         composeTestRule.onNodeWithText("Load Model").performClick()
-        composeTestRule.waitForIdle()
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Yes").fetchSemanticsNodes().isNotEmpty()
+        }
 
         // Confirm in dialog
         composeTestRule.onNodeWithText("Yes").performClick()
@@ -150,32 +154,31 @@ class UIWorkflowTest {
 
     /**
      * Waits for the model to be loaded by checking for success or error messages.
+     * Uses Compose's waitUntil for proper synchronization.
      */
     private fun waitForModelLoaded(timeoutMs: Long = 60000): Boolean {
-        val startTime = System.currentTimeMillis()
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
-            composeTestRule.waitForIdle()
-            try {
-                // Check for success message
-                composeTestRule.onNodeWithText("Successfully loaded", substring = true)
-                    .assertExists()
-                Log.i(TAG, "Model loaded successfully")
-                return true
-            } catch (e: AssertionError) {
-                // Check for error to fail fast
-                try {
-                    composeTestRule.onNodeWithText("Model Load failure", substring = true)
-                        .assertExists()
-                    Log.e(TAG, "Model load failed")
-                    return false
-                } catch (e2: AssertionError) {
-                    // Neither success nor error, keep waiting
-                }
+        return try {
+            composeTestRule.waitUntil(timeoutMillis = timeoutMs) {
+                val successNodes = composeTestRule.onAllNodesWithText("Successfully loaded", substring = true)
+                    .fetchSemanticsNodes()
+                val errorNodes = composeTestRule.onAllNodesWithText("Model Load failure", substring = true)
+                    .fetchSemanticsNodes()
+                successNodes.isNotEmpty() || errorNodes.isNotEmpty()
             }
-            Thread.sleep(1000)
+            // Check which one appeared
+            val successNodes = composeTestRule.onAllNodesWithText("Successfully loaded", substring = true)
+                .fetchSemanticsNodes()
+            if (successNodes.isNotEmpty()) {
+                Log.i(TAG, "Model loaded successfully")
+                true
+            } else {
+                Log.e(TAG, "Model load failed")
+                false
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Model loading timed out after ${timeoutMs}ms")
+            false
         }
-        Log.e(TAG, "Model loading timed out after ${timeoutMs}ms")
-        return false
     }
 
     /**
@@ -199,30 +202,21 @@ class UIWorkflowTest {
     /**
      * Verifies that the model generated a non-empty response by checking for
      * tokens per second metrics (e.g., "t/s") which only appear in model responses.
-     * Uses retry logic for CI stability.
+     * Uses Compose's waitUntil for proper synchronization.
      */
-    private fun assertModelResponseNotEmpty(timeoutMs: Long = 5000) {
-        val startTime = System.currentTimeMillis()
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
-            composeTestRule.waitForIdle()
-            try {
-                // Model responses show tokens per second metric
-                composeTestRule.onNodeWithText("t/s", substring = true).assertExists()
-                Log.i(TAG, "Model response verified - found t/s metric")
-                return
-            } catch (e: AssertionError) {
-                // Try alternative: check for generation time
-                try {
-                    composeTestRule.onNodeWithText("tok/s", substring = true).assertExists()
-                    Log.i(TAG, "Model response verified - found tok/s metric")
-                    return
-                } catch (e2: AssertionError) {
-                    // Keep trying
-                    Thread.sleep(500)
-                }
+    private fun assertModelResponseNotEmpty(timeoutMs: Long = 10000) {
+        try {
+            composeTestRule.waitUntil(timeoutMillis = timeoutMs) {
+                val tpsNodes = composeTestRule.onAllNodesWithText("t/s", substring = true)
+                    .fetchSemanticsNodes()
+                val tokpsNodes = composeTestRule.onAllNodesWithText("tok/s", substring = true)
+                    .fetchSemanticsNodes()
+                tpsNodes.isNotEmpty() || tokpsNodes.isNotEmpty()
             }
+            Log.i(TAG, "Model response verified - found generation metrics")
+        } catch (e: Exception) {
+            throw AssertionError("Model response appears to be empty - no generation metrics found after ${timeoutMs}ms")
         }
-        throw AssertionError("Model response appears to be empty - no generation metrics found after ${timeoutMs}ms")
     }
 
     /**
@@ -237,15 +231,15 @@ class UIWorkflowTest {
     @Test
     fun testModelLoadingWorkflow() {
         composeTestRule.waitForIdle()
-        Thread.sleep(1000)
 
         // Dismiss the "Please Select a Model" dialog
         dismissSelectModelDialogIfPresent()
 
         // Click settings button
         composeTestRule.onNodeWithContentDescription("Settings").performClick()
-        composeTestRule.waitForIdle()
-        Thread.sleep(500)
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Settings").fetchSemanticsNodes().isNotEmpty()
+        }
 
         // Verify we're in settings
         composeTestRule.onNodeWithText("Settings").assertIsDisplayed()
@@ -255,27 +249,29 @@ class UIWorkflowTest {
 
         // Click model selection
         composeTestRule.onNodeWithText("Model").performClick()
-        composeTestRule.waitForIdle()
-        Thread.sleep(300)
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isNotEmpty()
+        }
 
         // Select model file
         composeTestRule.onNodeWithText(modelFile, substring = true).performClick()
         composeTestRule.waitForIdle()
-        Thread.sleep(300)
 
         // Click tokenizer selection
         composeTestRule.onNodeWithText("Tokenizer").performClick()
-        composeTestRule.waitForIdle()
-        Thread.sleep(300)
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Select tokenizer path").fetchSemanticsNodes().isNotEmpty()
+        }
 
         // Select tokenizer file
         composeTestRule.onNodeWithText(tokenizerFile, substring = true).performClick()
         composeTestRule.waitForIdle()
-        Thread.sleep(300)
 
         // Click load model button
         composeTestRule.onNodeWithText("Load Model").performClick()
-        composeTestRule.waitForIdle()
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Yes").fetchSemanticsNodes().isNotEmpty()
+        }
 
         // Confirm loading
         composeTestRule.onNodeWithText("Yes").performClick()
@@ -287,7 +283,6 @@ class UIWorkflowTest {
     @Test
     fun testSendMessageAndReceiveResponse() {
         composeTestRule.waitForIdle()
-        Thread.sleep(1000)
 
         dismissSelectModelDialogIfPresent()
 
@@ -321,7 +316,6 @@ class UIWorkflowTest {
     @Test
     fun testStopGeneration() {
         composeTestRule.waitForIdle()
-        Thread.sleep(1000)
 
         dismissSelectModelDialogIfPresent()
 
@@ -338,13 +332,15 @@ class UIWorkflowTest {
         composeTestRule.onNodeWithContentDescription("Send").performClick()
         composeTestRule.waitForIdle()
 
-        // Wait a bit for generation to start
-        Thread.sleep(2000)
-
-        // Click stop (the button should now show stop icon)
+        // Wait for Stop button to appear (generation started)
         try {
+            composeTestRule.waitUntil(timeoutMillis = 5000) {
+                composeTestRule.onAllNodes(hasContentDescription("Stop"))
+                    .fetchSemanticsNodes().isNotEmpty()
+            }
+            // Click stop
             composeTestRule.onNodeWithContentDescription("Stop").performClick()
-        } catch (e: AssertionError) {
+        } catch (e: Exception) {
             // Generation might have already finished
             Log.i(TAG, "Stop button not found - generation may have completed")
         }
@@ -366,7 +362,6 @@ class UIWorkflowTest {
     @Test
     fun testEmptyPromptSend() {
         composeTestRule.waitForIdle()
-        Thread.sleep(1000)
 
         dismissSelectModelDialogIfPresent()
 
@@ -376,9 +371,11 @@ class UIWorkflowTest {
         val modelLoaded = waitForModelLoaded(90000)
         assertTrue("Model should be loaded successfully", modelLoaded)
 
-        // Wait for UI to stabilize after model load
-        Thread.sleep(1000)
-        composeTestRule.waitForIdle()
+        // Wait for send button to be in expected state (disabled with empty input)
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodes(hasContentDescription("Send"))
+                .fetchSemanticsNodes().isNotEmpty()
+        }
 
         // Verify send button is disabled with empty input
         composeTestRule.onNodeWithContentDescription("Send").assertIsNotEnabled()
@@ -386,9 +383,15 @@ class UIWorkflowTest {
         // Type some text using testTag
         typeInChatInput("hello")
 
-        // Wait for UI to update
-        Thread.sleep(500)
-        composeTestRule.waitForIdle()
+        // Wait for send button to become enabled
+        composeTestRule.waitUntil(timeoutMillis = 2000) {
+            try {
+                composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
+                true
+            } catch (e: AssertionError) {
+                false
+            }
+        }
 
         // Verify send button is now enabled
         composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
@@ -396,9 +399,15 @@ class UIWorkflowTest {
         // Clear the text
         clearChatInput()
 
-        // Wait for UI to update
-        Thread.sleep(500)
-        composeTestRule.waitForIdle()
+        // Wait for send button to become disabled
+        composeTestRule.waitUntil(timeoutMillis = 2000) {
+            try {
+                composeTestRule.onNodeWithContentDescription("Send").assertIsNotEnabled()
+                true
+            } catch (e: AssertionError) {
+                false
+            }
+        }
 
         // Verify send button is disabled again
         composeTestRule.onNodeWithContentDescription("Send").assertIsNotEnabled()
@@ -410,22 +419,23 @@ class UIWorkflowTest {
     @Test
     fun testNoFilesInDirectory() {
         composeTestRule.waitForIdle()
-        Thread.sleep(1000)
 
         dismissSelectModelDialogIfPresent()
 
         // Go to settings
         composeTestRule.onNodeWithContentDescription("Settings").performClick()
-        composeTestRule.waitForIdle()
-        Thread.sleep(500)
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Settings").fetchSemanticsNodes().isNotEmpty()
+        }
 
         // Verify settings screen
         composeTestRule.onNodeWithText("Settings").assertIsDisplayed()
 
         // Click model selection
         composeTestRule.onNodeWithText("Model").performClick()
-        composeTestRule.waitForIdle()
-        Thread.sleep(300)
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isNotEmpty()
+        }
 
         // Dialog should appear - verify it has a title
         composeTestRule.onNodeWithText("Select model path").assertIsDisplayed()
@@ -446,14 +456,14 @@ class UIWorkflowTest {
     @Test
     fun testCancelFileSelection() {
         composeTestRule.waitForIdle()
-        Thread.sleep(1000)
 
         dismissSelectModelDialogIfPresent()
 
         // Go to settings
         composeTestRule.onNodeWithContentDescription("Settings").performClick()
-        composeTestRule.waitForIdle()
-        Thread.sleep(500)
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Settings").fetchSemanticsNodes().isNotEmpty()
+        }
 
         // Verify initial state
         composeTestRule.onNodeWithText("no model selected").assertIsDisplayed()
@@ -461,24 +471,33 @@ class UIWorkflowTest {
 
         // Select a model first
         composeTestRule.onNodeWithText("Model").performClick()
-        composeTestRule.waitForIdle()
-        Thread.sleep(300)
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isNotEmpty()
+        }
         composeTestRule.onNodeWithText(modelFile, substring = true).performClick()
-        composeTestRule.waitForIdle()
-        Thread.sleep(300)
+
+        // Wait for dialog to close and model to be selected
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText(modelFile, substring = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
 
         // Verify model is selected
         composeTestRule.onNodeWithText(modelFile, substring = true).assertIsDisplayed()
 
         // Open model selection again
         composeTestRule.onNodeWithText("Model").performClick()
-        composeTestRule.waitForIdle()
-        Thread.sleep(300)
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isNotEmpty()
+        }
 
         // Cancel
         composeTestRule.onNodeWithText("Cancel").performClick()
-        composeTestRule.waitForIdle()
-        Thread.sleep(300)
+
+        // Wait for dialog to close
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isEmpty()
+        }
 
         // Verify selection is preserved
         composeTestRule.onNodeWithText(modelFile, substring = true).assertIsDisplayed()
@@ -490,36 +509,44 @@ class UIWorkflowTest {
     @Test
     fun testLoadButtonDisabledState() {
         composeTestRule.waitForIdle()
-        Thread.sleep(1000)
 
         dismissSelectModelDialogIfPresent()
 
         // Go to settings
         composeTestRule.onNodeWithContentDescription("Settings").performClick()
-        composeTestRule.waitForIdle()
-        Thread.sleep(500)
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Settings").fetchSemanticsNodes().isNotEmpty()
+        }
 
         // Verify load button is initially disabled
         composeTestRule.onNodeWithText("Load Model").assertIsNotEnabled()
 
         // Select only model
         composeTestRule.onNodeWithText("Model").performClick()
-        composeTestRule.waitForIdle()
-        Thread.sleep(300)
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isNotEmpty()
+        }
         composeTestRule.onNodeWithText(modelFile, substring = true).performClick()
-        composeTestRule.waitForIdle()
-        Thread.sleep(300)
+
+        // Wait for dialog to close
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isEmpty()
+        }
 
         // Verify load button still disabled (no tokenizer)
         composeTestRule.onNodeWithText("Load Model").assertIsNotEnabled()
 
         // Select tokenizer
         composeTestRule.onNodeWithText("Tokenizer").performClick()
-        composeTestRule.waitForIdle()
-        Thread.sleep(300)
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Select tokenizer path").fetchSemanticsNodes().isNotEmpty()
+        }
         composeTestRule.onNodeWithText(tokenizerFile, substring = true).performClick()
-        composeTestRule.waitForIdle()
-        Thread.sleep(300)
+
+        // Wait for dialog to close
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodesWithText("Select tokenizer path").fetchSemanticsNodes().isEmpty()
+        }
 
         // Verify load button is now enabled
         composeTestRule.onNodeWithText("Load Model").assertIsEnabled()
@@ -531,7 +558,6 @@ class UIWorkflowTest {
     @Test
     fun testWhitespaceOnlyPrompt() {
         composeTestRule.waitForIdle()
-        Thread.sleep(1000)
 
         dismissSelectModelDialogIfPresent()
 
@@ -540,6 +566,12 @@ class UIWorkflowTest {
 
         val modelLoaded = waitForModelLoaded(90000)
         assertTrue("Model should be loaded successfully", modelLoaded)
+
+        // Wait for send button to appear
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.onAllNodes(hasContentDescription("Send"))
+                .fetchSemanticsNodes().isNotEmpty()
+        }
 
         // Verify send button is disabled with empty input
         composeTestRule.onNodeWithContentDescription("Send").assertIsNotEnabled()
@@ -553,6 +585,16 @@ class UIWorkflowTest {
         // Clear and type actual text
         clearChatInput()
         typeInChatInput("hello")
+
+        // Wait for send button to become enabled
+        composeTestRule.waitUntil(timeoutMillis = 2000) {
+            try {
+                composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
+                true
+            } catch (e: AssertionError) {
+                false
+            }
+        }
 
         // Verify send button is now enabled
         composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
@@ -568,7 +610,6 @@ class UIWorkflowTest {
     @Test
     fun testMultipleMessagesConversation() {
         composeTestRule.waitForIdle()
-        Thread.sleep(1000)
 
         dismissSelectModelDialogIfPresent()
 
@@ -589,10 +630,6 @@ class UIWorkflowTest {
         val firstResponseComplete = waitForGenerationComplete(120000)
         assertTrue("First response should complete", firstResponseComplete)
 
-        // Wait for UI to stabilize
-        Thread.sleep(1000)
-        composeTestRule.waitForIdle()
-
         // Verify first user message is visible and model response is not empty
         composeTestRule.onNodeWithText(firstMessage, substring = true).assertExists()
         assertModelResponseNotEmpty()
@@ -602,8 +639,14 @@ class UIWorkflowTest {
         typeInChatInput(secondMessage)
 
         // Wait for send button to be enabled
-        Thread.sleep(500)
-        composeTestRule.waitForIdle()
+        composeTestRule.waitUntil(timeoutMillis = 5000) {
+            try {
+                composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
+                true
+            } catch (e: AssertionError) {
+                false
+            }
+        }
 
         composeTestRule.onNodeWithContentDescription("Send").performClick()
         composeTestRule.waitForIdle()
@@ -611,10 +654,6 @@ class UIWorkflowTest {
         // Wait for second response to complete
         val secondResponseComplete = waitForGenerationComplete(120000)
         assertTrue("Second response should complete", secondResponseComplete)
-
-        // Wait for UI to stabilize
-        Thread.sleep(1000)
-        composeTestRule.waitForIdle()
 
         // Verify both user messages are visible in conversation
         composeTestRule.onNodeWithText(firstMessage, substring = true).assertExists()
@@ -628,26 +667,34 @@ class UIWorkflowTest {
 
     /**
      * Waits for generation to complete by checking when the Stop button disappears.
+     * Uses Compose's waitUntil for proper synchronization.
      */
     private fun waitForGenerationComplete(timeoutMs: Long = 120000): Boolean {
-        val startTime = System.currentTimeMillis()
-        // First wait a bit to ensure generation has started
-        Thread.sleep(1000)
-
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
-            composeTestRule.waitForIdle()
-            try {
-                // If Stop button exists, generation is still in progress
-                composeTestRule.onNodeWithContentDescription("Stop").assertExists()
-                Thread.sleep(500)
-            } catch (e: AssertionError) {
-                // Stop button doesn't exist, generation is complete
-                Log.i(TAG, "Generation complete - Stop button no longer visible")
-                return true
+        // First, wait for Stop button to appear (generation started)
+        try {
+            composeTestRule.waitUntil(timeoutMillis = 5000) {
+                composeTestRule.onAllNodes(hasContentDescription("Stop"))
+                    .fetchSemanticsNodes().isNotEmpty()
             }
+        } catch (e: Exception) {
+            // Stop button never appeared - generation might have finished very quickly
+            // or never started. Check if there's already a response.
+            Log.i(TAG, "Stop button didn't appear - generation may have completed quickly")
+            return true
         }
-        Log.e(TAG, "Generation timed out after ${timeoutMs}ms")
-        return false
+
+        // Now wait for Stop button to disappear (generation complete)
+        return try {
+            composeTestRule.waitUntil(timeoutMillis = timeoutMs) {
+                composeTestRule.onAllNodes(hasContentDescription("Stop"))
+                    .fetchSemanticsNodes().isEmpty()
+            }
+            Log.i(TAG, "Generation complete - Stop button no longer visible")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Generation timed out after ${timeoutMs}ms")
+            false
+        }
     }
 
     /**
@@ -656,7 +703,6 @@ class UIWorkflowTest {
     @Test
     fun testCollapseMediaButton() {
         composeTestRule.waitForIdle()
-        Thread.sleep(1000)
 
         dismissSelectModelDialogIfPresent()
 
@@ -666,8 +712,11 @@ class UIWorkflowTest {
 
             // Click add media button to show options
             composeTestRule.onNodeWithContentDescription("Add media").performClick()
-            composeTestRule.waitForIdle()
-            Thread.sleep(300)
+
+            // Wait for media options to appear
+            composeTestRule.waitUntil(timeoutMillis = 3000) {
+                composeTestRule.onAllNodesWithText("Gallery").fetchSemanticsNodes().isNotEmpty()
+            }
 
             // Verify media options appear (Gallery, Camera, Audio)
             composeTestRule.onNodeWithText("Gallery").assertIsDisplayed()
@@ -675,8 +724,11 @@ class UIWorkflowTest {
 
             // Click collapse to hide
             composeTestRule.onNodeWithContentDescription("Collapse media").performClick()
-            composeTestRule.waitForIdle()
-            Thread.sleep(300)
+
+            // Wait for media options to disappear
+            composeTestRule.waitUntil(timeoutMillis = 3000) {
+                composeTestRule.onAllNodesWithText("Gallery").fetchSemanticsNodes().isEmpty()
+            }
 
             // Verify media options are hidden
             composeTestRule.onNodeWithText("Gallery").assertDoesNotExist()
