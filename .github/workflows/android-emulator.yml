@@ -4,7 +4,7 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
-name: DL3 Android Emulator
+name: Android Emulator Tests
 
 on:
   pull_request:
@@ -13,6 +13,12 @@ on:
       - 'dl3/android/**'
       - '.github/workflows/android-emulator.yml'
   workflow_dispatch:
+    inputs:
+      demo_path:
+        description: 'Path to Android demo (e.g., dl3/android/DeepLabV3Demo)'
+        required: false
+        default: 'dl3/android/DeepLabV3Demo'
+        type: string
 
 permissions:
   contents: read
@@ -23,11 +29,19 @@ jobs:
     env:
       API_LEVEL: 34
       ARCH: x86_64
+      DEMO_PATH: ${{ inputs.demo_path || 'dl3/android/DeepLabV3Demo' }}
 
-    name: Instrumentation Test DL3
+    name: Instrumentation Test Android Emulator
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Determine demo name
+        id: demo-info
+        run: |
+          DEMO_NAME=$(basename "${{ env.DEMO_PATH }}")
+          echo "demo_name=$DEMO_NAME" >> $GITHUB_OUTPUT
+          echo "Testing: $DEMO_NAME"
 
       - name: Enable KVM group perms
         run: |
@@ -51,7 +65,7 @@ jobs:
           path: |
             ~/.android/avd/*
             ~/.android/adb*
-          key: avd-${{ env.API_LEVEL }}-${{ env.ARCH }}-ram8G-disk8G-dl3-v1
+          key: avd-${{ env.API_LEVEL }}-${{ env.ARCH }}-ram8G-disk8G-${{ steps.demo-info.outputs.demo_name }}-v1
 
       - name: Create AVD and generate snapshot for caching
         if: steps.avd-cache.outputs.cache-hit != 'true'
@@ -64,7 +78,7 @@ jobs:
           force-avd-creation: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot-save -memory 8192
           disable-animations: false
-          working-directory: dl3/android/DeepLabV3Demo
+          working-directory: ${{ env.DEMO_PATH }}
           script: echo "Generated AVD snapshot for caching."
 
       - name: Run instrumentation tests
@@ -77,13 +91,13 @@ jobs:
           force-avd-creation: true
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot-save -memory 8192
           disable-animations: true
-          working-directory: dl3/android/DeepLabV3Demo
+          working-directory: ${{ env.DEMO_PATH }}
           script: bash ./scripts/run-ci-tests.sh
 
       - name: Upload logcat
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: logcat-dl3
-          path: /tmp/logcat-dl3.txt
+          name: logcat-${{ steps.demo-info.outputs.demo_name }}
+          path: /tmp/logcat-*.txt
           retention-days: 7

@@ -106,9 +106,9 @@ Open `app/src/androidTest/java/org/pytorch/executorchexamples/dl3/SanityCheck.kt
 
 ### Test Files
 - **SanityCheck.kt**: Basic module forward pass test
+  - Downloads model automatically if not present
   - Tests model loading from app's private storage
-  - Validates model output shape
-  - Skips gracefully if model not yet downloaded
+  - Validates model output shape (batch_size × classes × width × height)
 
 > **Note**: UI workflow tests for the Compose-based interface are planned for a future update.
 

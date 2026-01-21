@@ -5,13 +5,16 @@
 # This source code is licensed under the BSD-style license found in the
 # LICENSE file in the root directory of this source tree.
 
-# CI test script for running DL3 instrumentation tests
-# The model will be downloaded automatically by the app during the test
+# CI test script for running Android instrumentation tests
+# The model will be downloaded automatically by the test if needed
 
 set -ex
 
+DEMO_NAME=$(basename "$PWD")
+
 echo "=== Test Configuration ==="
-echo "DL3 Demo - Model will be downloaded by the app"
+echo "Demo: $DEMO_NAME"
+echo "Model will be downloaded by the test if not present"
 
 echo "=== Emulator Memory Info ==="
 adb shell cat /proc/meminfo | head -5
@@ -20,8 +23,9 @@ echo "=== Emulator Disk Space ==="
 adb shell df -h /data
 
 # Start logcat capture
+LOGCAT_FILE="/tmp/logcat-${DEMO_NAME}.txt"
 adb logcat -c
-adb logcat > /tmp/logcat-dl3.txt &
+adb logcat > "$LOGCAT_FILE" &
 LOGCAT_PID=$!
 
 echo "=== Starting Gradle ==="
@@ -41,6 +45,6 @@ else
 fi
 
 echo "=== Checking for test results in logcat ==="
-grep "UIWorkflowTest" /tmp/logcat-dl3.txt || echo "No UIWorkflowTest logs found"
+grep "SanityCheck" "$LOGCAT_FILE" || echo "No SanityCheck logs found"
 
 exit $TEST_EXIT_CODE
