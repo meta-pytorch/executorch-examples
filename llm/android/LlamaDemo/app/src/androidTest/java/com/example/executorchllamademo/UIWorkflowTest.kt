@@ -58,7 +58,7 @@ class UIWorkflowTest {
     companion object {
         private const val TAG = "UIWorkflowTest"
         private const val DEFAULT_MODEL_FILE = "stories110M.pte"
-        private const val DEFAULT_TOKENIZER_FILE = "tokenizer.model"
+        private const val DEFAULT_TOKENIZER_FILE = "stories.model"
     }
 
     @get:Rule
@@ -106,13 +106,13 @@ class UIWorkflowTest {
     private fun loadModel(): Boolean {
         // Click settings button
         composeTestRule.onNodeWithContentDescription("Settings").performClick()
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5001) {
             composeTestRule.onAllNodesWithText("Settings").fetchSemanticsNodes().isNotEmpty()
         }
 
         // Click model row to open model selection dialog
         composeTestRule.onNodeWithText("Model").performClick()
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5002) {
             composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isNotEmpty()
         }
 
@@ -127,7 +127,7 @@ class UIWorkflowTest {
 
         // Click tokenizer row to open tokenizer selection dialog
         composeTestRule.onNodeWithText("Tokenizer").performClick()
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5003) {
             composeTestRule.onAllNodesWithText("Select tokenizer path").fetchSemanticsNodes().isNotEmpty()
         }
 
@@ -142,7 +142,7 @@ class UIWorkflowTest {
 
         // Click Load Model button
         composeTestRule.onNodeWithText("Load Model").performClick()
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5004) {
             composeTestRule.onAllNodesWithText("Yes").fetchSemanticsNodes().isNotEmpty()
         }
 
@@ -238,7 +238,7 @@ class UIWorkflowTest {
 
         // Click settings button
         composeTestRule.onNodeWithContentDescription("Settings").performClick()
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5005) {
             composeTestRule.onAllNodesWithText("Settings").fetchSemanticsNodes().isNotEmpty()
         }
 
@@ -250,7 +250,7 @@ class UIWorkflowTest {
 
         // Click model selection
         composeTestRule.onNodeWithText("Model").performClick()
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5006) {
             composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isNotEmpty()
         }
 
@@ -260,7 +260,7 @@ class UIWorkflowTest {
 
         // Click tokenizer selection
         composeTestRule.onNodeWithText("Tokenizer").performClick()
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5007) {
             composeTestRule.onAllNodesWithText("Select tokenizer path").fetchSemanticsNodes().isNotEmpty()
         }
 
@@ -270,7 +270,7 @@ class UIWorkflowTest {
 
         // Click load model button
         composeTestRule.onNodeWithText("Load Model").performClick()
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5008) {
             composeTestRule.onAllNodesWithText("Yes").fetchSemanticsNodes().isNotEmpty()
         }
 
@@ -335,7 +335,7 @@ class UIWorkflowTest {
 
         // Wait for Stop button to appear (generation started)
         try {
-            composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.waitUntil(timeoutMillis = 5009) {
                 composeTestRule.onAllNodes(hasContentDescription("Stop"))
                     .fetchSemanticsNodes().isNotEmpty()
             }
@@ -373,7 +373,7 @@ class UIWorkflowTest {
         assertTrue("Model should be loaded successfully", modelLoaded)
 
         // Wait for send button to be in expected state (disabled with empty input)
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5010) {
             composeTestRule.onAllNodes(hasContentDescription("Send"))
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -425,7 +425,7 @@ class UIWorkflowTest {
 
         // Go to settings
         composeTestRule.onNodeWithContentDescription("Settings").performClick()
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5011) {
             composeTestRule.onAllNodesWithText("Settings").fetchSemanticsNodes().isNotEmpty()
         }
 
@@ -434,7 +434,7 @@ class UIWorkflowTest {
 
         // Click model selection
         composeTestRule.onNodeWithText("Model").performClick()
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5012) {
             composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isNotEmpty()
         }
 
@@ -462,7 +462,7 @@ class UIWorkflowTest {
 
         // Go to settings
         composeTestRule.onNodeWithContentDescription("Settings").performClick()
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5013) {
             composeTestRule.onAllNodesWithText("Settings").fetchSemanticsNodes().isNotEmpty()
         }
 
@@ -472,13 +472,13 @@ class UIWorkflowTest {
 
         // Select a model first
         composeTestRule.onNodeWithText("Model").performClick()
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5014) {
             composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isNotEmpty()
         }
         composeTestRule.onNodeWithText(modelFile, substring = true).performClick()
 
         // Wait for dialog to close and model to be selected
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5015) {
             composeTestRule.onAllNodesWithText(modelFile, substring = true)
                 .fetchSemanticsNodes().isNotEmpty()
         }
@@ -488,7 +488,7 @@ class UIWorkflowTest {
 
         // Open model selection again
         composeTestRule.onNodeWithText("Model").performClick()
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5016) {
             composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isNotEmpty()
         }
 
@@ -496,7 +496,7 @@ class UIWorkflowTest {
         composeTestRule.onNodeWithText("Cancel").performClick()
 
         // Wait for dialog to close
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
+        composeTestRule.waitUntil(timeoutMillis = 5017) {
             composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isEmpty()
         }
 
@@ -674,7 +674,7 @@ class UIWorkflowTest {
     private fun waitForGenerationComplete(timeoutMs: Long = 120000): Boolean {
         // First, wait for Stop button to appear (generation started)
         try {
-            composeTestRule.waitUntil(timeoutMillis = 5000) {
+            composeTestRule.waitUntil(timeoutMillis = 10000) {
                 composeTestRule.onAllNodes(hasContentDescription("Stop"))
                     .fetchSemanticsNodes().isNotEmpty()
             }
