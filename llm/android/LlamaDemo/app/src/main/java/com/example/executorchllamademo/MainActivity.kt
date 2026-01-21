@@ -602,7 +602,7 @@ class MainActivity : AppCompatActivity(), Runnable, LlmCallback {
             put(MediaStore.Images.Media.RELATIVE_PATH, "DCIM/Camera/")
         }
         cameraImageUri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-        cameraRoll.launch(cameraImageUri)
+        cameraImageUri?.let { cameraRoll.launch(it) }
     }
 
     private fun setupGalleryPicker() {

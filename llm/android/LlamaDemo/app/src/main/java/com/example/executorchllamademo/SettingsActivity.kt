@@ -262,7 +262,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun setupBackendSelectorDialog() {
         // Convert enum to list
-        val backendTypes = BackendType.entries.map { it.toString() }.toTypedArray()
+        val backendTypes = BackendType.values().map { it.toString() }.toTypedArray()
 
         AlertDialog.Builder(this)
             .setTitle("Select backend type")
@@ -344,7 +344,7 @@ class SettingsActivity : AppCompatActivity() {
 
     private fun setupModelTypeSelectorDialog() {
         // Convert enum to list
-        val modelTypes = ModelType.entries.map { it.toString() }.toTypedArray()
+        val modelTypes = ModelType.values().map { it.toString() }.toTypedArray()
 
         AlertDialog.Builder(this)
             .setTitle("Select model type")
