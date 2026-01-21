@@ -47,11 +47,6 @@ enum class ModelType(
     );
 
     /**
-     * Returns a copy of the file name patterns associated with this model type.
-     */
-    fun getPatterns(): Array<String> = patterns.copyOf()
-
-    /**
      * Checks if this model supports image input.
      */
     fun supportsImage(): Boolean = mediaCapabilities.contains(MediaCapability.IMAGE)
