@@ -8,75 +8,67 @@
 
 package com.example.executorchllamademo
 
-import android.app.AlertDialog
 import android.os.Build
 import android.os.Bundle
-import android.widget.ImageButton
-import android.widget.ListView
-import androidx.appcompat.app.AppCompatActivity
+import android.util.Log
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import com.example.executorchllamademo.ui.screens.LogsScreen
+import com.example.executorchllamademo.ui.theme.LlamaDemoTheme
+import com.google.gson.Gson
 
-class LogsActivity : AppCompatActivity() {
+class LogsActivity : ComponentActivity() {
 
-    private lateinit var logsAdapter: LogsAdapter
+    private var appearanceMode by mutableStateOf(AppearanceMode.SYSTEM)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_logs)
 
         if (Build.VERSION.SDK_INT >= 21) {
             window.statusBarColor = ContextCompat.getColor(this, R.color.status_bar)
             window.navigationBarColor = ContextCompat.getColor(this, R.color.nav_bar)
         }
 
-        ViewCompat.setOnApplyWindowInsetsListener(requireViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
+        loadAppearanceMode()
 
-        setupLogs()
-        setupClearLogsButton()
+        setContent {
+            val isDarkTheme = when (appearanceMode) {
+                AppearanceMode.LIGHT -> false
+                AppearanceMode.DARK -> true
+                AppearanceMode.SYSTEM -> isSystemInDarkTheme()
+            }
+
+            LlamaDemoTheme(darkTheme = isDarkTheme) {
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    LogsScreen()
+                }
+            }
+        }
+    }
+
+    private fun loadAppearanceMode() {
+        val prefs = DemoSharedPreferences(this)
+        val settingsJson = prefs.getSettings()
+        if (settingsJson.isNotEmpty()) {
+            try {
+                val settings = Gson().fromJson(settingsJson, SettingsFields::class.java)
+                appearanceMode = settings.appearanceMode
+            } catch (e: Exception) {
+                Log.e("LogsActivity", "Error loading appearance mode", e)
+            }
+        }
     }
 
     override fun onResume() {
         super.onResume()
-        logsAdapter.clear()
-        logsAdapter.addAll(ETLogging.getInstance().getLogs())
-        logsAdapter.notifyDataSetChanged()
-    }
-
-    private fun setupLogs() {
-        val logsListView = requireViewById<ListView>(R.id.logsListView)
-        logsAdapter = LogsAdapter(this, R.layout.logs_message)
-
-        logsListView.adapter = logsAdapter
-        logsAdapter.addAll(ETLogging.getInstance().getLogs())
-        logsAdapter.notifyDataSetChanged()
-    }
-
-    private fun setupClearLogsButton() {
-        val clearLogsButton = requireViewById<ImageButton>(R.id.clearLogsButton)
-        clearLogsButton.setOnClickListener {
-            AlertDialog.Builder(this)
-                .setTitle("Delete Logs History")
-                .setMessage("Do you really want to delete logs history?")
-                .setIcon(android.R.drawable.ic_dialog_alert)
-                .setPositiveButton(android.R.string.yes) { _, _ ->
-                    // Clear the messageAdapter and sharedPreference
-                    ETLogging.getInstance().clearLogs()
-                    logsAdapter.clear()
-                    logsAdapter.notifyDataSetChanged()
-                }
-                .setNegativeButton(android.R.string.no, null)
-                .show()
-        }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        ETLogging.getInstance().saveLogs()
+        loadAppearanceMode()
     }
 }
