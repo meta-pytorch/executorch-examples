@@ -89,9 +89,6 @@ class SettingsActivity : ComponentActivity() {
     }
 
     companion object {
-        @JvmField
-        val TEMPERATURE_MIN_VALUE = 0.0
-
         private fun fileHasExtension(file: String, suffix: Array<String>): Boolean {
             return suffix.any { file.endsWith(it) }
         }

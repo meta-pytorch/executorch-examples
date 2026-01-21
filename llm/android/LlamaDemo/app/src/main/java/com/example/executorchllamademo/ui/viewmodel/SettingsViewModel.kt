@@ -96,12 +96,10 @@ class SettingsViewModel : ViewModel() {
 
     // Model selection
     fun selectModel(modelPath: String) {
-        android.util.Log.d("SettingsViewModel", "selectModel called with: $modelPath")
         val newSettings = SettingsFields(settingsFields)
         newSettings.saveModelPath(modelPath)
         autoSelectModelType(newSettings, modelPath)
         settingsFields = newSettings
-        android.util.Log.d("SettingsViewModel", "settingsFields.modelFilePath is now: ${settingsFields.modelFilePath}")
     }
 
     private fun autoSelectModelType(settings: SettingsFields, filePath: String) {

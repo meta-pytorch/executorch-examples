@@ -17,7 +17,7 @@ class SettingsFields(
     var modelFilePath: String = "",
     var tokenizerFilePath: String = "",
     var dataPath: String = "",
-    var temperature: Double = SettingsActivity.TEMPERATURE_MIN_VALUE,
+    var temperature: Double = DEFAULT_TEMPERATURE,
     var systemPrompt: String = "",
     var userPrompt: String = PromptFormat.getUserPromptTemplate(DEFAULT_MODEL),
     isClearChatHistory: Boolean = false,
@@ -140,6 +140,7 @@ class SettingsFields(
     }
 
     companion object {
+        const val DEFAULT_TEMPERATURE = 0.0
         private val DEFAULT_MODEL = ModelType.LLAMA_3
         private val DEFAULT_BACKEND = BackendType.XNNPACK
         private val DEFAULT_APPEARANCE = AppearanceMode.SYSTEM

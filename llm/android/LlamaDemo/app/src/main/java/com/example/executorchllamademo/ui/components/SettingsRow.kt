@@ -69,7 +69,7 @@ fun SettingsRow(
             modifier = Modifier.weight(0.1f)
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.baseline_folder_24),
+                painter = painterResource(id = R.drawable.baseline_chevron_right_24),
                 contentDescription = "Select $label",
                 tint = appColors.settingsText
             )
