@@ -144,7 +144,7 @@ fun ChatInput(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Add,
-                        contentDescription = if (showMediaSelector) "Close media menu" else "Add media",
+                        contentDescription = if (showMediaSelector) "Collapse media" else "Add media",
                         tint = appColors.textOnNavBar,
                         modifier = Modifier.rotate(rotation)
                     )
