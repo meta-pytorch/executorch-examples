@@ -32,9 +32,7 @@ class LogsActivity : ComponentActivity() {
         setContent {
             LlamaDemoTheme(darkTheme = false) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    LogsScreen(
-                        onBackPressed = { finish() }
-                    )
+                    LogsScreen()
                 }
             }
         }
