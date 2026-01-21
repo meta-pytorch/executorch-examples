@@ -198,13 +198,12 @@ private fun TopBanner(
             fontWeight = FontWeight.Bold
         )
 
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.weight(1f))
 
         Text(
             text = ramUsage,
             color = appColors.textOnNavBar,
-            fontSize = 14.sp,
-            modifier = Modifier.weight(1f)
+            fontSize = 14.sp
         )
 
         IconButton(onClick = onLogsClick) {
