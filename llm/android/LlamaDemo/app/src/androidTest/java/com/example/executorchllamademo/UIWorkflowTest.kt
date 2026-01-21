@@ -376,7 +376,7 @@ class UIWorkflowTest {
         composeTestRule.waitForIdle()
 
         // Wait briefly
-        Thread.sleep(1000)
+        Thread.sleep(10)
 
         // UI should still be responsive
         composeTestRule.waitForIdle()
@@ -632,7 +632,7 @@ class UIWorkflowTest {
     }
 
     /**
-     * Waits for generation to complete by checking when the Send button becomes enabled.
+     * Waits for generation to complete by checking when the Stop button disappears.
      */
     private fun waitForGenerationComplete(timeoutMs: Long = 120000): Boolean {
         val startTime = System.currentTimeMillis()
@@ -642,19 +642,13 @@ class UIWorkflowTest {
         while (System.currentTimeMillis() - startTime < timeoutMs) {
             composeTestRule.waitForIdle()
             try {
-                // If send button is not enabled, generation is still in progress
-                composeTestRule.onNodeWithContentDescription("Send").assertIsNotEnabled()
+                // If Stop button exists, generation is still in progress
+                composeTestRule.onNodeWithContentDescription("Stop").assertExists()
                 Thread.sleep(500)
             } catch (e: AssertionError) {
-                // Send button is enabled or doesn't exist - check if Stop button exists
-                try {
-                    composeTestRule.onNodeWithContentDescription("Stop").assertExists()
-                    // Still generating
-                    Thread.sleep(500)
-                } catch (e2: AssertionError) {
-                    // No stop button, generation complete
-                    return true
-                }
+                // Stop button doesn't exist, generation is complete
+                Log.i(TAG, "Generation complete - Stop button no longer visible")
+                return true
             }
         }
         Log.e(TAG, "Generation timed out after ${timeoutMs}ms")
