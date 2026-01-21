@@ -28,9 +28,13 @@ class DemoSharedPreferences(private val context: Context) {
     }
 
     fun addMessages(messageAdapter: MessageAdapter) {
+        addMessages(messageAdapter.savedMessages)
+    }
+
+    fun addMessages(messages: List<Message>) {
         val editor = sharedPreferences.edit()
         val gson = Gson()
-        val msgJSON = gson.toJson(messageAdapter.savedMessages)
+        val msgJSON = gson.toJson(messages)
         editor.putString(context.getString(R.string.saved_messages_json_key), msgJSON)
         editor.apply()
     }
