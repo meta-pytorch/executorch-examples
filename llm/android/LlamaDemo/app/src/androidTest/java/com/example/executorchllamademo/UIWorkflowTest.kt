@@ -668,30 +668,22 @@ class UIWorkflowTest {
     }
 
     /**
-     * Waits for generation to complete by checking when the Stop button disappears.
+     * Waits for generation to complete by checking for tokens-per-second metrics
+     * which appear when generation finishes.
      * Uses Compose's waitUntil for proper synchronization.
      */
     private fun waitForGenerationComplete(timeoutMs: Long = 120000): Boolean {
-        // First, wait for Stop button to appear (generation started)
-        try {
-            composeTestRule.waitUntil(timeoutMillis = 10000) {
-                composeTestRule.onAllNodes(hasContentDescription("Stop"))
-                    .fetchSemanticsNodes().isNotEmpty()
-            }
-        } catch (e: Exception) {
-            // Stop button never appeared - generation might have finished very quickly
-            // or never started. Check if there's already a response.
-            Log.i(TAG, "Stop button didn't appear - generation may have completed quickly")
-            return true
-        }
-
-        // Now wait for Stop button to disappear (generation complete)
+        // Wait for generation metrics to appear (indicates generation completed)
+        // We check for "t/s" or "tok/s" which only appear after generation finishes
         return try {
             composeTestRule.waitUntil(timeoutMillis = timeoutMs) {
-                composeTestRule.onAllNodes(hasContentDescription("Stop"))
-                    .fetchSemanticsNodes().isEmpty()
+                val tpsNodes = composeTestRule.onAllNodesWithText("t/s", substring = true)
+                    .fetchSemanticsNodes()
+                val tokpsNodes = composeTestRule.onAllNodesWithText("tok/s", substring = true)
+                    .fetchSemanticsNodes()
+                tpsNodes.isNotEmpty() || tokpsNodes.isNotEmpty()
             }
-            Log.i(TAG, "Generation complete - Stop button no longer visible")
+            Log.i(TAG, "Generation complete - found generation metrics")
             true
         } catch (e: Exception) {
             Log.e(TAG, "Generation timed out after ${timeoutMs}ms")
