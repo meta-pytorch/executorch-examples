@@ -102,7 +102,7 @@ The app detects all 21 PASCAL VOC classes with distinct color overlays:
 ```
 
 ### Using Android Studio
-Open `app/src/androidTest/java/org/pytorch/executorchexamples/dl3/SanityCheck.kt` and click the Play button.
+Open `app/src/androidTest/java/org/pytorch/executorchexamples/dl3/SanityCheck.kt` or `UIWorkflowTest.kt` and click the Play button.
 
 ### Test Files
 - **SanityCheck.kt**: Basic module forward pass test
@@ -110,5 +110,12 @@ Open `app/src/androidTest/java/org/pytorch/executorchexamples/dl3/SanityCheck.kt
   - Tests model loading from app's private storage
   - Validates model output shape (batch_size × classes × width × height)
 
-> **Note**: UI workflow tests for the Compose-based interface are planned for a future update.
+- **UIWorkflowTest.kt**: Compose UI workflow tests including:
+  - Initial UI state verification
+  - Download button functionality (with and without model present)
+  - Model run/segmentation testing with inference time display
+  - Next button to cycle through sample images
+  - Reset button functionality
+  - Complete end-to-end workflow (Next → Run → Reset)
+  - Multiple consecutive runs to test model reusability
 

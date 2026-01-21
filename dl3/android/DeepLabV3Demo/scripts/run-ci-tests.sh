@@ -45,6 +45,6 @@ else
 fi
 
 echo "=== Checking for test results in logcat ==="
-grep "SanityCheck" "$LOGCAT_FILE" || echo "No SanityCheck logs found"
+grep -E "SanityCheck|UIWorkflowTest" "$LOGCAT_FILE" || echo "No test logs found"
 
 exit $TEST_EXIT_CODE
