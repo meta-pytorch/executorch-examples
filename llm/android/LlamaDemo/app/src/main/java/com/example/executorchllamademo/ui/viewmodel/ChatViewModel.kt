@@ -56,6 +56,10 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     var ramUsage by mutableStateOf("0 MB")
     var showMediaButtons by mutableStateOf(true)
 
+    // Counter that increments on each token to trigger auto-scroll during generation
+    var scrollTrigger by mutableStateOf(0)
+        private set
+
     private val _selectedImages = mutableStateListOf<Uri>()
     val selectedImages: List<Uri> = _selectedImages
 
@@ -489,6 +493,8 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
             if (index >= 0) {
                 _messages[index] = resultMessage!!
             }
+            // Increment scroll trigger to auto-scroll during generation
+            scrollTrigger++
         }
     }
 
