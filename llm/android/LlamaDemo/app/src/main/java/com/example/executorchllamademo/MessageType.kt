@@ -6,10 +6,10 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-package com.example.executorchllamademo;
+package com.example.executorchllamademo
 
-public enum MessageType {
-  TEXT,
-  IMAGE,
-  SYSTEM
+enum class MessageType {
+    TEXT,
+    IMAGE,
+    SYSTEM
 }

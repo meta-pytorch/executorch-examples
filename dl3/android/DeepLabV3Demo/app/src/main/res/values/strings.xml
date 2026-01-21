@@ -1,13 +1,3 @@
 <resources>
     <string name="app_name">DeepLabV3Demo</string>
-    <string name="image_view">Image View</string>
-    <string name="run_model">Running the model...</string>
-    <string name="next">Next sample image</string>
-    <string name="run_xnnpack">Run</string>
-    <string name="reset">Reset</string>
-    <string name="load_and_refresh">Pick Image</string>
-    <string name="inference_time_placeholder">Inference: -- ms</string>
-    <string name="download_model">Download Model</string>
-    <string name="downloading">Downloading...</string>
-    <string name="model_status_placeholder">Model status</string>
 </resources>
