@@ -17,6 +17,7 @@ import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
@@ -148,47 +149,51 @@ class UIWorkflowTest {
     }
 
     /**
-     * Waits for the model to be loaded by checking for "Successfully loaded model" message.
+     * Waits for the model to be loaded by checking for success or error messages.
      */
     private fun waitForModelLoaded(timeoutMs: Long = 60000): Boolean {
         val startTime = System.currentTimeMillis()
         while (System.currentTimeMillis() - startTime < timeoutMs) {
+            composeTestRule.waitForIdle()
             try {
-                composeTestRule.onNodeWithText("Successfully loaded model", substring = true)
+                // Check for success message
+                composeTestRule.onNodeWithText("Successfully loaded", substring = true)
                     .assertExists()
+                Log.i(TAG, "Model loaded successfully")
                 return true
             } catch (e: AssertionError) {
-                Thread.sleep(500)
+                // Check for error to fail fast
+                try {
+                    composeTestRule.onNodeWithText("Model Load failure", substring = true)
+                        .assertExists()
+                    Log.e(TAG, "Model load failed")
+                    return false
+                } catch (e2: AssertionError) {
+                    // Neither success nor error, keep waiting
+                }
             }
+            Thread.sleep(1000)
         }
+        Log.e(TAG, "Model loading timed out after ${timeoutMs}ms")
         return false
     }
 
     /**
-     * Waits for response to appear with minimum length.
+     * Types text into the chat input field using testTag.
      */
-    private fun waitForResponseLength(minLength: Int, timeoutMs: Long): Boolean {
-        val startTime = System.currentTimeMillis()
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
-            // Check if there's any substantial text in the messages
-            // This is a simplified check - Compose testing makes it harder to extract text length
-            composeTestRule.waitForIdle()
-            Thread.sleep(200)
+    private fun typeInChatInput(text: String) {
+        composeTestRule.onNodeWithTag("chat_input_field").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("chat_input_field").performTextInput(text)
+        composeTestRule.waitForIdle()
+    }
 
-            // Try to find nodes that might contain response
-            try {
-                val nodes = composeTestRule.onAllNodesWithText("", substring = true)
-                    .fetchSemanticsNodes()
-                // If we have substantial content, return true
-                if (nodes.size > 5) { // Rough heuristic for response
-                    return true
-                }
-            } catch (e: Exception) {
-                // Continue waiting
-            }
-            Thread.sleep(300)
-        }
-        return false
+    /**
+     * Clears the chat input field.
+     */
+    private fun clearChatInput() {
+        composeTestRule.onNodeWithTag("chat_input_field").performTextClearance()
+        composeTestRule.waitForIdle()
     }
 
     /**
@@ -261,13 +266,11 @@ class UIWorkflowTest {
         assertTrue("Model should be selected successfully", loaded)
 
         // Wait for model to load
-        val modelLoaded = waitForModelLoaded(60000)
+        val modelLoaded = waitForModelLoaded(90000)
         assertTrue("Model should be loaded successfully", modelLoaded)
 
-        // Type a message
-        composeTestRule.onNodeWithText("Type a message...", substring = true).performClick()
-        composeTestRule.onNodeWithText("Type a message...", substring = true).performTextInput("tell me a story")
-        composeTestRule.waitForIdle()
+        // Type a message using testTag
+        typeInChatInput("tell me a story")
 
         // Click send
         composeTestRule.onNodeWithContentDescription("Send").performClick()
@@ -293,14 +296,11 @@ class UIWorkflowTest {
         val loaded = loadModel()
         assertTrue("Model should be selected successfully", loaded)
 
-        val modelLoaded = waitForModelLoaded(60000)
+        val modelLoaded = waitForModelLoaded(90000)
         assertTrue("Model should be loaded successfully", modelLoaded)
 
-        // Type a long prompt
-        composeTestRule.onNodeWithText("Type a message...", substring = true).performClick()
-        composeTestRule.onNodeWithText("Type a message...", substring = true)
-            .performTextInput("Write a very long story about a brave knight who goes on an adventure")
-        composeTestRule.waitForIdle()
+        // Type a long prompt using testTag
+        typeInChatInput("Write a very long story about a brave knight who goes on an adventure")
 
         // Click send
         composeTestRule.onNodeWithContentDescription("Send").performClick()
@@ -333,14 +333,11 @@ class UIWorkflowTest {
         val loaded = loadModel()
         assertTrue("Model should be selected successfully", loaded)
 
-        val modelLoaded = waitForModelLoaded(60000)
+        val modelLoaded = waitForModelLoaded(90000)
         assertTrue("Model should be loaded successfully", modelLoaded)
 
-        // Type a prompt
-        composeTestRule.onNodeWithText("Type a message...", substring = true).performClick()
-        composeTestRule.onNodeWithText("Type a message...", substring = true)
-            .performTextInput("Write a detailed story")
-        composeTestRule.waitForIdle()
+        // Type a prompt using testTag
+        typeInChatInput("Write a detailed story")
 
         // Click send
         composeTestRule.onNodeWithContentDescription("Send").performClick()
@@ -366,23 +363,20 @@ class UIWorkflowTest {
         val loaded = loadModel()
         assertTrue("Model should be selected successfully", loaded)
 
-        val modelLoaded = waitForModelLoaded(60000)
+        val modelLoaded = waitForModelLoaded(90000)
         assertTrue("Model should be loaded successfully", modelLoaded)
 
         // Verify send button is disabled with empty input
         composeTestRule.onNodeWithContentDescription("Send").assertIsNotEnabled()
 
-        // Type some text
-        composeTestRule.onNodeWithText("Type a message...", substring = true).performClick()
-        composeTestRule.onNodeWithText("Type a message...", substring = true).performTextInput("hello")
-        composeTestRule.waitForIdle()
+        // Type some text using testTag
+        typeInChatInput("hello")
 
         // Verify send button is now enabled
         composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
 
         // Clear the text
-        composeTestRule.onNode(hasText("hello")).performTextClearance()
-        composeTestRule.waitForIdle()
+        clearChatInput()
 
         // Verify send button is disabled again
         composeTestRule.onNodeWithContentDescription("Send").assertIsNotEnabled()
@@ -522,24 +516,21 @@ class UIWorkflowTest {
         val loaded = loadModel()
         assertTrue("Model should be selected successfully", loaded)
 
-        val modelLoaded = waitForModelLoaded(60000)
+        val modelLoaded = waitForModelLoaded(90000)
         assertTrue("Model should be loaded successfully", modelLoaded)
 
         // Verify send button is disabled with empty input
         composeTestRule.onNodeWithContentDescription("Send").assertIsNotEnabled()
 
-        // Type only spaces
-        composeTestRule.onNodeWithText("Type a message...", substring = true).performClick()
-        composeTestRule.onNodeWithText("Type a message...", substring = true).performTextInput("     ")
-        composeTestRule.waitForIdle()
+        // Type only spaces using testTag
+        typeInChatInput("     ")
 
         // Verify send button is still disabled (whitespace only)
         composeTestRule.onNodeWithContentDescription("Send").assertIsNotEnabled()
 
         // Clear and type actual text
-        composeTestRule.onNode(hasText("     ")).performTextClearance()
-        composeTestRule.onNodeWithText("Type a message...", substring = true).performTextInput("hello")
-        composeTestRule.waitForIdle()
+        clearChatInput()
+        typeInChatInput("hello")
 
         // Verify send button is now enabled
         composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
