@@ -15,7 +15,7 @@ import java.util.Locale
 /**
  * Represents a log entry with timestamp.
  */
-data class AppLog(
+data class AppLog @JvmOverloads constructor(
     val message: String,
     val timestamp: Long = System.currentTimeMillis()
 ) {

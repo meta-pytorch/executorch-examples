@@ -20,11 +20,18 @@ class SettingsFields(
     var temperature: Double = SettingsActivity.TEMPERATURE_MIN_VALUE,
     var systemPrompt: String = "",
     var userPrompt: String = PromptFormat.getUserPromptTemplate(DEFAULT_MODEL),
-    var isClearChatHistory: Boolean = false,
-    var isLoadModel: Boolean = false,
+    isClearChatHistory: Boolean = false,
+    isLoadModel: Boolean = false,
     var modelType: ModelType = DEFAULT_MODEL,
     var backendType: BackendType = DEFAULT_BACKEND
 ) {
+    // Use backing fields with explicit getters to maintain Java compatibility
+    // Java expects getIsClearChatHistory() and getIsLoadModel()
+    @get:JvmName("getIsClearChatHistory")
+    var isClearChatHistory: Boolean = isClearChatHistory
+
+    @get:JvmName("getIsLoadModel")
+    var isLoadModel: Boolean = isLoadModel
     /**
      * Copy constructor
      */

@@ -52,7 +52,7 @@ enum class ModelType(private vararg val patterns: String) {
             }
 
             // Check remaining types
-            return entries.firstOrNull { type ->
+            return values().firstOrNull { type ->
                 type != LLAMA_GUARD_3 && type != LLAVA_1_5 && type.matchesFileName(lowerFileName)
             }
         }
