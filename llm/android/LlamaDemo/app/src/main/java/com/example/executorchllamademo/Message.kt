@@ -20,10 +20,13 @@ import java.util.Locale
  */
 class Message(
     text: String,
-    val isSent: Boolean,
+    isSent: Boolean,
     val messageType: MessageType,
     val promptID: Int
 ) {
+    // Use @JvmName to maintain Java compatibility - Java expects getIsSent()
+    @get:JvmName("getIsSent")
+    val isSent: Boolean = isSent
     var text: String = if (messageType == MessageType.IMAGE) "" else text
         private set
 
