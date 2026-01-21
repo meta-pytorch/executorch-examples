@@ -77,36 +77,39 @@ class SettingsViewModel : ViewModel() {
 
     // Backend selection
     fun selectBackend(backendType: BackendType) {
-        settingsFields.saveBackendType(backendType)
-        settingsFields = SettingsFields(settingsFields) // Trigger recomposition
-        applyBackendDefaults()
+        val newSettings = SettingsFields(settingsFields)
+        newSettings.saveBackendType(backendType)
+        applyBackendDefaults(newSettings)
+        settingsFields = newSettings
     }
 
-    private fun applyBackendDefaults() {
-        if (settingsFields.backendType == BackendType.MEDIATEK) {
-            if (settingsFields.modelFilePath.isEmpty()) {
-                settingsFields.saveModelPath("/in/mtk/llama/runner")
+    private fun applyBackendDefaults(settings: SettingsFields) {
+        if (settings.backendType == BackendType.MEDIATEK) {
+            if (settings.modelFilePath.isEmpty()) {
+                settings.saveModelPath("/in/mtk/llama/runner")
             }
-            if (settingsFields.tokenizerFilePath.isEmpty()) {
-                settingsFields.saveTokenizerPath("/in/mtk/llama/runner")
+            if (settings.tokenizerFilePath.isEmpty()) {
+                settings.saveTokenizerPath("/in/mtk/llama/runner")
             }
-            settingsFields = SettingsFields(settingsFields)
         }
     }
 
     // Model selection
     fun selectModel(modelPath: String) {
-        settingsFields.saveModelPath(modelPath)
-        autoSelectModelType(modelPath)
-        settingsFields = SettingsFields(settingsFields)
+        android.util.Log.d("SettingsViewModel", "selectModel called with: $modelPath")
+        val newSettings = SettingsFields(settingsFields)
+        newSettings.saveModelPath(modelPath)
+        autoSelectModelType(newSettings, modelPath)
+        settingsFields = newSettings
+        android.util.Log.d("SettingsViewModel", "settingsFields.modelFilePath is now: ${settingsFields.modelFilePath}")
     }
 
-    private fun autoSelectModelType(filePath: String) {
+    private fun autoSelectModelType(settings: SettingsFields, filePath: String) {
         val detectedType = ModelType.fromFilePath(filePath)
         if (detectedType != null) {
-            settingsFields.saveModelType(detectedType)
-            settingsFields.savePrompts(
-                settingsFields.systemPrompt,
+            settings.saveModelType(detectedType)
+            settings.savePrompts(
+                settings.systemPrompt,
                 PromptFormat.getUserPromptTemplate(detectedType)
             )
         }
@@ -114,61 +117,69 @@ class SettingsViewModel : ViewModel() {
 
     // Tokenizer selection
     fun selectTokenizer(tokenizerPath: String) {
-        settingsFields.saveTokenizerPath(tokenizerPath)
-        settingsFields = SettingsFields(settingsFields)
+        val newSettings = SettingsFields(settingsFields)
+        newSettings.saveTokenizerPath(tokenizerPath)
+        settingsFields = newSettings
     }
 
     // Data path selection
     fun selectDataPath(dataPath: String) {
-        settingsFields.saveDataPath(dataPath)
-        settingsFields = SettingsFields(settingsFields)
+        val newSettings = SettingsFields(settingsFields)
+        newSettings.saveDataPath(dataPath)
+        settingsFields = newSettings
     }
 
     // Model type selection
     fun selectModelType(modelType: ModelType) {
-        settingsFields.saveModelType(modelType)
-        settingsFields.savePrompts(
-            settingsFields.systemPrompt,
+        val newSettings = SettingsFields(settingsFields)
+        newSettings.saveModelType(modelType)
+        newSettings.savePrompts(
+            newSettings.systemPrompt,
             PromptFormat.getUserPromptTemplate(modelType)
         )
-        settingsFields = SettingsFields(settingsFields)
+        settingsFields = newSettings
     }
 
     // Temperature
     fun updateTemperature(temperature: Double) {
-        settingsFields.saveParameters(temperature)
-        settingsFields.saveLoadModelAction(true)
-        settingsFields = SettingsFields(settingsFields)
+        val newSettings = SettingsFields(settingsFields)
+        newSettings.saveParameters(temperature)
+        newSettings.saveLoadModelAction(true)
+        settingsFields = newSettings
         saveSettings()
     }
 
     // System prompt
     fun updateSystemPrompt(prompt: String) {
-        settingsFields.savePrompts(prompt, settingsFields.userPrompt)
-        settingsFields = SettingsFields(settingsFields)
+        val newSettings = SettingsFields(settingsFields)
+        newSettings.savePrompts(prompt, newSettings.userPrompt)
+        settingsFields = newSettings
     }
 
     fun resetSystemPrompt() {
-        settingsFields.savePrompts(PromptFormat.DEFAULT_SYSTEM_PROMPT, settingsFields.userPrompt)
-        settingsFields = SettingsFields(settingsFields)
+        val newSettings = SettingsFields(settingsFields)
+        newSettings.savePrompts(PromptFormat.DEFAULT_SYSTEM_PROMPT, newSettings.userPrompt)
+        settingsFields = newSettings
     }
 
     // User prompt
     fun updateUserPrompt(prompt: String) {
         if (isValidUserPrompt(prompt)) {
-            settingsFields.savePrompts(settingsFields.systemPrompt, prompt)
-            settingsFields = SettingsFields(settingsFields)
+            val newSettings = SettingsFields(settingsFields)
+            newSettings.savePrompts(newSettings.systemPrompt, prompt)
+            settingsFields = newSettings
         } else {
             showInvalidPromptDialog = true
         }
     }
 
     fun resetUserPrompt() {
-        settingsFields.savePrompts(
-            settingsFields.systemPrompt,
-            PromptFormat.getUserPromptTemplate(settingsFields.modelType)
+        val newSettings = SettingsFields(settingsFields)
+        newSettings.savePrompts(
+            newSettings.systemPrompt,
+            PromptFormat.getUserPromptTemplate(newSettings.modelType)
         )
-        settingsFields = SettingsFields(settingsFields)
+        settingsFields = newSettings
     }
 
     private fun isValidUserPrompt(userPrompt: String): Boolean {
@@ -178,14 +189,16 @@ class SettingsViewModel : ViewModel() {
     // Load model action
     fun confirmLoadModel() {
         saveSettings()
-        settingsFields.saveLoadModelAction(true)
-        settingsFields = SettingsFields(settingsFields)
+        val newSettings = SettingsFields(settingsFields)
+        newSettings.saveLoadModelAction(true)
+        settingsFields = newSettings
     }
 
     // Clear chat
     fun confirmClearChat() {
-        settingsFields.saveIsClearChatHistory(true)
-        settingsFields = SettingsFields(settingsFields)
+        val newSettings = SettingsFields(settingsFields)
+        newSettings.saveIsClearChatHistory(true)
+        settingsFields = newSettings
     }
 
     // Validation
@@ -203,8 +216,9 @@ class SettingsViewModel : ViewModel() {
 
     // Appearance mode selection
     fun selectAppearanceMode(mode: AppearanceMode) {
-        settingsFields.saveAppearanceMode(mode)
-        settingsFields = SettingsFields(settingsFields)
+        val newSettings = SettingsFields(settingsFields)
+        newSettings.saveAppearanceMode(mode)
+        settingsFields = newSettings
         saveSettings()
     }
 }

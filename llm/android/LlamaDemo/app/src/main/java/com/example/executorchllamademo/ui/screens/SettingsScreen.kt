@@ -8,8 +8,12 @@
 
 package com.example.executorchllamademo.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -29,6 +34,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -104,20 +111,20 @@ fun SettingsScreen(
                 .verticalScroll(scrollState)
                 .padding(12.dp)
         ) {
+            // Appearance selector (first)
+            SettingsRow(
+                label = "Appearance",
+                value = viewModel.settingsFields.appearanceMode.displayName,
+                onClick = { viewModel.showAppearanceDialog = true }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             // Backend selector
             SettingsRow(
                 label = "Backend",
                 value = viewModel.settingsFields.backendType.toString(),
                 onClick = { viewModel.showBackendDialog = true }
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Appearance selector
-            SettingsRow(
-                label = "Appearance",
-                value = viewModel.settingsFields.appearanceMode.displayName,
-                onClick = { viewModel.showAppearanceDialog = true }
             )
 
             // Only show these for non-MediaTek backends
@@ -190,7 +197,7 @@ fun SettingsScreen(
             if (!viewModel.isMediaTekMode()) {
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Temperature
+                // Temperature with slider and input box
                 Text(
                     text = "Parameters",
                     fontSize = 16.sp,
@@ -201,7 +208,7 @@ fun SettingsScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 var temperatureText by remember(viewModel.settingsFields.temperature) {
-                    mutableStateOf(viewModel.settingsFields.temperature.toString())
+                    mutableStateOf(String.format("%.2f", viewModel.settingsFields.temperature))
                 }
 
                 Row(
@@ -211,22 +218,42 @@ fun SettingsScreen(
                     Text(
                         text = "Temperature",
                         fontSize = 14.sp,
-                        color = appColors.settingsText,
-                        modifier = Modifier.weight(0.4f)
+                        color = appColors.settingsText
                     )
 
+                    Spacer(modifier = Modifier.width(12.dp))
+
+                    // Slider
+                    Slider(
+                        value = viewModel.settingsFields.temperature.toFloat().coerceIn(0f, 2f),
+                        onValueChange = { newValue ->
+                            val rounded = (newValue * 100).toInt() / 100.0
+                            temperatureText = String.format("%.2f", rounded)
+                            viewModel.updateTemperature(rounded)
+                        },
+                        valueRange = 0f..2f,
+                        modifier = Modifier.weight(1f),
+                        colors = SliderDefaults.colors(
+                            thumbColor = BtnEnabled,
+                            activeTrackColor = BtnEnabled
+                        )
+                    )
+
+                    Spacer(modifier = Modifier.width(8.dp))
+
+                    // Number input box
                     Box(
                         modifier = Modifier
-                            .weight(0.6f)
+                            .width(60.dp)
                             .border(1.dp, appColors.settingsSecondaryText, RoundedCornerShape(4.dp))
-                            .padding(horizontal = 12.dp, vertical = 8.dp)
+                            .padding(horizontal = 8.dp, vertical = 6.dp)
                     ) {
                         BasicTextField(
                             value = temperatureText,
                             onValueChange = { newValue ->
                                 temperatureText = newValue
                                 newValue.toDoubleOrNull()?.let {
-                                    viewModel.updateTemperature(it)
+                                    viewModel.updateTemperature(it.coerceIn(0.0, 2.0))
                                 }
                             },
                             modifier = Modifier.fillMaxWidth(),
@@ -240,23 +267,60 @@ fun SettingsScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // System Prompt
-            PromptSection(
-                title = "System Prompt",
-                value = viewModel.settingsFields.systemPrompt,
-                onValueChange = { viewModel.updateSystemPrompt(it) },
-                onReset = { viewModel.showResetSystemPromptDialog = true }
-            )
+            // Advanced Options section
+            var showAdvancedOptions by remember { mutableStateOf(false) }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showAdvancedOptions = !showAdvancedOptions }
+                    .padding(vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Advanced Options",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = appColors.settingsText,
+                    modifier = Modifier.weight(1f)
+                )
 
-            // User Prompt Format
-            PromptSection(
-                title = "Prompt Format",
-                value = viewModel.settingsFields.userPrompt,
-                onValueChange = { viewModel.updateUserPrompt(it) },
-                onReset = { viewModel.showResetUserPromptDialog = true }
-            )
+                Icon(
+                    painter = painterResource(
+                        id = if (showAdvancedOptions) R.drawable.expand_circle_down else R.drawable.baseline_chevron_right_24
+                    ),
+                    contentDescription = if (showAdvancedOptions) "Collapse" else "Expand",
+                    tint = appColors.settingsText
+                )
+            }
+
+            AnimatedVisibility(
+                visible = showAdvancedOptions,
+                enter = expandVertically(),
+                exit = shrinkVertically()
+            ) {
+                Column {
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // System Prompt
+                    PromptSection(
+                        title = "System Prompt",
+                        value = viewModel.settingsFields.systemPrompt,
+                        onValueChange = { viewModel.updateSystemPrompt(it) },
+                        onReset = { viewModel.showResetSystemPromptDialog = true }
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // User Prompt Format
+                    PromptSection(
+                        title = "Prompt Format",
+                        value = viewModel.settingsFields.userPrompt,
+                        onValueChange = { viewModel.updateUserPrompt(it) },
+                        onReset = { viewModel.showResetUserPromptDialog = true }
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -657,19 +721,22 @@ private fun SingleChoiceDialog(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 4.dp),
+                            .clickable {
+                                selectedOption = option
+                                onSelect(option)
+                            }
+                            .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(
                             selected = selectedOption == option,
-                            onClick = {
-                                selectedOption = option
-                                onSelect(option)
-                            }
+                            onClick = null // Let the Row handle the click
                         )
                         Text(
                             text = option.substringAfterLast('/'),
-                            modifier = Modifier.padding(start = 8.dp),
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+                                .weight(1f),
                             fontSize = 14.sp
                         )
                     }
