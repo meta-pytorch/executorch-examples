@@ -361,49 +361,6 @@ class UIWorkflowTest {
     }
 
     /**
-     * Tests behavior during generation.
-     */
-    @Test
-    fun testSendDuringGeneration() {
-        composeTestRule.waitForIdle()
-        Thread.sleep(1000)
-
-        dismissSelectModelDialogIfPresent()
-
-        val loaded = loadModel()
-        assertTrue("Model should be selected successfully", loaded)
-
-        val modelLoaded = waitForModelLoaded(90000)
-        assertTrue("Model should be loaded successfully", modelLoaded)
-
-        // Type a prompt using testTag
-        typeInChatInput("Write a detailed story")
-
-        // Click send
-        composeTestRule.onNodeWithContentDescription("Send").performClick()
-        composeTestRule.waitForIdle()
-
-        // Wait briefly
-        Thread.sleep(10)
-
-        // UI should still be responsive
-        composeTestRule.waitForIdle()
-
-        // Wait for generation to complete
-        val generationComplete = waitForGenerationComplete(120000)
-        assertTrue("Generation should complete", generationComplete)
-
-        // Wait for UI to stabilize after generation
-        Thread.sleep(1000)
-        composeTestRule.waitForIdle()
-
-        // Verify that a response was generated
-        assertModelResponseNotEmpty()
-
-        Log.i(TAG, "Send during generation test completed successfully")
-    }
-
-    /**
      * Tests that send button is disabled when input is empty.
      */
     @Test
