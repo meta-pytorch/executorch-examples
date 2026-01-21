@@ -34,10 +34,8 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.executorchllamademo.Message
 import com.example.executorchllamademo.MessageType
-import com.example.executorchllamademo.ui.theme.MessageBubbleReceived
+import com.example.executorchllamademo.ui.theme.LocalAppColors
 import com.example.executorchllamademo.ui.theme.MessageBubbleSent
-import com.example.executorchllamademo.ui.theme.MessageBubbleSystem
-import com.example.executorchllamademo.ui.theme.TextOnPrimary
 
 @Composable
 fun MessageItem(
@@ -61,6 +59,8 @@ private fun SystemMessage(
     maxWidth: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier
 ) {
+    val appColors = LocalAppColors.current
+
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -71,7 +71,7 @@ private fun SystemMessage(
             modifier = Modifier
                 .widthIn(max = maxWidth)
                 .background(
-                    color = MessageBubbleSystem,
+                    color = appColors.messageBubbleSystem,
                     shape = RoundedCornerShape(12.dp)
                 )
                 .padding(horizontal = 12.dp, vertical = 8.dp)
@@ -80,7 +80,8 @@ private fun SystemMessage(
                 text = message.text,
                 fontSize = 12.sp,
                 fontStyle = FontStyle.Italic,
-                color = Color.Gray
+                color = if (appColors.isDark) Color.LightGray else Color.Gray,
+                lineHeight = 14.sp
             )
         }
     }
@@ -92,9 +93,10 @@ private fun ImageMessage(
     maxWidth: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier
 ) {
+    val appColors = LocalAppColors.current
     val isSent = message.isSent
     val arrangement = if (isSent) Arrangement.End else Arrangement.Start
-    val bubbleColor = if (isSent) MessageBubbleSent else MessageBubbleReceived
+    val bubbleColor = if (isSent) MessageBubbleSent else appColors.messageBubbleReceived
 
     Row(
         modifier = modifier
@@ -128,10 +130,11 @@ private fun TextMessage(
     maxWidth: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier
 ) {
+    val appColors = LocalAppColors.current
     val isSent = message.isSent
     val arrangement = if (isSent) Arrangement.End else Arrangement.Start
-    val bubbleColor = if (isSent) MessageBubbleSent else MessageBubbleReceived
-    val textColor = if (isSent) TextOnPrimary else Color.Black
+    val bubbleColor = if (isSent) MessageBubbleSent else appColors.messageBubbleReceived
+    val textColor = if (isSent) Color.White else appColors.textOnBubble
 
     Row(
         modifier = modifier
@@ -150,13 +153,16 @@ private fun TextMessage(
         ) {
             Text(
                 text = message.text,
-                fontSize = 14.sp,
+                fontSize = 16.sp,
+                letterSpacing = 0.sp,
                 color = textColor
             )
 
-            // Show metrics if available
-            if (message.tokensPerSecond > 0 || message.totalGenerationTime > 0) {
-                Spacer(modifier = Modifier.width(4.dp))
+            // Show metrics and timestamp on the same row
+            val hasMetrics = message.tokensPerSecond > 0 || message.totalGenerationTime > 0
+            val hasTimestamp = message.timestamp > 0
+
+            if (hasMetrics || hasTimestamp) {
                 Row(
                     modifier = Modifier.padding(top = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -165,34 +171,38 @@ private fun TextMessage(
                         Text(
                             text = String.format("%.2f t/s", message.tokensPerSecond),
                             fontSize = 10.sp,
-                            color = if (isSent) TextOnPrimary.copy(alpha = 0.7f) else Color.Gray
+                            color = textColor.copy(alpha = 0.7f)
                         )
                     }
                     if (message.tokensPerSecond > 0 && message.totalGenerationTime > 0) {
                         Text(
                             text = " | ",
                             fontSize = 10.sp,
-                            color = if (isSent) TextOnPrimary.copy(alpha = 0.7f) else Color.Gray
+                            color = textColor.copy(alpha = 0.7f)
                         )
                     }
                     if (message.totalGenerationTime > 0) {
                         Text(
                             text = "${message.totalGenerationTime / 1000f}s",
                             fontSize = 10.sp,
-                            color = if (isSent) TextOnPrimary.copy(alpha = 0.7f) else Color.Gray
+                            color = textColor.copy(alpha = 0.7f)
+                        )
+                    }
+                    if (hasMetrics && hasTimestamp) {
+                        Text(
+                            text = " | ",
+                            fontSize = 10.sp,
+                            color = textColor.copy(alpha = 0.7f)
+                        )
+                    }
+                    if (hasTimestamp) {
+                        Text(
+                            text = message.getFormattedTimestamp(),
+                            fontSize = 10.sp,
+                            color = textColor.copy(alpha = 0.7f)
                         )
                     }
                 }
-            }
-
-            // Show timestamp
-            if (message.timestamp > 0) {
-                Text(
-                    text = message.getFormattedTimestamp(),
-                    fontSize = 10.sp,
-                    color = if (isSent) TextOnPrimary.copy(alpha = 0.7f) else Color.Gray,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
             }
         }
     }

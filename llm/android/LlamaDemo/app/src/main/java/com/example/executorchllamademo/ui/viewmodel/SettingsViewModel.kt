@@ -13,6 +13,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import com.example.executorchllamademo.AppearanceMode
 import com.example.executorchllamademo.BackendType
 import com.example.executorchllamademo.DemoSharedPreferences
 import com.example.executorchllamademo.ETLogging
@@ -38,6 +39,7 @@ class SettingsViewModel : ViewModel() {
     var showResetSystemPromptDialog by mutableStateOf(false)
     var showResetUserPromptDialog by mutableStateOf(false)
     var showInvalidPromptDialog by mutableStateOf(false)
+    var showAppearanceDialog by mutableStateOf(false)
 
     // File lists for dialogs
     var modelFiles by mutableStateOf<Array<String>>(emptyArray())
@@ -197,5 +199,12 @@ class SettingsViewModel : ViewModel() {
 
     fun getFilenameFromPath(path: String): String {
         return if (path.isEmpty()) "" else path.substringAfterLast('/')
+    }
+
+    // Appearance mode selection
+    fun selectAppearanceMode(mode: AppearanceMode) {
+        settingsFields.saveAppearanceMode(mode)
+        settingsFields = SettingsFields(settingsFields)
+        saveSettings()
     }
 }

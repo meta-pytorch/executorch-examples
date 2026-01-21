@@ -44,9 +44,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.executorchllamademo.R
+import com.example.executorchllamademo.ui.theme.AppColors
 import com.example.executorchllamademo.ui.theme.BtnDisabled
-import com.example.executorchllamademo.ui.theme.BtnEnabled
 import com.example.executorchllamademo.ui.theme.ColorPrimary
+import com.example.executorchllamademo.ui.theme.LocalAppColors
 
 @Composable
 fun ChatInput(
@@ -69,6 +70,8 @@ fun ChatInput(
     onAddMoreImages: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val appColors = LocalAppColors.current
+
     Column(modifier = modifier.fillMaxWidth()) {
         // Media preview section
         if (selectedImages.isNotEmpty()) {
@@ -88,24 +91,27 @@ fun ChatInput(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(Color(0xFFF5F5F5))
+                    .background(appColors.navBar)
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 MediaButton(
                     iconRes = R.drawable.outline_image_48,
                     label = "Gallery",
-                    onClick = onGalleryClick
+                    onClick = onGalleryClick,
+                    appColors = appColors
                 )
                 MediaButton(
                     iconRes = R.drawable.outline_camera_alt_48,
                     label = "Camera",
-                    onClick = onCameraClick
+                    onClick = onCameraClick,
+                    appColors = appColors
                 )
                 MediaButton(
                     iconRes = R.drawable.baseline_audio_file_48,
                     label = "Audio",
-                    onClick = onAudioClick
+                    onClick = onAudioClick,
+                    appColors = appColors
                 )
             }
         }
@@ -114,7 +120,7 @@ fun ChatInput(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.White)
+                .background(appColors.navBar)
                 .padding(horizontal = 8.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -129,7 +135,7 @@ fun ChatInput(
                             id = if (showMediaSelector) R.drawable.expand_circle_down else R.drawable.baseline_add_24
                         ),
                         contentDescription = if (showMediaSelector) "Collapse media" else "Add media",
-                        tint = ColorPrimary
+                        tint = appColors.textOnNavBar
                     )
                 }
             }
@@ -144,7 +150,7 @@ fun ChatInput(
                         id = if (thinkMode) R.drawable.blue_lightbulb_24 else R.drawable.baseline_lightbulb_24
                     ),
                     contentDescription = "Think mode",
-                    tint = if (thinkMode) ColorPrimary else Color.Gray
+                    tint = if (thinkMode) Color(0xFFFFD54F) else appColors.textOnNavBar
                 )
             }
 
@@ -152,14 +158,15 @@ fun ChatInput(
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .background(Color(0xFFF5F5F5), RoundedCornerShape(20.dp))
+                    .background(appColors.inputBackground, RoundedCornerShape(20.dp))
                     .padding(horizontal = 16.dp, vertical = 10.dp)
             ) {
                 if (inputText.isEmpty()) {
                     Text(
                         text = "Type a message...",
-                        color = Color.Gray,
-                        fontSize = 14.sp
+                        color = appColors.textOnInput.copy(alpha = 0.6f),
+                        fontSize = 14.sp,
+                        letterSpacing = 0.sp
                     )
                 }
                 BasicTextField(
@@ -168,7 +175,8 @@ fun ChatInput(
                     modifier = Modifier.fillMaxWidth(),
                     textStyle = TextStyle(
                         fontSize = 14.sp,
-                        color = Color.Black
+                        letterSpacing = 0.sp,
+                        color = appColors.textOnInput
                     ),
                     singleLine = false,
                     maxLines = 4
@@ -195,7 +203,7 @@ fun ChatInput(
                         id = if (isGenerating) R.drawable.baseline_stop_24 else R.drawable.baseline_send_24
                     ),
                     contentDescription = if (isGenerating) "Stop" else "Send",
-                    tint = if (isGenerating || canSend) BtnEnabled else BtnDisabled
+                    tint = if (isGenerating || canSend) appColors.textOnNavBar else BtnDisabled
                 )
             }
         }
@@ -206,7 +214,8 @@ fun ChatInput(
 private fun MediaButton(
     iconRes: Int,
     label: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    appColors: AppColors
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -231,7 +240,7 @@ private fun MediaButton(
         Text(
             text = label,
             fontSize = 12.sp,
-            color = Color.Gray
+            color = appColors.textOnNavBar
         )
     }
 }
@@ -242,10 +251,12 @@ fun MediaPreview(
     onRemoveImage: (Uri) -> Unit,
     onAddMore: () -> Unit
 ) {
+    val appColors = LocalAppColors.current
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color(0xFFF5F5F5))
+            .background(appColors.navBar)
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -292,7 +303,7 @@ fun MediaPreview(
             Icon(
                 painter = painterResource(id = R.drawable.baseline_add_24),
                 contentDescription = "Add more images",
-                tint = ColorPrimary
+                tint = appColors.textOnNavBar
             )
         }
 
@@ -304,7 +315,7 @@ fun MediaPreview(
             Icon(
                 painter = painterResource(id = R.drawable.baseline_close_24),
                 contentDescription = "Close preview",
-                tint = Color.Gray
+                tint = appColors.textOnNavBar
             )
         }
     }

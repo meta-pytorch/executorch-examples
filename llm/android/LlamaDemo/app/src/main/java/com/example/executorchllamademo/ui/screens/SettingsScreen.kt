@@ -48,6 +48,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.executorchllamademo.AppearanceMode
 import com.example.executorchllamademo.BackendType
 import com.example.executorchllamademo.ModelType
 import com.example.executorchllamademo.PromptFormat
@@ -55,15 +56,15 @@ import com.example.executorchllamademo.R
 import com.example.executorchllamademo.ui.components.SettingsRow
 import com.example.executorchllamademo.ui.theme.BtnDisabled
 import com.example.executorchllamademo.ui.theme.BtnEnabled
-import com.example.executorchllamademo.ui.theme.NavBar
-import com.example.executorchllamademo.ui.theme.TextOnPrimary
+import com.example.executorchllamademo.ui.theme.LocalAppColors
 import com.example.executorchllamademo.ui.viewmodel.SettingsViewModel
 
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel(),
     onBackPressed: () -> Unit = {},
-    onLoadModel: () -> Unit = {}
+    onLoadModel: () -> Unit = {},
+    onAppearanceChanged: (AppearanceMode) -> Unit = {}
 ) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
@@ -72,22 +73,24 @@ fun SettingsScreen(
         viewModel.initialize(context)
     }
 
+    val appColors = LocalAppColors.current
+
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(appColors.settingsBackground)
     ) {
         // Top banner
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(NavBar)
+                .background(appColors.navBar)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "Settings",
-                color = TextOnPrimary,
+                color = appColors.textOnNavBar,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f)
@@ -99,7 +102,7 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .verticalScroll(scrollState)
-                .padding(16.dp)
+                .padding(12.dp)
         ) {
             // Backend selector
             SettingsRow(
@@ -108,9 +111,18 @@ fun SettingsScreen(
                 onClick = { viewModel.showBackendDialog = true }
             )
 
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Appearance selector
+            SettingsRow(
+                label = "Appearance",
+                value = viewModel.settingsFields.appearanceMode.displayName,
+                onClick = { viewModel.showAppearanceDialog = true }
+            )
+
             // Only show these for non-MediaTek backends
             if (!viewModel.isMediaTekMode()) {
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // Model selector
                 SettingsRow(
@@ -123,7 +135,7 @@ fun SettingsScreen(
                     }
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // Tokenizer selector
                 SettingsRow(
@@ -136,7 +148,7 @@ fun SettingsScreen(
                     }
                 )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
                 // Data path selector
                 SettingsRow(
@@ -150,7 +162,7 @@ fun SettingsScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             // Model type selector
             SettingsRow(
@@ -159,7 +171,7 @@ fun SettingsScreen(
                 onClick = { viewModel.showModelTypeDialog = true }
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Load Model button
             Button(
@@ -183,7 +195,7 @@ fun SettingsScreen(
                     text = "Parameters",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.Black
+                    color = appColors.settingsText
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
@@ -199,14 +211,14 @@ fun SettingsScreen(
                     Text(
                         text = "Temperature",
                         fontSize = 14.sp,
-                        color = Color.Black,
+                        color = appColors.settingsText,
                         modifier = Modifier.weight(0.4f)
                     )
 
                     Box(
                         modifier = Modifier
                             .weight(0.6f)
-                            .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
+                            .border(1.dp, appColors.settingsSecondaryText, RoundedCornerShape(4.dp))
                             .padding(horizontal = 12.dp, vertical = 8.dp)
                     ) {
                         BasicTextField(
@@ -220,7 +232,7 @@ fun SettingsScreen(
                             modifier = Modifier.fillMaxWidth(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                             singleLine = true,
-                            textStyle = TextStyle(fontSize = 14.sp, color = Color.Black)
+                            textStyle = TextStyle(fontSize = 14.sp, color = appColors.settingsText)
                         )
                     }
                 }
@@ -264,6 +276,7 @@ fun SettingsScreen(
 
     // Dialogs
     BackendDialog(viewModel)
+    AppearanceDialog(viewModel, onAppearanceChanged)
     ModelDialog(viewModel)
     TokenizerDialog(viewModel)
     DataPathDialog(viewModel)
@@ -282,6 +295,8 @@ private fun PromptSection(
     onValueChange: (String) -> Unit,
     onReset: () -> Unit
 ) {
+    val appColors = LocalAppColors.current
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
@@ -290,7 +305,7 @@ private fun PromptSection(
             text = title,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = appColors.settingsText,
             modifier = Modifier.weight(1f)
         )
 
@@ -298,7 +313,7 @@ private fun PromptSection(
             Icon(
                 painter = painterResource(id = R.drawable.baseline_autorenew_24),
                 contentDescription = "Reset $title",
-                tint = Color.Black
+                tint = appColors.settingsText
             )
         }
     }
@@ -309,14 +324,14 @@ private fun PromptSection(
         modifier = Modifier
             .fillMaxWidth()
             .height(120.dp)
-            .border(1.dp, Color.Gray, RoundedCornerShape(4.dp))
+            .border(1.dp, appColors.settingsSecondaryText, RoundedCornerShape(4.dp))
             .padding(8.dp)
     ) {
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier.fillMaxSize(),
-            textStyle = TextStyle(fontSize = 14.sp, color = Color.Black)
+            textStyle = TextStyle(fontSize = 14.sp, color = appColors.settingsText)
         )
     }
 }
@@ -332,6 +347,26 @@ private fun BackendDialog(viewModel: SettingsViewModel) {
                 viewModel.showBackendDialog = false
             },
             onDismiss = { viewModel.showBackendDialog = false }
+        )
+    }
+}
+
+@Composable
+private fun AppearanceDialog(
+    viewModel: SettingsViewModel,
+    onAppearanceChanged: (AppearanceMode) -> Unit
+) {
+    if (viewModel.showAppearanceDialog) {
+        SingleChoiceDialog(
+            title = "Select appearance",
+            options = AppearanceMode.values().map { it.displayName },
+            onSelect = { selected ->
+                val mode = AppearanceMode.fromDisplayName(selected)
+                viewModel.selectAppearanceMode(mode)
+                onAppearanceChanged(mode)
+                viewModel.showAppearanceDialog = false
+            },
+            onDismiss = { viewModel.showAppearanceDialog = false }
         )
     }
 }

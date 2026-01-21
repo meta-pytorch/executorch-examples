@@ -10,12 +10,9 @@ package com.example.executorchllamademo.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
@@ -23,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.layout.Row
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
@@ -34,7 +32,6 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -42,8 +39,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.executorchllamademo.AppLog
 import com.example.executorchllamademo.R
-import com.example.executorchllamademo.ui.theme.NavBar
-import com.example.executorchllamademo.ui.theme.TextOnPrimary
+import com.example.executorchllamademo.ui.theme.LocalAppColors
 import com.example.executorchllamademo.ui.viewmodel.LogsViewModel
 
 @Composable
@@ -52,6 +48,7 @@ fun LogsScreen(
 ) {
     var showClearDialog by remember { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
+    val appColors = LocalAppColors.current
 
     // Load logs on resume (like the old onResume behavior)
     DisposableEffect(lifecycleOwner) {
@@ -70,19 +67,19 @@ fun LogsScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(appColors.logsBackground)
     ) {
         // Top banner
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(NavBar)
+                .background(appColors.navBar)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
                 text = "Logs",
-                color = TextOnPrimary,
+                color = appColors.textOnNavBar,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f)
@@ -92,7 +89,7 @@ fun LogsScreen(
                 Icon(
                     painter = painterResource(id = R.drawable.baseline_delete_24),
                     contentDescription = "Clear logs",
-                    tint = TextOnPrimary
+                    tint = appColors.textOnNavBar
                 )
             }
         }
@@ -142,10 +139,12 @@ fun LogsScreen(
 
 @Composable
 private fun LogItem(log: AppLog) {
+    val appColors = LocalAppColors.current
+
     Text(
         text = log.getFormattedLog(),
         fontSize = 12.sp,
-        color = Color.Black,
+        color = appColors.logsText,
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)

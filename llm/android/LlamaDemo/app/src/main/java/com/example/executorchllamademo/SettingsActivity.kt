@@ -10,19 +10,27 @@ package com.example.executorchllamademo
 
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.executorchllamademo.ui.screens.SettingsScreen
 import com.example.executorchllamademo.ui.theme.LlamaDemoTheme
 import com.example.executorchllamademo.ui.viewmodel.SettingsViewModel
+import com.google.gson.Gson
 import java.io.File
 
 class SettingsActivity : ComponentActivity() {
+
+    private var appearanceMode by mutableStateOf(AppearanceMode.SYSTEM)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -32,8 +40,16 @@ class SettingsActivity : ComponentActivity() {
             window.navigationBarColor = ContextCompat.getColor(this, R.color.nav_bar)
         }
 
+        loadAppearanceMode()
+
         setContent {
-            LlamaDemoTheme(darkTheme = false) {
+            val isDarkTheme = when (appearanceMode) {
+                AppearanceMode.LIGHT -> false
+                AppearanceMode.DARK -> true
+                AppearanceMode.SYSTEM -> isSystemInDarkTheme()
+            }
+
+            LlamaDemoTheme(darkTheme = isDarkTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val viewModel: SettingsViewModel = viewModel()
                     SettingsScreen(
@@ -44,11 +60,32 @@ class SettingsActivity : ComponentActivity() {
                         },
                         onLoadModel = {
                             // Settings are saved by viewModel.confirmLoadModel()
+                        },
+                        onAppearanceChanged = { mode ->
+                            appearanceMode = mode
                         }
                     )
                 }
             }
         }
+    }
+
+    private fun loadAppearanceMode() {
+        val prefs = DemoSharedPreferences(this)
+        val settingsJson = prefs.getSettings()
+        if (settingsJson.isNotEmpty()) {
+            try {
+                val settings = Gson().fromJson(settingsJson, SettingsFields::class.java)
+                appearanceMode = settings.appearanceMode
+            } catch (e: Exception) {
+                Log.e("SettingsActivity", "Error loading appearance mode", e)
+            }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        loadAppearanceMode()
     }
 
     companion object {

@@ -8,9 +8,7 @@
 
 package com.example.executorchllamademo.ui.screens
 
-import android.net.Uri
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,7 +29,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -39,7 +36,7 @@ import androidx.compose.ui.unit.sp
 import com.example.executorchllamademo.R
 import com.example.executorchllamademo.ui.components.ChatInput
 import com.example.executorchllamademo.ui.components.MessageItem
-import com.example.executorchllamademo.ui.theme.NavBar
+import com.example.executorchllamademo.ui.theme.LocalAppColors
 import com.example.executorchllamademo.ui.viewmodel.ChatViewModel
 import kotlinx.coroutines.delay
 
@@ -53,6 +50,7 @@ fun ChatScreen(
     onAudioClick: (List<String>) -> Unit
 ) {
     val listState = rememberLazyListState()
+    val appColors = LocalAppColors.current
 
     // Auto-scroll to bottom when new messages are added
     LaunchedEffect(viewModel.messages.size) {
@@ -84,7 +82,7 @@ fun ChatScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFFDCD7D7))
+            .background(appColors.chatBackground)
     ) {
         // Top banner
         TopBanner(
@@ -99,7 +97,7 @@ fun ChatScreen(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .background(Color(0xFFDCD7D7))
+                .background(appColors.chatBackground)
                 .padding(horizontal = 8.dp)
         ) {
             itemsIndexed(
@@ -128,8 +126,7 @@ fun ChatScreen(
             onAudioClick = { onAudioClick(emptyList()) },
             selectedImages = viewModel.selectedImages,
             onRemoveImage = { viewModel.removeImage(it) },
-            onAddMoreImages = onGalleryClick,
-            modifier = Modifier.background(NavBar)
+            onAddMoreImages = onGalleryClick
         )
     }
 
@@ -173,16 +170,18 @@ private fun TopBanner(
     onLogsClick: () -> Unit,
     onSettingsClick: () -> Unit
 ) {
+    val appColors = LocalAppColors.current
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(NavBar)
+            .background(appColors.navBar)
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = "Chat with assistant",
-            color = Color.White,
+            color = appColors.textOnNavBar,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold
         )
@@ -191,7 +190,7 @@ private fun TopBanner(
 
         Text(
             text = ramUsage,
-            color = Color.White,
+            color = appColors.textOnNavBar,
             fontSize = 14.sp,
             modifier = Modifier.weight(1f)
         )
@@ -200,7 +199,7 @@ private fun TopBanner(
             Icon(
                 painter = painterResource(id = R.drawable.baseline_article_24),
                 contentDescription = "Logs",
-                tint = Color.White
+                tint = appColors.textOnNavBar
             )
         }
 
@@ -208,7 +207,7 @@ private fun TopBanner(
             Icon(
                 painter = painterResource(id = R.drawable.baseline_settings_24),
                 contentDescription = "Settings",
-                tint = Color.White
+                tint = appColors.textOnNavBar
             )
         }
     }

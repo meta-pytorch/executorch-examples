@@ -20,12 +20,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.executorchllamademo.R
+import com.example.executorchllamademo.ui.theme.LocalAppColors
 
 @Composable
 fun SettingsRow(
@@ -34,32 +34,34 @@ fun SettingsRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val appColors = LocalAppColors.current
+
     Row(
         modifier = modifier
             .fillMaxWidth()
             .background(
-                color = Color(0xFFDCD7D7),
-                shape = RoundedCornerShape(8.dp)
+                color = appColors.settingsRowBackground,
+                shape = RoundedCornerShape(6.dp)
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 12.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = label,
-            fontSize = 16.sp,
+            fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Black,
+            color = appColors.settingsText,
             modifier = Modifier.weight(0.35f)
         )
 
         Text(
             text = value,
-            fontSize = 14.sp,
-            color = Color.Black,
+            fontSize = 13.sp,
+            color = appColors.settingsSecondaryText,
             modifier = Modifier
                 .weight(0.55f)
-                .padding(horizontal = 8.dp)
+                .padding(horizontal = 6.dp)
         )
 
         IconButton(
@@ -69,7 +71,7 @@ fun SettingsRow(
             Icon(
                 painter = painterResource(id = R.drawable.baseline_folder_24),
                 contentDescription = "Select $label",
-                tint = Color.Black
+                tint = appColors.settingsText
             )
         }
     }

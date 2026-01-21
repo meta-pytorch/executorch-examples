@@ -23,7 +23,8 @@ class SettingsFields(
     isClearChatHistory: Boolean = false,
     isLoadModel: Boolean = false,
     var modelType: ModelType = DEFAULT_MODEL,
-    var backendType: BackendType = DEFAULT_BACKEND
+    var backendType: BackendType = DEFAULT_BACKEND,
+    var appearanceMode: AppearanceMode = DEFAULT_APPEARANCE
 ) {
     // Use backing fields with explicit getters to maintain Java compatibility
     // Java expects getIsClearChatHistory() and getIsLoadModel()
@@ -45,7 +46,8 @@ class SettingsFields(
         isClearChatHistory = other.isClearChatHistory,
         isLoadModel = other.isLoadModel,
         modelType = other.modelType,
-        backendType = other.backendType
+        backendType = other.backendType,
+        appearanceMode = other.appearanceMode
     )
 
     fun getFormattedSystemPrompt(): String {
@@ -100,6 +102,10 @@ class SettingsFields(
         this.dataPath = dataPath
     }
 
+    fun saveAppearanceMode(appearanceMode: AppearanceMode) {
+        this.appearanceMode = appearanceMode
+    }
+
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other == null || javaClass != other.javaClass) return false
@@ -113,7 +119,8 @@ class SettingsFields(
                 systemPrompt == other.systemPrompt &&
                 userPrompt == other.userPrompt &&
                 modelType == other.modelType &&
-                backendType == other.backendType
+                backendType == other.backendType &&
+                appearanceMode == other.appearanceMode
     }
 
     override fun hashCode(): Int {
@@ -127,12 +134,14 @@ class SettingsFields(
             isClearChatHistory,
             isLoadModel,
             modelType,
-            backendType
+            backendType,
+            appearanceMode
         ).hashCode()
     }
 
     companion object {
         private val DEFAULT_MODEL = ModelType.LLAMA_3
         private val DEFAULT_BACKEND = BackendType.XNNPACK
+        private val DEFAULT_APPEARANCE = AppearanceMode.SYSTEM
     }
 }

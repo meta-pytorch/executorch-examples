@@ -25,14 +25,19 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.executorchllamademo.ui.screens.ChatScreen
 import com.example.executorchllamademo.ui.theme.LlamaDemoTheme
 import com.example.executorchllamademo.ui.viewmodel.ChatViewModel
+import com.google.gson.Gson
 
 class MainActivity : ComponentActivity() {
 
@@ -41,6 +46,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var cameraPermissionLauncher: ActivityResultLauncher<String>
     private var cameraImageUri: Uri? = null
     private var chatViewModel: ChatViewModel? = null
+    private var appearanceMode by mutableStateOf(AppearanceMode.SYSTEM)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,12 +63,19 @@ class MainActivity : ComponentActivity() {
             finish()
         }
 
+        loadAppearanceMode()
         setupPermissionLauncher()
         setupGalleryPicker()
         setupCameraRoll()
 
         setContent {
-            LlamaDemoTheme(darkTheme = false) {
+            val isDarkTheme = when (appearanceMode) {
+                AppearanceMode.LIGHT -> false
+                AppearanceMode.DARK -> true
+                AppearanceMode.SYSTEM -> isSystemInDarkTheme()
+            }
+
+            LlamaDemoTheme(darkTheme = isDarkTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val viewModel: ChatViewModel = viewModel()
                     chatViewModel = viewModel
@@ -164,8 +177,22 @@ class MainActivity : ComponentActivity() {
             .show()
     }
 
+    private fun loadAppearanceMode() {
+        val prefs = DemoSharedPreferences(this)
+        val settingsJson = prefs.getSettings()
+        if (settingsJson.isNotEmpty()) {
+            try {
+                val settings = Gson().fromJson(settingsJson, SettingsFields::class.java)
+                appearanceMode = settings.appearanceMode
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Error loading appearance mode", e)
+            }
+        }
+    }
+
     override fun onResume() {
         super.onResume()
+        loadAppearanceMode()
         chatViewModel?.checkAndLoadSettings()
     }
 
