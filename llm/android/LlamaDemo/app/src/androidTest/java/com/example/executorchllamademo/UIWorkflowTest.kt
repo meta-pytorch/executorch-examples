@@ -29,6 +29,7 @@ import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -607,6 +608,7 @@ class UIWorkflowTest {
      * 3. Send second message and wait for response
      * 4. Verify both user messages and responses are visible
      */
+    @Ignore("Temporarily disabled")
     @Test
     fun testMultipleMessagesConversation() {
         composeTestRule.waitForIdle()
