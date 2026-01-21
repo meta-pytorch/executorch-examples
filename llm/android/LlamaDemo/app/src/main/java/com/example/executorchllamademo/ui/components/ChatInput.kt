@@ -10,7 +10,10 @@ package com.example.executorchllamademo.ui.components
 
 import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -29,23 +32,33 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.outlined.AudioFile
+import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.Image
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
-import com.example.executorchllamademo.R
 import com.example.executorchllamademo.ui.theme.AppColors
 import com.example.executorchllamademo.ui.theme.BtnDisabled
 import com.example.executorchllamademo.ui.theme.ColorPrimary
@@ -70,9 +83,15 @@ fun ChatInput(
     selectedImages: List<Uri>,
     onRemoveImage: (Uri) -> Unit,
     onAddMoreImages: () -> Unit,
+    supportsImageInput: Boolean = true,
+    supportsAudioInput: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val appColors = LocalAppColors.current
+    val rotation by animateFloatAsState(
+        targetValue = if (showMediaSelector) 45f else 0f,
+        label = "fab_rotation"
+    )
 
     Column(modifier = modifier.fillMaxWidth()) {
         // Media preview section
@@ -84,38 +103,29 @@ fun ChatInput(
             )
         }
 
-        // Media selector section (gallery, camera, audio buttons)
+        // FAB menu for media selection
         AnimatedVisibility(
-            visible = showMediaSelector,
-            enter = expandVertically(),
-            exit = shrinkVertically()
+            visible = showMediaSelector && showMediaButtons,
+            enter = expandVertically() + fadeIn(),
+            exit = shrinkVertically() + fadeOut()
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(appColors.navBar)
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                MediaButton(
-                    iconRes = R.drawable.outline_image_48,
-                    label = "Gallery",
-                    onClick = onGalleryClick,
-                    appColors = appColors
-                )
-                MediaButton(
-                    iconRes = R.drawable.outline_camera_alt_48,
-                    label = "Camera",
-                    onClick = onCameraClick,
-                    appColors = appColors
-                )
-                MediaButton(
-                    iconRes = R.drawable.baseline_audio_file_48,
-                    label = "Audio",
-                    onClick = onAudioClick,
-                    appColors = appColors
-                )
-            }
+            MediaFabMenu(
+                supportsImage = supportsImageInput,
+                supportsAudio = supportsAudioInput,
+                onGalleryClick = {
+                    onGalleryClick()
+                    onAddMediaClick() // Close menu after selection
+                },
+                onCameraClick = {
+                    onCameraClick()
+                    onAddMediaClick() // Close menu after selection
+                },
+                onAudioClick = {
+                    onAudioClick()
+                    onAddMediaClick() // Close menu after selection
+                },
+                appColors = appColors
+            )
         }
 
         // Input row
@@ -126,18 +136,17 @@ fun ChatInput(
                 .padding(horizontal = 8.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Add media button (+ or collapse icon)
+            // Add media button (+ icon with rotation animation)
             if (showMediaButtons) {
                 IconButton(
                     onClick = onAddMediaClick,
                     modifier = Modifier.size(40.dp)
                 ) {
                     Icon(
-                        painter = painterResource(
-                            id = if (showMediaSelector) R.drawable.expand_circle_down else R.drawable.baseline_add_24
-                        ),
-                        contentDescription = if (showMediaSelector) "Collapse media" else "Add media",
-                        tint = appColors.textOnNavBar
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = if (showMediaSelector) "Close media menu" else "Add media",
+                        tint = appColors.textOnNavBar,
+                        modifier = Modifier.rotate(rotation)
                     )
                 }
             }
@@ -148,9 +157,7 @@ fun ChatInput(
                 modifier = Modifier.size(40.dp)
             ) {
                 Icon(
-                    painter = painterResource(
-                        id = if (thinkMode) R.drawable.blue_lightbulb_24 else R.drawable.baseline_lightbulb_24
-                    ),
+                    imageVector = Icons.Filled.Lightbulb,
                     contentDescription = "Think mode",
                     tint = if (thinkMode) Color(0xFFFFD54F) else appColors.textOnNavBar
                 )
@@ -204,9 +211,7 @@ fun ChatInput(
                 modifier = Modifier.size(40.dp)
             ) {
                 Icon(
-                    painter = painterResource(
-                        id = if (isGenerating) R.drawable.baseline_stop_24 else R.drawable.baseline_send_24
-                    ),
+                    imageVector = if (isGenerating) Icons.Filled.Stop else Icons.Filled.Send,
                     contentDescription = if (isGenerating) "Stop" else "Send",
                     tint = if (isGenerating || canSend) appColors.textOnNavBar else BtnDisabled
                 )
@@ -216,8 +221,49 @@ fun ChatInput(
 }
 
 @Composable
+private fun MediaFabMenu(
+    supportsImage: Boolean,
+    supportsAudio: Boolean,
+    onGalleryClick: () -> Unit,
+    onCameraClick: () -> Unit,
+    onAudioClick: () -> Unit,
+    appColors: AppColors
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(appColors.navBar)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
+    ) {
+        if (supportsImage) {
+            MediaButton(
+                icon = Icons.Outlined.Image,
+                label = "Gallery",
+                onClick = onGalleryClick,
+                appColors = appColors
+            )
+            MediaButton(
+                icon = Icons.Outlined.CameraAlt,
+                label = "Camera",
+                onClick = onCameraClick,
+                appColors = appColors
+            )
+        }
+        if (supportsAudio) {
+            MediaButton(
+                icon = Icons.Outlined.AudioFile,
+                label = "Audio",
+                onClick = onAudioClick,
+                appColors = appColors
+            )
+        }
+    }
+}
+
+@Composable
 private fun MediaButton(
-    iconRes: Int,
+    icon: ImageVector,
     label: String,
     onClick: () -> Unit,
     appColors: AppColors
@@ -235,7 +281,7 @@ private fun MediaButton(
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                painter = painterResource(id = iconRes),
+                imageVector = icon,
                 contentDescription = label,
                 tint = Color.White,
                 modifier = Modifier.size(24.dp)
@@ -288,7 +334,7 @@ fun MediaPreview(
                             .background(Color.Black.copy(alpha = 0.5f), CircleShape)
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.baseline_close_24),
+                            imageVector = Icons.Filled.Close,
                             contentDescription = "Remove",
                             tint = Color.White,
                             modifier = Modifier.size(12.dp)
@@ -306,7 +352,7 @@ fun MediaPreview(
             modifier = Modifier.size(40.dp)
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.baseline_add_24),
+                imageVector = Icons.Filled.Add,
                 contentDescription = "Add more images",
                 tint = appColors.textOnNavBar
             )
@@ -318,7 +364,7 @@ fun MediaPreview(
             modifier = Modifier.size(40.dp)
         ) {
             Icon(
-                painter = painterResource(id = R.drawable.baseline_close_24),
+                imageVector = Icons.Filled.Close,
                 contentDescription = "Close preview",
                 tint = appColors.textOnNavBar
             )

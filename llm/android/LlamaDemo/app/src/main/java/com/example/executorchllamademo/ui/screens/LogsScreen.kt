@@ -15,6 +15,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -32,13 +35,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.executorchllamademo.AppLog
-import com.example.executorchllamademo.R
 import com.example.executorchllamademo.ui.theme.LocalAppColors
 import com.example.executorchllamademo.ui.viewmodel.LogsViewModel
 
@@ -87,7 +88,7 @@ fun LogsScreen(
 
             IconButton(onClick = { showClearDialog = true }) {
                 Icon(
-                    painter = painterResource(id = R.drawable.baseline_delete_24),
+                    imageVector = Icons.Filled.Delete,
                     contentDescription = "Clear logs",
                     tint = appColors.textOnNavBar
                 )
@@ -112,7 +113,7 @@ fun LogsScreen(
             onDismissRequest = { showClearDialog = false },
             icon = {
                 Icon(
-                    painter = painterResource(id = android.R.drawable.ic_dialog_alert),
+                    imageVector = Icons.Filled.Warning,
                     contentDescription = null
                 )
             },

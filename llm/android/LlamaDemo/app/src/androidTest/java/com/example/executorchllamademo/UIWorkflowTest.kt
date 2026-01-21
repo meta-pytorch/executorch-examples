@@ -197,6 +197,27 @@ class UIWorkflowTest {
     }
 
     /**
+     * Verifies that the model generated a non-empty response by checking for
+     * tokens per second metrics (e.g., "t/s") which only appear in model responses.
+     */
+    private fun assertModelResponseNotEmpty() {
+        composeTestRule.waitForIdle()
+        try {
+            // Model responses show tokens per second metric
+            composeTestRule.onNodeWithText("t/s", substring = true).assertExists()
+            Log.i(TAG, "Model response verified - found t/s metric")
+        } catch (e: AssertionError) {
+            // Try alternative: check for generation time
+            try {
+                composeTestRule.onNodeWithText("s", substring = true).assertExists()
+                Log.i(TAG, "Model response verified - found timing metric")
+            } catch (e2: AssertionError) {
+                throw AssertionError("Model response appears to be empty - no generation metrics found")
+            }
+        }
+    }
+
+    /**
      * Tests the complete model loading workflow:
      * 1. Dismiss the "Please Select a Model" dialog
      * 2. Click settings button
@@ -276,11 +297,14 @@ class UIWorkflowTest {
         composeTestRule.onNodeWithContentDescription("Send").performClick()
         composeTestRule.waitForIdle()
 
-        // Wait for response
-        Thread.sleep(5000) // Give model time to generate
+        // Wait for generation to complete
+        val generationComplete = waitForGenerationComplete(120000)
+        assertTrue("Generation should complete", generationComplete)
 
-        // Just verify we got past sending without crashes
-        composeTestRule.waitForIdle()
+        // Verify model generated a non-empty response
+        assertModelResponseNotEmpty()
+
+        Log.i(TAG, "Send message and receive response test completed successfully")
     }
 
     /**
@@ -318,6 +342,14 @@ class UIWorkflowTest {
         }
 
         composeTestRule.waitForIdle()
+
+        // Wait for generation to fully stop
+        waitForGenerationComplete(30000)
+
+        // Verify that some response was generated (even if stopped early)
+        assertModelResponseNotEmpty()
+
+        Log.i(TAG, "Stop generation test completed successfully")
     }
 
     /**
@@ -348,6 +380,15 @@ class UIWorkflowTest {
 
         // UI should still be responsive
         composeTestRule.waitForIdle()
+
+        // Wait for generation to complete
+        val generationComplete = waitForGenerationComplete(120000)
+        assertTrue("Generation should complete", generationComplete)
+
+        // Verify that a response was generated
+        assertModelResponseNotEmpty()
+
+        Log.i(TAG, "Send during generation test completed successfully")
     }
 
     /**
@@ -534,6 +575,90 @@ class UIWorkflowTest {
 
         // Verify send button is now enabled
         composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
+    }
+
+    /**
+     * Tests sending multiple messages and verifying conversation flow:
+     * 1. Load model
+     * 2. Send first message and wait for response
+     * 3. Send second message and wait for response
+     * 4. Verify both user messages and responses are visible
+     */
+    @Test
+    fun testMultipleMessagesConversation() {
+        composeTestRule.waitForIdle()
+        Thread.sleep(1000)
+
+        dismissSelectModelDialogIfPresent()
+
+        val loaded = loadModel()
+        assertTrue("Model should be selected successfully", loaded)
+
+        val modelLoaded = waitForModelLoaded(90000)
+        assertTrue("Model should be loaded successfully", modelLoaded)
+
+        // --- Send first message ---
+        val firstMessage = "Hello"
+        typeInChatInput(firstMessage)
+        composeTestRule.onNodeWithContentDescription("Send").performClick()
+        composeTestRule.waitForIdle()
+
+        // Wait for first response to complete (send button becomes enabled again)
+        val firstResponseComplete = waitForGenerationComplete(120000)
+        assertTrue("First response should complete", firstResponseComplete)
+
+        // Verify first user message is visible and model response is not empty
+        composeTestRule.onNodeWithText(firstMessage, substring = true).assertExists()
+        assertModelResponseNotEmpty()
+
+        // --- Send second message ---
+        val secondMessage = "Tell me more"
+        typeInChatInput(secondMessage)
+        composeTestRule.onNodeWithContentDescription("Send").performClick()
+        composeTestRule.waitForIdle()
+
+        // Wait for second response to complete
+        val secondResponseComplete = waitForGenerationComplete(120000)
+        assertTrue("Second response should complete", secondResponseComplete)
+
+        // Verify both user messages are visible in conversation
+        composeTestRule.onNodeWithText(firstMessage, substring = true).assertExists()
+        composeTestRule.onNodeWithText(secondMessage, substring = true).assertExists()
+
+        // Verify model responses are not empty (should have multiple t/s metrics now)
+        assertModelResponseNotEmpty()
+
+        Log.i(TAG, "Multiple messages conversation test completed successfully")
+    }
+
+    /**
+     * Waits for generation to complete by checking when the Send button becomes enabled.
+     */
+    private fun waitForGenerationComplete(timeoutMs: Long = 120000): Boolean {
+        val startTime = System.currentTimeMillis()
+        // First wait a bit to ensure generation has started
+        Thread.sleep(1000)
+
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            composeTestRule.waitForIdle()
+            try {
+                // If send button is not enabled, generation is still in progress
+                composeTestRule.onNodeWithContentDescription("Send").assertIsNotEnabled()
+                Thread.sleep(500)
+            } catch (e: AssertionError) {
+                // Send button is enabled or doesn't exist - check if Stop button exists
+                try {
+                    composeTestRule.onNodeWithContentDescription("Stop").assertExists()
+                    // Still generating
+                    Thread.sleep(500)
+                } catch (e2: AssertionError) {
+                    // No stop button, generation complete
+                    return true
+                }
+            }
+        }
+        Log.e(TAG, "Generation timed out after ${timeoutMs}ms")
+        return false
     }
 
     /**

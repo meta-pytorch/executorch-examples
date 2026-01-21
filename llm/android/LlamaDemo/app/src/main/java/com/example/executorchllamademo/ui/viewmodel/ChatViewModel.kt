@@ -54,7 +54,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     var thinkMode by mutableStateOf(false)
     var showMediaSelector by mutableStateOf(false)
     var ramUsage by mutableStateOf("0 MB")
-    var showMediaButtons by mutableStateOf(true)
+    var showMediaButtons by mutableStateOf(false)
+    var supportsImageInput by mutableStateOf(false)
+    var supportsAudioInput by mutableStateOf(false)
 
     // Counter that increments on each token to trigger auto-scroll during generation
     var scrollTrigger by mutableStateOf(0)
@@ -112,10 +114,11 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
             }
             val isUpdated = currentSettingsFields != updatedSettingsFields
             val isLoadModel = updatedSettingsFields.isLoadModel
-            setBackendMode(updatedSettingsFields.backendType)
             if (isUpdated) {
                 checkForClearChatHistory(updatedSettingsFields)
                 currentSettingsFields = SettingsFields(updatedSettingsFields)
+                // Update media capabilities after settings are updated
+                setBackendMode(updatedSettingsFields.backendType)
 
                 if (isLoadModel) {
                     loadLocalModelAndParameters(
@@ -130,6 +133,8 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                     showSelectModelDialog = true
                 }
             } else {
+                // Settings unchanged, but still update media capabilities for current settings
+                setBackendMode(updatedSettingsFields.backendType)
                 val modelPath = updatedSettingsFields.modelFilePath
                 val tokenizerPath = updatedSettingsFields.tokenizerFilePath
                 if (modelPath.isEmpty() || tokenizerPath.isEmpty()) {
@@ -142,9 +147,32 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     }
 
     private fun setBackendMode(backendType: BackendType) {
-        showMediaButtons = when (backendType) {
+        // Media buttons visibility depends on backend (MediaTek doesn't support media)
+        val backendSupportsMedia = when (backendType) {
             BackendType.XNNPACK, BackendType.QUALCOMM, BackendType.VULKAN -> true
             BackendType.MEDIATEK -> false
+        }
+        updateMediaCapabilities(backendSupportsMedia)
+    }
+
+    private fun updateMediaCapabilities(backendSupportsMedia: Boolean) {
+        val modelType = currentSettingsFields.modelType
+        supportsImageInput = backendSupportsMedia && modelType.supportsImage()
+        supportsAudioInput = backendSupportsMedia && modelType.supportsAudio()
+        showMediaButtons = supportsImageInput || supportsAudioInput
+        ETLogging.getInstance().log("updateMediaCapabilities: modelType=$modelType, supportsImage=${modelType.supportsImage()}, supportsAudio=${modelType.supportsAudio()}, showMediaButtons=$showMediaButtons")
+    }
+
+    private fun getCapabilityDescription(modelType: ModelType): String {
+        return when {
+            modelType.supportsImage() && modelType.supportsAudio() ->
+                "You can send text, images, or audio for inference."
+            modelType.supportsImage() ->
+                "You can send text or images for inference."
+            modelType.supportsAudio() ->
+                "You can send text or audio for inference."
+            else ->
+                "You can send text for inference."
         }
     }
 
@@ -214,7 +242,8 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
             module?.load()
             val pteName = modelPath.substringAfterLast('/')
             val tokenizerName = tokenizerPath.substringAfterLast('/')
-            modelInfo = "Successfully loaded model. $pteName and tokenizer $tokenizerName in ${loadDuration.toFloat() / 1000} sec. You can send text or image for inference"
+            val capabilityText = getCapabilityDescription(currentSettingsFields.modelType)
+            modelInfo = "Successfully loaded model. $pteName and tokenizer $tokenizerName in ${loadDuration.toFloat() / 1000} sec. $capabilityText"
 
             if (currentSettingsFields.modelType == ModelType.LLAVA_1_5) {
                 ETLogging.getInstance().log("Llava start prefill prompt")

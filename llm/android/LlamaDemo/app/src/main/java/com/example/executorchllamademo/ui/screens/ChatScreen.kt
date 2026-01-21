@@ -21,6 +21,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Article
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,11 +36,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.executorchllamademo.R
 import com.example.executorchllamademo.ui.components.ChatInput
 import com.example.executorchllamademo.ui.components.MessageItem
 import com.example.executorchllamademo.ui.theme.LocalAppColors
@@ -138,7 +139,9 @@ fun ChatScreen(
             onAudioClick = { onAudioClick(emptyList()) },
             selectedImages = viewModel.selectedImages,
             onRemoveImage = { viewModel.removeImage(it) },
-            onAddMoreImages = onGalleryClick
+            onAddMoreImages = onGalleryClick,
+            supportsImageInput = viewModel.supportsImageInput,
+            supportsAudioInput = viewModel.supportsAudioInput
         )
     }
 
@@ -208,7 +211,7 @@ private fun TopBanner(
 
         IconButton(onClick = onLogsClick) {
             Icon(
-                painter = painterResource(id = R.drawable.baseline_article_24),
+                imageVector = Icons.Filled.Article,
                 contentDescription = "Logs",
                 tint = appColors.textOnNavBar
             )
@@ -216,7 +219,7 @@ private fun TopBanner(
 
         IconButton(onClick = onSettingsClick) {
             Icon(
-                painter = painterResource(id = R.drawable.baseline_settings_24),
+                imageVector = Icons.Filled.Settings,
                 contentDescription = "Settings",
                 tint = appColors.textOnNavBar
             )

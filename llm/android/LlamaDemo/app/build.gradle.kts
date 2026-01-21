@@ -258,6 +258,7 @@ dependencies {
   implementation("androidx.compose.ui:ui-graphics")
   implementation("androidx.compose.ui:ui-tooling-preview")
   implementation("androidx.compose.material3:material3")
+  implementation("androidx.compose.material:material-icons-extended")
   implementation("io.coil-kt:coil-compose:2.4.0")
   implementation("androidx.appcompat:appcompat:1.6.1")
   implementation("androidx.camera:camera-core:1.3.0-rc02")

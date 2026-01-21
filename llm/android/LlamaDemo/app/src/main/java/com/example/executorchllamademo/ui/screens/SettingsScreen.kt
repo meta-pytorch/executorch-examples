@@ -28,6 +28,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -48,7 +53,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -59,7 +63,6 @@ import com.example.executorchllamademo.AppearanceMode
 import com.example.executorchllamademo.BackendType
 import com.example.executorchllamademo.ModelType
 import com.example.executorchllamademo.PromptFormat
-import com.example.executorchllamademo.R
 import com.example.executorchllamademo.ui.components.SettingsRow
 import com.example.executorchllamademo.ui.theme.BtnDisabled
 import com.example.executorchllamademo.ui.theme.BtnEnabled
@@ -286,9 +289,7 @@ fun SettingsScreen(
                 )
 
                 Icon(
-                    painter = painterResource(
-                        id = if (showAdvancedOptions) R.drawable.expand_circle_down else R.drawable.baseline_chevron_right_24
-                    ),
+                    imageVector = if (showAdvancedOptions) Icons.Filled.KeyboardArrowDown else Icons.Filled.KeyboardArrowRight,
                     contentDescription = if (showAdvancedOptions) "Collapse" else "Expand",
                     tint = appColors.settingsText
                 )
@@ -375,7 +376,7 @@ private fun PromptSection(
 
         IconButton(onClick = onReset) {
             Icon(
-                painter = painterResource(id = R.drawable.baseline_autorenew_24),
+                imageVector = Icons.Filled.Refresh,
                 contentDescription = "Reset $title",
                 tint = appColors.settingsText
             )
@@ -546,7 +547,7 @@ private fun LoadModelDialog(
             onDismissRequest = { viewModel.showLoadModelDialog = false },
             icon = {
                 Icon(
-                    painter = painterResource(id = android.R.drawable.ic_dialog_alert),
+                    imageVector = Icons.Filled.Warning,
                     contentDescription = null
                 )
             },
@@ -580,7 +581,7 @@ private fun ClearChatDialog(viewModel: SettingsViewModel) {
             onDismissRequest = { viewModel.showClearChatDialog = false },
             icon = {
                 Icon(
-                    painter = painterResource(id = android.R.drawable.ic_dialog_alert),
+                    imageVector = Icons.Filled.Warning,
                     contentDescription = null
                 )
             },
@@ -612,7 +613,7 @@ private fun ResetSystemPromptDialog(viewModel: SettingsViewModel) {
             onDismissRequest = { viewModel.showResetSystemPromptDialog = false },
             icon = {
                 Icon(
-                    painter = painterResource(id = android.R.drawable.ic_dialog_alert),
+                    imageVector = Icons.Filled.Warning,
                     contentDescription = null
                 )
             },
@@ -644,7 +645,7 @@ private fun ResetUserPromptDialog(viewModel: SettingsViewModel) {
             onDismissRequest = { viewModel.showResetUserPromptDialog = false },
             icon = {
                 Icon(
-                    painter = painterResource(id = android.R.drawable.ic_dialog_alert),
+                    imageVector = Icons.Filled.Warning,
                     contentDescription = null
                 )
             },
@@ -676,7 +677,7 @@ private fun InvalidPromptDialog(viewModel: SettingsViewModel) {
             onDismissRequest = { viewModel.showInvalidPromptDialog = false },
             icon = {
                 Icon(
-                    painter = painterResource(id = android.R.drawable.ic_dialog_alert),
+                    imageVector = Icons.Filled.Warning,
                     contentDescription = null
                 )
             },
