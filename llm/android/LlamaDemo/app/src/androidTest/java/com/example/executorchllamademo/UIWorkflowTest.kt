@@ -433,12 +433,17 @@ class UIWorkflowTest {
 
             // --- Stop generation ---
             onView(withId(R.id.sendButton)).perform(click())
-            Thread.sleep(1000)
+            Thread.sleep(2000)
+
+            // --- Wait for UI to settle and verify button state ---
+            // After stopping, we need to wait for the generation thread to fully stop
+            // and for the UI to update. Use a longer wait with polling.
+            val buttonEnabled = waitForButtonEnabled(scenario, 10000)
 
             // --- Verify generation stopped and we can now send ---
             // After stopping, the input still has text, so send button should be enabled
             onView(withId(R.id.editTextMessage)).check(matches(withText("Another message")))
-            onView(withId(R.id.sendButton)).check(matches(isEnabled()))
+            assertTrue("Send button should be enabled after stopping generation", buttonEnabled)
         }
     }
 
@@ -526,6 +531,32 @@ class UIWorkflowTest {
                 return true
             }
             Thread.sleep(500) // Poll every 500ms
+        }
+        return false
+    }
+
+    /**
+     * Waits for the send button to become enabled.
+     * This is used after stopping generation to ensure the UI has fully updated.
+     *
+     * @param scenario the activity scenario
+     * @param timeoutMs maximum time to wait in milliseconds
+     * @return true if button became enabled, false if timeout
+     */
+    private fun waitForButtonEnabled(scenario: ActivityScenario<MainActivity>, timeoutMs: Long): Boolean {
+        val startTime = System.currentTimeMillis()
+        while (System.currentTimeMillis() - startTime < timeoutMs) {
+            val isEnabled = AtomicBoolean(false)
+            scenario.onActivity { activity ->
+                val sendButton = activity.findViewById<ImageButton>(R.id.sendButton)
+                if (sendButton != null) {
+                    isEnabled.set(sendButton.isEnabled)
+                }
+            }
+            if (isEnabled.get()) {
+                return true
+            }
+            Thread.sleep(200) // Poll every 200ms
         }
         return false
     }
