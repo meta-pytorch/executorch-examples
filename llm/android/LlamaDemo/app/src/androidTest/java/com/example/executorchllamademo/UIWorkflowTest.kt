@@ -10,6 +10,7 @@ package com.example.executorchllamademo
 
 import android.content.Context
 import android.util.Log
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -290,7 +291,8 @@ class UIWorkflowTest {
                 .fetchSemanticsNodes()
             for (node in responseNodes) {
                 // Get text from the semantics node
-                val text = ""
+                val text = node.config.getOrElse(SemanticsProperties.Text) { emptyList() }
+                    .joinToString(" ") { it.text }
                 if (text.isNotBlank()) {
                     Log.i(RESPONSE_TAG, text)
                 }
