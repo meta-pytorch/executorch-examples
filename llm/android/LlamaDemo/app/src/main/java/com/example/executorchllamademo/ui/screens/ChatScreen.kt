@@ -37,10 +37,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import com.example.executorchllamademo.ui.components.ChatInput
 import com.example.executorchllamademo.ui.components.MessageItem
 import com.example.executorchllamademo.ui.theme.LocalAppColors
@@ -76,9 +79,18 @@ fun ChatScreen(
         }
     }
 
-    // Check settings on resume
-    LaunchedEffect(Unit) {
-        viewModel.checkAndLoadSettings()
+    // Check settings on resume (including when navigating back from Settings)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.checkAndLoadSettings()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     // Save messages when composable leaves composition

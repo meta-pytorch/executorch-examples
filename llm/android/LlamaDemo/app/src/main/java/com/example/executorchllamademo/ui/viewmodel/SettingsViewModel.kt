@@ -197,6 +197,7 @@ class SettingsViewModel : ViewModel() {
         val newSettings = SettingsFields(settingsFields)
         newSettings.saveIsClearChatHistory(true)
         settingsFields = newSettings
+        saveSettings()
     }
 
     // Validation
