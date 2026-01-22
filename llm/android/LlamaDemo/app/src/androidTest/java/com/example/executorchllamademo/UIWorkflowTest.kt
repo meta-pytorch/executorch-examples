@@ -148,7 +148,7 @@ class UIWorkflowTest {
             composeTestRule.onNodeWithText(okText, ignoreCase = true).performClick()
             composeTestRule.waitForIdle()
             // Wait for the dialog to actually be dismissed
-            composeTestRule.waitUntil(timeoutMillis = 2000) {
+            composeTestRule.waitUntil(timeoutMillis = 2001) {
                 composeTestRule.onAllNodesWithText("Please Select a Model")
                     .fetchSemanticsNodes().isEmpty()
             }
