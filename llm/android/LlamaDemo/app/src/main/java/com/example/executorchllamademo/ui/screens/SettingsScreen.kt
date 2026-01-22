@@ -117,7 +117,7 @@ fun SettingsScreen(
             // Appearance selector (first)
             SettingsRow(
                 label = "Appearance",
-                value = viewModel.settingsFields.appearanceMode.displayName,
+                value = viewModel.appSettings.appearanceMode.displayName,
                 onClick = { viewModel.showAppearanceDialog = true }
             )
 
@@ -126,7 +126,7 @@ fun SettingsScreen(
             // Backend selector
             SettingsRow(
                 label = "Backend",
-                value = viewModel.settingsFields.backendType.toString(),
+                value = viewModel.moduleSettings.backendType.toString(),
                 onClick = { viewModel.showBackendDialog = true }
             )
 
@@ -137,7 +137,7 @@ fun SettingsScreen(
                 // Model selector
                 SettingsRow(
                     label = "Model",
-                    value = viewModel.getFilenameFromPath(viewModel.settingsFields.modelFilePath)
+                    value = viewModel.getFilenameFromPath(viewModel.moduleSettings.modelFilePath)
                         .ifEmpty { "no model selected" },
                     onClick = {
                         viewModel.refreshFileLists()
@@ -150,7 +150,7 @@ fun SettingsScreen(
                 // Tokenizer selector
                 SettingsRow(
                     label = "Tokenizer",
-                    value = viewModel.getFilenameFromPath(viewModel.settingsFields.tokenizerFilePath)
+                    value = viewModel.getFilenameFromPath(viewModel.moduleSettings.tokenizerFilePath)
                         .ifEmpty { "no tokenizer selected" },
                     onClick = {
                         viewModel.refreshFileLists()
@@ -163,7 +163,7 @@ fun SettingsScreen(
                 // Data path selector
                 SettingsRow(
                     label = "Data Path",
-                    value = viewModel.getFilenameFromPath(viewModel.settingsFields.dataPath)
+                    value = viewModel.getFilenameFromPath(viewModel.moduleSettings.dataPath)
                         .ifEmpty { "no data path selected" },
                     onClick = {
                         viewModel.refreshFileLists()
@@ -177,7 +177,7 @@ fun SettingsScreen(
             // Model type selector
             SettingsRow(
                 label = "Model Type",
-                value = viewModel.settingsFields.modelType.toString(),
+                value = viewModel.moduleSettings.modelType.toString(),
                 onClick = { viewModel.showModelTypeDialog = true }
             )
 
@@ -210,8 +210,8 @@ fun SettingsScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                var temperatureText by remember(viewModel.settingsFields.temperature) {
-                    mutableStateOf(String.format("%.2f", viewModel.settingsFields.temperature))
+                var temperatureText by remember(viewModel.moduleSettings.temperature) {
+                    mutableStateOf(String.format("%.2f", viewModel.moduleSettings.temperature))
                 }
 
                 Row(
@@ -228,7 +228,7 @@ fun SettingsScreen(
 
                     // Slider
                     Slider(
-                        value = viewModel.settingsFields.temperature.toFloat().coerceIn(0f, 2f),
+                        value = viewModel.moduleSettings.temperature.toFloat().coerceIn(0f, 2f),
                         onValueChange = { newValue ->
                             val rounded = (newValue * 100).toInt() / 100.0
                             temperatureText = String.format("%.2f", rounded)
@@ -306,7 +306,7 @@ fun SettingsScreen(
                     // System Prompt
                     PromptSection(
                         title = "System Prompt",
-                        value = viewModel.settingsFields.systemPrompt,
+                        value = viewModel.moduleSettings.systemPrompt,
                         onValueChange = { viewModel.updateSystemPrompt(it) },
                         onReset = { viewModel.showResetSystemPromptDialog = true }
                     )
@@ -316,7 +316,7 @@ fun SettingsScreen(
                     // User Prompt Format
                     PromptSection(
                         title = "Prompt Format",
-                        value = viewModel.settingsFields.userPrompt,
+                        value = viewModel.moduleSettings.userPrompt,
                         onValueChange = { viewModel.updateUserPrompt(it) },
                         onReset = { viewModel.showResetUserPromptDialog = true }
                     )

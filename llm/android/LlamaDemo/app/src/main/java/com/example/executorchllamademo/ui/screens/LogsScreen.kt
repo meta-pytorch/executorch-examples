@@ -8,6 +8,7 @@
 
 package com.example.executorchllamademo.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,9 +16,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -33,8 +36,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -50,6 +56,8 @@ fun LogsScreen(
     var showClearDialog by remember { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
     val appColors = LocalAppColors.current
+    val clipboardManager = LocalClipboardManager.current
+    val context = LocalContext.current
 
     // Load logs on resume (like the old onResume behavior)
     DisposableEffect(lifecycleOwner) {
@@ -86,6 +94,18 @@ fun LogsScreen(
                 modifier = Modifier.weight(1f)
             )
 
+            IconButton(onClick = {
+                val allLogs = viewModel.logs.joinToString("\n") { it.getFormattedLog() }
+                clipboardManager.setText(AnnotatedString(allLogs))
+                Toast.makeText(context, "Logs copied to clipboard", Toast.LENGTH_SHORT).show()
+            }) {
+                Icon(
+                    imageVector = Icons.Outlined.ContentCopy,
+                    contentDescription = "Copy logs",
+                    tint = appColors.textOnNavBar
+                )
+            }
+
             IconButton(onClick = { showClearDialog = true }) {
                 Icon(
                     imageVector = Icons.Filled.Delete,
@@ -96,13 +116,15 @@ fun LogsScreen(
         }
 
         // Logs list
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(8.dp)
-        ) {
-            items(viewModel.logs) { log ->
-                LogItem(log = log)
+        SelectionContainer {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(8.dp)
+            ) {
+                items(viewModel.logs) { log ->
+                    LogItem(log = log)
+                }
             }
         }
     }
