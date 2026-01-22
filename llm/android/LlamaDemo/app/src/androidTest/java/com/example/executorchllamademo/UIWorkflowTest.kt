@@ -68,8 +68,8 @@ class UIWorkflowTest {
     companion object {
         private const val TAG = "UIWorkflowTest"
         private const val RESPONSE_TAG = "LLAMA_RESPONSE"
-        private const val DEFAULT_MODEL_FILE = "stories110M.pte"
-        private const val DEFAULT_TOKENIZER_FILE = "tokenizer.model"
+        private const val DEFAULT_MODEL_FILE = "llava.pte"
+        private const val DEFAULT_TOKENIZER_FILE = "tokenizer.bin"
     }
 
     @get:Rule
