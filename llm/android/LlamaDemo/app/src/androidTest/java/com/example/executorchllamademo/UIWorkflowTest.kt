@@ -85,6 +85,43 @@ class UIWorkflowTest {
     }
 
     /**
+     * Clears chat history via the Settings UI.
+     * This ensures each test starts with a clean state.
+     */
+    private fun clearChatHistory() {
+        composeTestRule.waitForIdle()
+
+        // Go to settings
+        try {
+            composeTestRule.onNodeWithContentDescription("Settings").performClick()
+            composeTestRule.waitUntil(timeoutMillis = 3000) {
+                composeTestRule.onAllNodesWithText("Settings").fetchSemanticsNodes().isNotEmpty()
+            }
+        } catch (e: Exception) {
+            Log.d(TAG, "Could not open settings to clear history: ${e.message}")
+            return
+        }
+
+        // Click Clear Chat History button
+        try {
+            composeTestRule.onNodeWithText("Clear Chat History").performClick()
+            composeTestRule.waitForIdle()
+            Log.i(TAG, "Chat history cleared")
+        } catch (e: AssertionError) {
+            Log.d(TAG, "Clear Chat History button not found")
+        }
+
+        // Go back to chat screen
+        try {
+            composeTestRule.onNodeWithContentDescription("Back").performClick()
+            composeTestRule.waitForIdle()
+        } catch (e: AssertionError) {
+            // Back button might not be there, that's fine
+            Log.d(TAG, "Back button not found after clearing history")
+        }
+    }
+
+    /**
      * Dismisses the "Please Select a Model" dialog if it appears.
      */
     private fun dismissSelectModelDialogIfPresent() {
@@ -286,6 +323,7 @@ class UIWorkflowTest {
         composeTestRule.waitForIdle()
 
         dismissSelectModelDialogIfPresent()
+        clearChatHistory()
 
         val loaded = loadModel()
         assertTrue("Model should be selected successfully", loaded)
@@ -302,7 +340,7 @@ class UIWorkflowTest {
         composeTestRule.waitForIdle()
 
         // Wait for generation to complete
-        val generationComplete = waitForGenerationComplete(120000)
+        val generationComplete = waitForGenerationComplete()
         assertTrue("Generation should complete", generationComplete)
 
         // Verify model generated a non-empty response
@@ -319,6 +357,7 @@ class UIWorkflowTest {
         composeTestRule.waitForIdle()
 
         dismissSelectModelDialogIfPresent()
+        clearChatHistory()
 
         val loaded = loadModel()
         assertTrue("Model should be selected successfully", loaded)
@@ -614,6 +653,7 @@ class UIWorkflowTest {
         composeTestRule.waitForIdle()
 
         dismissSelectModelDialogIfPresent()
+        clearChatHistory()
 
         val loaded = loadModel()
         assertTrue("Model should be selected successfully", loaded)
