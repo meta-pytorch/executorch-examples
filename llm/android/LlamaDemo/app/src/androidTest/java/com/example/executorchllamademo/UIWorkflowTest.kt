@@ -142,19 +142,32 @@ class UIWorkflowTest {
      */
     private fun dismissSelectModelDialogIfPresent() {
         composeTestRule.waitForIdle()
+
+        // First check if the dialog is actually present
+        val dialogNodes = composeTestRule.onAllNodesWithText("Please Select a Model")
+            .fetchSemanticsNodes()
+
+        if (dialogNodes.isEmpty()) {
+            Log.d(TAG, "Select model dialog not present")
+            return
+        }
+
+        Log.d(TAG, "Select model dialog found, attempting to dismiss")
+
         try {
-            // Try to find and click the OK button on the select model dialog
+            // Click the OK button to dismiss
             val okText = composeTestRule.activity.getString(android.R.string.ok)
             composeTestRule.onNodeWithText(okText, ignoreCase = true).performClick()
             composeTestRule.waitForIdle()
+
             // Wait for the dialog to actually be dismissed
-            composeTestRule.waitUntil(timeoutMillis = 2001) {
+            composeTestRule.waitUntil(timeoutMillis = 3001) {
                 composeTestRule.onAllNodesWithText("Please Select a Model")
                     .fetchSemanticsNodes().isEmpty()
             }
+            Log.d(TAG, "Select model dialog dismissed successfully")
         } catch (e: Exception) {
-            // Dialog might not be present, that's fine
-            Log.d(TAG, "Select model dialog not present or already dismissed")
+            Log.w(TAG, "Failed to dismiss select model dialog: ${e.message}")
         }
     }
 
