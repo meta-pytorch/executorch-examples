@@ -181,25 +181,23 @@ class UIWorkflowTest {
      */
     private fun waitForModelLoaded(timeoutMs: Long = 60000): Boolean {
         return try {
+            var wasSuccess = false
             composeTestRule.waitUntil(timeoutMillis = timeoutMs) {
                 val successNodes = composeTestRule.onAllNodesWithText("Successfully loaded", substring = true)
                     .fetchSemanticsNodes()
-                val errorNodes = composeTestRule.onAllNodesWithText("Model Load failure", substring = true)
+                val errorNodes = composeTestRule.onAllNodesWithText("Model load failure", substring = true)
                     .fetchSemanticsNodes()
+                wasSuccess = successNodes.isNotEmpty()
                 successNodes.isNotEmpty() || errorNodes.isNotEmpty()
             }
-            // Check which one appeared
-            val successNodes = composeTestRule.onAllNodesWithText("Successfully loaded", substring = true)
-                .fetchSemanticsNodes()
-            if (successNodes.isNotEmpty()) {
+            if (wasSuccess) {
                 Log.i(TAG, "Model loaded successfully")
-                true
             } else {
                 Log.e(TAG, "Model load failed")
-                false
             }
+            wasSuccess
         } catch (e: Exception) {
-            Log.e(TAG, "Model loading timed out after ${timeoutMs}ms")
+            Log.e(TAG, "Model loading timed out after ${timeoutMs}ms: ${e.message}")
             false
         }
     }
@@ -406,17 +404,21 @@ class UIWorkflowTest {
                 composeTestRule.onAllNodes(hasContentDescription("Stop"))
                     .fetchSemanticsNodes().isNotEmpty()
             }
-            // Click stop
-            composeTestRule.onNodeWithContentDescription("Stop").performClick()
         } catch (e: Exception) {
             // Generation might have already finished
             Log.i(TAG, "Stop button not found - generation may have completed")
         }
 
+        // Click stop
+        composeTestRule.onNodeWithContentDescription("Stop").performClick()
+        Log.i(TAG, "111")
+
         composeTestRule.waitForIdle()
+        Log.i(TAG, "222")
 
         // Wait for generation to fully stop
         waitForGenerationComplete(30000)
+        Log.i(TAG, "333")
 
         // Verify that some response was generated (even if stopped early)
         assertModelResponseNotEmpty()

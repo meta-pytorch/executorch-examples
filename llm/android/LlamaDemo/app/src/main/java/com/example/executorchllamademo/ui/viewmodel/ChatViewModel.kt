@@ -233,6 +233,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
         var loadDuration = System.currentTimeMillis() - runStartTime
         var modelInfo: String
 
+        var loadSuccess = false
         try {
             module?.load()
             val pteName = modelPath.substringAfterLast('/')
@@ -245,8 +246,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                 module?.prefillPrompt(PromptFormat.getLlavaPresetPrompt())
                 ETLogging.getInstance().log("Llava completes prefill prompt")
             }
+            loadSuccess = true
         } catch (e: ExecutorchRuntimeException) {
-            modelInfo = "${e.message}\n"
+            modelInfo = "Model load failure: ${e.message}"
             loadDuration = 0
             modelLoadError = modelInfo
             showModelLoadErrorDialog = true
@@ -261,7 +263,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                 "Model loaded time: $loadDuration ms"
         ETLogging.getInstance().log("Load complete. $modelLoggingInfo")
 
-        isModelReady = true
+        isModelReady = loadSuccess
         _messages.remove(modelLoadingMessage)
         _messages.add(modelLoadedMessage)
     }
