@@ -148,7 +148,6 @@ class UIWorkflowTest {
             Log.e(TAG, "Model file not found: $modelFile")
             return false
         }
-        composeTestRule.waitForIdle()
 
         // Click tokenizer row to open tokenizer selection dialog
         composeTestRule.onNodeWithText("Tokenizer").performClick()
@@ -163,7 +162,6 @@ class UIWorkflowTest {
             Log.e(TAG, "Tokenizer file not found: $tokenizerFile")
             return false
         }
-        composeTestRule.waitForIdle()
 
         // Click Load Model button
         composeTestRule.onNodeWithText("Load Model").performClick()
@@ -173,7 +171,6 @@ class UIWorkflowTest {
 
         // Confirm in dialog
         composeTestRule.onNodeWithText("Yes").performClick()
-        composeTestRule.waitForIdle()
 
         return true
     }
@@ -301,7 +298,6 @@ class UIWorkflowTest {
 
         // Select model file
         composeTestRule.onNodeWithText(modelFile, substring = true).performClick()
-        composeTestRule.waitForIdle()
 
         // Click tokenizer selection
         composeTestRule.onNodeWithText("Tokenizer").performClick()
@@ -311,7 +307,6 @@ class UIWorkflowTest {
 
         // Select tokenizer file
         composeTestRule.onNodeWithText(tokenizerFile, substring = true).performClick()
-        composeTestRule.waitForIdle()
 
         // Click load model button
         composeTestRule.onNodeWithText("Load Model").performClick()
@@ -342,6 +337,16 @@ class UIWorkflowTest {
 
         // Type a message using testTag
         typeInChatInput("tell me a story")
+
+        // Verify send button is enabled before clicking
+        composeTestRule.waitUntil(timeoutMillis = 5025) {
+            try {
+                composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
+                true
+            } catch (e: AssertionError) {
+                false
+            }
+        }
 
         // Click send
         composeTestRule.onNodeWithContentDescription("Send").performClick()
@@ -378,6 +383,16 @@ class UIWorkflowTest {
 
         // Type a long prompt using testTag
         typeInChatInput("Write a very long story about a brave knight who goes on an adventure")
+
+        // Verify send button is enabled before clicking
+        composeTestRule.waitUntil(timeoutMillis = 5026) {
+            try {
+                composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
+                true
+            } catch (e: AssertionError) {
+                false
+            }
+        }
 
         // Click send
         composeTestRule.onNodeWithContentDescription("Send").performClick()
