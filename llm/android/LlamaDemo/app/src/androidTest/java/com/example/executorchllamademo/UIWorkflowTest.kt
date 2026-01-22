@@ -344,6 +344,7 @@ class UIWorkflowTest {
                 composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
                 true
             } catch (e: AssertionError) {
+                Log.d(TAG, "Send button not yet enabled: ${e.message}")
                 false
             }
         }
@@ -390,6 +391,7 @@ class UIWorkflowTest {
                 composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
                 true
             } catch (e: AssertionError) {
+                Log.d(TAG, "Send button not yet enabled: ${e.message}")
                 false
             }
         }
