@@ -141,7 +141,6 @@ class SettingsViewModel : ViewModel() {
     fun updateTemperature(temperature: Double) {
         val newSettings = SettingsFields(settingsFields)
         newSettings.saveParameters(temperature)
-        newSettings.saveLoadModelAction(true)
         settingsFields = newSettings
         saveSettings()
     }
@@ -181,22 +180,6 @@ class SettingsViewModel : ViewModel() {
 
     private fun isValidUserPrompt(userPrompt: String): Boolean {
         return userPrompt.contains(PromptFormat.USER_PLACEHOLDER)
-    }
-
-    // Load model action
-    fun confirmLoadModel() {
-        saveSettings()
-        val newSettings = SettingsFields(settingsFields)
-        newSettings.saveLoadModelAction(true)
-        settingsFields = newSettings
-    }
-
-    // Clear chat
-    fun confirmClearChat() {
-        val newSettings = SettingsFields(settingsFields)
-        newSettings.saveIsClearChatHistory(true)
-        settingsFields = newSettings
-        saveSettings()
     }
 
     // Validation

@@ -44,6 +44,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var pickGallery: ActivityResultLauncher<PickVisualMediaRequest>
     private lateinit var cameraRoll: ActivityResultLauncher<Uri>
     private lateinit var cameraPermissionLauncher: ActivityResultLauncher<String>
+    private lateinit var settingsLauncher: ActivityResultLauncher<Intent>
     private var cameraImageUri: Uri? = null
     private var chatViewModel: ChatViewModel? = null
     private var appearanceMode by mutableStateOf(AppearanceMode.SYSTEM)
@@ -67,6 +68,7 @@ class MainActivity : ComponentActivity() {
         setupPermissionLauncher()
         setupGalleryPicker()
         setupCameraRoll()
+        setupSettingsLauncher()
 
         setContent {
             val isDarkTheme = when (appearanceMode) {
@@ -83,7 +85,7 @@ class MainActivity : ComponentActivity() {
                     ChatScreen(
                         viewModel = viewModel,
                         onSettingsClick = {
-                            startActivity(Intent(this@MainActivity, SettingsActivity::class.java))
+                            settingsLauncher.launch(Intent(this@MainActivity, SettingsActivity::class.java))
                         },
                         onLogsClick = {
                             startActivity(Intent(this@MainActivity, LogsActivity::class.java))
@@ -151,6 +153,29 @@ class MainActivity : ComponentActivity() {
                     contentResolver.delete(uri, null, null)
                     Log.d("CameraRoll", "No photo taken. Delete temp uri")
                 }
+            }
+        }
+    }
+
+    private fun setupSettingsLauncher() {
+        settingsLauncher = registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()
+        ) { result ->
+            // Always reload appearance mode when returning from settings
+            loadAppearanceMode()
+
+            if (result.resultCode == RESULT_OK) {
+                val actionExtra = result.data?.getStringExtra(SettingsAction.EXTRA_ACTION)
+                val action = SettingsAction.fromExtra(actionExtra)
+                if (action != null) {
+                    chatViewModel?.handleSettingsAction(action)
+                } else {
+                    // No specific action, just refresh settings
+                    chatViewModel?.checkAndLoadSettings()
+                }
+            } else {
+                // User pressed back or cancelled, still refresh settings
+                chatViewModel?.checkAndLoadSettings()
             }
         }
     }

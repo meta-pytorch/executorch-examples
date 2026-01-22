@@ -8,6 +8,8 @@
 
 package com.example.executorchllamademo
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -54,12 +56,8 @@ class SettingsActivity : ComponentActivity() {
                     val viewModel: SettingsViewModel = viewModel()
                     SettingsScreen(
                         viewModel = viewModel,
-                        onBackPressed = {
-                            viewModel.saveSettings()
-                            finish()
-                        },
-                        onLoadModel = {
-                            // Settings are saved by viewModel.confirmLoadModel()
+                        onFinish = { action ->
+                            finishWithAction(action)
                         },
                         onAppearanceChanged = { mode ->
                             appearanceMode = mode
@@ -68,6 +66,15 @@ class SettingsActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun finishWithAction(action: SettingsAction?) {
+        val resultIntent = Intent()
+        if (action != null) {
+            resultIntent.putExtra(SettingsAction.EXTRA_ACTION, SettingsAction.toExtra(action))
+        }
+        setResult(Activity.RESULT_OK, resultIntent)
+        finish()
     }
 
     private fun loadAppearanceMode() {

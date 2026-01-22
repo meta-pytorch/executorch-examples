@@ -20,19 +20,10 @@ class SettingsFields(
     var temperature: Double = DEFAULT_TEMPERATURE,
     var systemPrompt: String = "",
     var userPrompt: String = PromptFormat.getUserPromptTemplate(DEFAULT_MODEL),
-    isClearChatHistory: Boolean = false,
-    isLoadModel: Boolean = false,
     var modelType: ModelType = DEFAULT_MODEL,
     var backendType: BackendType = DEFAULT_BACKEND,
     var appearanceMode: AppearanceMode = DEFAULT_APPEARANCE
 ) {
-    // Use backing fields with explicit getters to maintain Java compatibility
-    // Java expects getIsClearChatHistory() and getIsLoadModel()
-    @get:JvmName("getIsClearChatHistory")
-    var isClearChatHistory: Boolean = isClearChatHistory
-
-    @get:JvmName("getIsLoadModel")
-    var isLoadModel: Boolean = isLoadModel
     /**
      * Copy constructor
      */
@@ -43,8 +34,6 @@ class SettingsFields(
         temperature = other.temperature,
         systemPrompt = other.systemPrompt,
         userPrompt = other.userPrompt,
-        isClearChatHistory = other.isClearChatHistory,
-        isLoadModel = other.isLoadModel,
         modelType = other.modelType,
         backendType = other.backendType,
         appearanceMode = other.appearanceMode
@@ -90,14 +79,6 @@ class SettingsFields(
         this.userPrompt = userPrompt
     }
 
-    fun saveIsClearChatHistory(needToClear: Boolean) {
-        this.isClearChatHistory = needToClear
-    }
-
-    fun saveLoadModelAction(shouldLoadModel: Boolean) {
-        this.isLoadModel = shouldLoadModel
-    }
-
     fun saveDataPath(dataPath: String) {
         this.dataPath = dataPath
     }
@@ -111,8 +92,6 @@ class SettingsFields(
         if (other == null || javaClass != other.javaClass) return false
         other as SettingsFields
         return temperature.compareTo(other.temperature) == 0 &&
-                isClearChatHistory == other.isClearChatHistory &&
-                isLoadModel == other.isLoadModel &&
                 modelFilePath == other.modelFilePath &&
                 tokenizerFilePath == other.tokenizerFilePath &&
                 dataPath == other.dataPath &&
@@ -131,8 +110,6 @@ class SettingsFields(
             temperature,
             systemPrompt,
             userPrompt,
-            isClearChatHistory,
-            isLoadModel,
             modelType,
             backendType,
             appearanceMode

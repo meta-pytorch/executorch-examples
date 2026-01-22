@@ -63,6 +63,7 @@ import com.example.executorchllamademo.AppearanceMode
 import com.example.executorchllamademo.BackendType
 import com.example.executorchllamademo.ModelType
 import com.example.executorchllamademo.PromptFormat
+import com.example.executorchllamademo.SettingsAction
 import com.example.executorchllamademo.ui.components.SettingsRow
 import com.example.executorchllamademo.ui.theme.BtnDisabled
 import com.example.executorchllamademo.ui.theme.BtnEnabled
@@ -72,8 +73,7 @@ import com.example.executorchllamademo.ui.viewmodel.SettingsViewModel
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel(),
-    onBackPressed: () -> Unit = {},
-    onLoadModel: () -> Unit = {},
+    onFinish: (SettingsAction?) -> Unit = {},
     onAppearanceChanged: (AppearanceMode) -> Unit = {}
 ) {
     val context = LocalContext.current
@@ -327,7 +327,10 @@ fun SettingsScreen(
 
             // Clear Chat button
             Button(
-                onClick = { viewModel.confirmClearChat() },
+                onClick = {
+                    viewModel.saveSettings()
+                    onFinish(SettingsAction.ClearChatHistory)
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = BtnEnabled),
                 shape = RoundedCornerShape(8.dp)
@@ -346,7 +349,7 @@ fun SettingsScreen(
     TokenizerDialog(viewModel)
     DataPathDialog(viewModel)
     ModelTypeDialog(viewModel)
-    LoadModelDialog(viewModel, onLoadModel, onBackPressed)
+    LoadModelDialog(viewModel, onFinish)
     ResetSystemPromptDialog(viewModel)
     ResetUserPromptDialog(viewModel)
     InvalidPromptDialog(viewModel)
@@ -538,8 +541,7 @@ private fun ModelTypeDialog(viewModel: SettingsViewModel) {
 @Composable
 private fun LoadModelDialog(
     viewModel: SettingsViewModel,
-    onLoadModel: () -> Unit,
-    onBackPressed: () -> Unit
+    onFinish: (SettingsAction?) -> Unit
 ) {
     if (viewModel.showLoadModelDialog) {
         AlertDialog(
@@ -555,10 +557,9 @@ private fun LoadModelDialog(
             confirmButton = {
                 TextButton(
                     onClick = {
-                        viewModel.confirmLoadModel()
+                        viewModel.saveSettings()
                         viewModel.showLoadModelDialog = false
-                        onLoadModel()
-                        onBackPressed()
+                        onFinish(SettingsAction.LoadModel)
                     }
                 ) {
                     Text("Yes")

@@ -27,6 +27,7 @@ import com.example.executorchllamademo.MessageType
 import com.example.executorchllamademo.ModelType
 import com.example.executorchllamademo.ModelUtils
 import com.example.executorchllamademo.PromptFormat
+import com.example.executorchllamademo.SettingsAction
 import com.example.executorchllamademo.SettingsFields
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -114,23 +115,12 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                 return
             }
             val isUpdated = currentSettingsFields != updatedSettingsFields
-            val isLoadModel = updatedSettingsFields.isLoadModel
             if (isUpdated) {
-                checkForClearChatHistory(updatedSettingsFields)
                 currentSettingsFields = SettingsFields(updatedSettingsFields)
                 // Update media capabilities after settings are updated
                 setBackendMode(updatedSettingsFields.backendType)
 
-                if (isLoadModel) {
-                    loadLocalModelAndParameters(
-                        updatedSettingsFields.modelFilePath,
-                        updatedSettingsFields.tokenizerFilePath,
-                        updatedSettingsFields.dataPath,
-                        updatedSettingsFields.temperature.toFloat()
-                    )
-                    updatedSettingsFields.saveLoadModelAction(false)
-                    demoSharedPreferences.addSettings(updatedSettingsFields)
-                } else if (module == null) {
+                if (module == null) {
                     addSystemMessage(systemPromptMessage)
                 }
             } else {
@@ -145,6 +135,43 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
         } else if (module == null) {
             addSystemMessage(systemPromptMessage)
         }
+    }
+
+    /**
+     * Handles an action returned from SettingsActivity.
+     * Call this when the settings activity finishes with an action result.
+     */
+    fun handleSettingsAction(action: SettingsAction) {
+        // First refresh settings from SharedPreferences
+        val gson = Gson()
+        val settingsFieldsJSON = demoSharedPreferences.getSettings()
+        if (settingsFieldsJSON.isNotEmpty()) {
+            val updatedSettingsFields = gson.fromJson(settingsFieldsJSON, SettingsFields::class.java)
+            if (updatedSettingsFields != null) {
+                currentSettingsFields = SettingsFields(updatedSettingsFields)
+                setBackendMode(updatedSettingsFields.backendType)
+            }
+        }
+
+        when (action) {
+            is SettingsAction.LoadModel -> {
+                loadLocalModelAndParameters(
+                    currentSettingsFields.modelFilePath,
+                    currentSettingsFields.tokenizerFilePath,
+                    currentSettingsFields.dataPath,
+                    currentSettingsFields.temperature.toFloat()
+                )
+            }
+            is SettingsAction.ClearChatHistory -> {
+                clearChatHistory()
+            }
+        }
+    }
+
+    private fun clearChatHistory() {
+        _messages.clear()
+        demoSharedPreferences.removeExistingMessages()
+        module?.resetContext()
     }
 
     private fun setBackendMode(backendType: BackendType) {
@@ -174,16 +201,6 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                 "You can send text or audio for inference."
             else ->
                 "You can send text for inference."
-        }
-    }
-
-    private fun checkForClearChatHistory(updatedSettingsFields: SettingsFields) {
-        if (updatedSettingsFields.isClearChatHistory) {
-            _messages.clear()
-            demoSharedPreferences.removeExistingMessages()
-            updatedSettingsFields.saveIsClearChatHistory(false)
-            demoSharedPreferences.addSettings(updatedSettingsFields)
-            module?.resetContext()
         }
     }
 
