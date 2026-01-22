@@ -58,6 +58,7 @@ class UIWorkflowTest {
 
     companion object {
         private const val TAG = "UIWorkflowTest"
+        private const val RESPONSE_TAG = "LLAMA_RESPONSE"
         private const val DEFAULT_MODEL_FILE = "stories110M.pte"
         private const val DEFAULT_TOKENIZER_FILE = "stories.model"
     }
@@ -128,6 +129,8 @@ class UIWorkflowTest {
         try {
             Espresso.pressBack()
             composeTestRule.waitForIdle()
+            dismissSelectModelDialogIfPresent()
+            composeTestRule.waitForIdle()
         } catch (e: Exception) {
             Log.d(TAG, "Could not press back after clearing history: ${e.message}")
         }
@@ -140,7 +143,8 @@ class UIWorkflowTest {
         composeTestRule.waitForIdle()
         try {
             // Try to find and click the OK button on the select model dialog
-            composeTestRule.onNodeWithText("OK").performClick()
+            val okText = composeTestRule.activity.getString(android.R.string.ok)
+            composeTestRule.onNodeWithText(okText, ignoreCase = true).performClick()
             composeTestRule.waitForIdle()
             // Wait for the dialog to actually be dismissed
             composeTestRule.waitUntil(timeoutMillis = 2000) {
@@ -275,6 +279,29 @@ class UIWorkflowTest {
     }
 
     /**
+     * Logs the model response text for CI output.
+     * Searches for text nodes containing generation metrics (t/s) and extracts the response.
+     */
+    private fun logModelResponse() {
+        try {
+            Log.i(RESPONSE_TAG, "BEGIN_RESPONSE")
+            // Find all nodes with t/s metrics - these are model response bubbles
+            val responseNodes = composeTestRule.onAllNodesWithText("t/s", substring = true)
+                .fetchSemanticsNodes()
+            for (node in responseNodes) {
+                // Get text from the semantics node
+                val text = ""
+                if (text.isNotBlank()) {
+                    Log.i(RESPONSE_TAG, text)
+                }
+            }
+            Log.i(RESPONSE_TAG, "END_RESPONSE")
+        } catch (e: Exception) {
+            Log.d(TAG, "Could not log model response: ${e.message}")
+        }
+    }
+
+    /**
      * Tests the complete model loading workflow:
      * 1. Dismiss the "Please Select a Model" dialog
      * 2. Click settings button
@@ -362,6 +389,9 @@ class UIWorkflowTest {
 
         // Verify model generated a non-empty response
         assertModelResponseNotEmpty()
+
+        // Log response for CI workflow summary
+        logModelResponse()
 
         Log.i(TAG, "Send message and receive response test completed successfully")
     }

@@ -37,6 +37,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -193,7 +194,7 @@ fun ChatScreen(
                     viewModel.dismissSelectModelDialog()
                     viewModel.addSystemMessage("To get started, select your desired model and tokenizer from the top right corner")
                 }) {
-                    Text("OK")
+                    Text(stringResource(android.R.string.ok))
                 }
             }
         )
@@ -207,7 +208,7 @@ fun ChatScreen(
             text = { Text(viewModel.modelLoadError) },
             confirmButton = {
                 TextButton(onClick = { viewModel.dismissModelLoadErrorDialog() }) {
-                    Text("OK")
+                    Text(stringResource(android.R.string.ok))
                 }
             }
         )
