@@ -61,7 +61,7 @@ class UIWorkflowTest {
         private const val TAG = "UIWorkflowTest"
         private const val RESPONSE_TAG = "LLAMA_RESPONSE"
         private const val DEFAULT_MODEL_FILE = "stories110M.pte"
-        private const val DEFAULT_TOKENIZER_FILE = "stories.model"
+        private const val DEFAULT_TOKENIZER_FILE = "tokenizer.model"
     }
 
     @get:Rule
