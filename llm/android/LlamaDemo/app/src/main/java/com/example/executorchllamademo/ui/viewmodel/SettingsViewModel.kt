@@ -35,7 +35,6 @@ class SettingsViewModel : ViewModel() {
     var showDataPathDialog by mutableStateOf(false)
     var showModelTypeDialog by mutableStateOf(false)
     var showLoadModelDialog by mutableStateOf(false)
-    var showClearChatDialog by mutableStateOf(false)
     var showResetSystemPromptDialog by mutableStateOf(false)
     var showResetUserPromptDialog by mutableStateOf(false)
     var showInvalidPromptDialog by mutableStateOf(false)
@@ -197,6 +196,7 @@ class SettingsViewModel : ViewModel() {
         val newSettings = SettingsFields(settingsFields)
         newSettings.saveIsClearChatHistory(true)
         settingsFields = newSettings
+        saveSettings()
     }
 
     // Validation

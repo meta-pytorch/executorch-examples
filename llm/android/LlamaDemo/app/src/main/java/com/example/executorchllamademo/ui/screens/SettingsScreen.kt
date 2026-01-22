@@ -327,7 +327,7 @@ fun SettingsScreen(
 
             // Clear Chat button
             Button(
-                onClick = { viewModel.showClearChatDialog = true },
+                onClick = { viewModel.confirmClearChat() },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(containerColor = BtnEnabled),
                 shape = RoundedCornerShape(8.dp)
@@ -347,7 +347,6 @@ fun SettingsScreen(
     DataPathDialog(viewModel)
     ModelTypeDialog(viewModel)
     LoadModelDialog(viewModel, onLoadModel, onBackPressed)
-    ClearChatDialog(viewModel)
     ResetSystemPromptDialog(viewModel)
     ResetUserPromptDialog(viewModel)
     InvalidPromptDialog(viewModel)
@@ -567,38 +566,6 @@ private fun LoadModelDialog(
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.showLoadModelDialog = false }) {
-                    Text("No")
-                }
-            }
-        )
-    }
-}
-
-@Composable
-private fun ClearChatDialog(viewModel: SettingsViewModel) {
-    if (viewModel.showClearChatDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.showClearChatDialog = false },
-            icon = {
-                Icon(
-                    imageVector = Icons.Filled.Warning,
-                    contentDescription = null
-                )
-            },
-            title = { Text("Delete Chat History") },
-            text = { Text("Do you really want to delete chat history?") },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        viewModel.confirmClearChat()
-                        viewModel.showClearChatDialog = false
-                    }
-                ) {
-                    Text("Yes")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { viewModel.showClearChatDialog = false }) {
                     Text("No")
                 }
             }
