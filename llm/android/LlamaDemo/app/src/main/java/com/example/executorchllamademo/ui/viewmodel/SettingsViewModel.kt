@@ -133,10 +133,7 @@ class SettingsViewModel : ViewModel() {
 
     // Temperature
     fun updateTemperature(temperature: Double) {
-        moduleSettings = moduleSettings.copy(
-            temperature = temperature,
-            isLoadModel = true
-        )
+        moduleSettings = moduleSettings.copy(temperature = temperature)
         saveSettings()
     }
 
@@ -166,18 +163,6 @@ class SettingsViewModel : ViewModel() {
 
     private fun isValidUserPrompt(userPrompt: String): Boolean {
         return userPrompt.contains(PromptFormat.USER_PLACEHOLDER)
-    }
-
-    // Load model action
-    fun confirmLoadModel() {
-        saveSettings()
-        moduleSettings = moduleSettings.copy(isLoadModel = true)
-    }
-
-    // Clear chat
-    fun confirmClearChat() {
-        moduleSettings = moduleSettings.copy(isClearChatHistory = true)
-        saveSettings()
     }
 
     // Validation

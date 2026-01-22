@@ -19,9 +19,7 @@ data class ModuleSettings(
     val systemPrompt: String = "",
     val userPrompt: String = PromptFormat.getUserPromptTemplate(DEFAULT_MODEL),
     val modelType: ModelType = DEFAULT_MODEL,
-    val backendType: BackendType = DEFAULT_BACKEND,
-    val isClearChatHistory: Boolean = false,
-    val isLoadModel: Boolean = false
+    val backendType: BackendType = DEFAULT_BACKEND
 ) {
     fun getFormattedSystemPrompt(): String {
         return PromptFormat.getSystemPromptTemplate(modelType)

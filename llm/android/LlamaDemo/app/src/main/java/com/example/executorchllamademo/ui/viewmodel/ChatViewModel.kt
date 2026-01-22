@@ -28,6 +28,7 @@ import com.example.executorchllamademo.ModelType
 import com.example.executorchllamademo.ModelUtils
 import com.example.executorchllamademo.PromptFormat
 import com.example.executorchllamademo.ModuleSettings
+import com.example.executorchllamademo.SettingsAction
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import org.json.JSONException
@@ -104,50 +105,46 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
 
     private val systemPromptMessage = "To get started, select your desired model and tokenizer from the top right corner"
 
-    fun checkAndLoadSettings() {
-        val updatedSettingsFields = demoSharedPreferences.getModuleSettings()
-        val isUpdated = currentSettingsFields != updatedSettingsFields
-        val isLoadModel = updatedSettingsFields.isLoadModel
-        if (isUpdated) {
-            checkForClearChatHistory(updatedSettingsFields)
-            // Update media capabilities after settings are updated
-            setBackendMode(updatedSettingsFields.backendType)
-
-            if (isLoadModel) {
+    fun handleSettingsAction(action: SettingsAction) {
+        when (action) {
+            is SettingsAction.LoadModel -> {
+                val settings = demoSharedPreferences.getModuleSettings()
+                currentSettingsFields = settings
+                setBackendMode(settings.backendType)
                 loadLocalModelAndParameters(
-                    updatedSettingsFields.modelFilePath,
-                    updatedSettingsFields.tokenizerFilePath,
-                    updatedSettingsFields.dataPath,
-                    updatedSettingsFields.temperature.toFloat()
+                    settings.modelFilePath,
+                    settings.tokenizerFilePath,
+                    settings.dataPath,
+                    settings.temperature.toFloat()
                 )
-                // Save with isLoadModel = false and update local copy to match,
-                // preventing duplicate "To get started..." messages on subsequent calls
-                val settingsWithLoadFlagCleared = updatedSettingsFields.copy(isLoadModel = false)
-                demoSharedPreferences.saveModuleSettings(settingsWithLoadFlagCleared)
-                currentSettingsFields = settingsWithLoadFlagCleared
-            } else {
-                currentSettingsFields = updatedSettingsFields.copy()
-                if (module == null) {
-                    addSystemMessage(systemPromptMessage)
-                }
             }
-        } else {
-            // Settings unchanged, but still update media capabilities for current settings
-            setBackendMode(updatedSettingsFields.backendType)
-            val modelPath = updatedSettingsFields.modelFilePath
-            val tokenizerPath = updatedSettingsFields.tokenizerFilePath
-            if (modelPath.isEmpty() || tokenizerPath.isEmpty()) {
-                addSystemMessage(systemPromptMessage)
+            is SettingsAction.ClearChatHistory -> {
+                clearChatHistory()
             }
         }
     }
 
-    private fun checkForClearChatHistory(updatedSettingsFields: ModuleSettings) {
-        if (updatedSettingsFields.isClearChatHistory) {
-            _messages.clear()
-            demoSharedPreferences.removeExistingMessages()
-            demoSharedPreferences.saveModuleSettings(updatedSettingsFields.copy(isClearChatHistory = false))
-            module?.resetContext()
+    private fun clearChatHistory() {
+        _messages.clear()
+        demoSharedPreferences.removeExistingMessages()
+        module?.resetContext()
+    }
+
+    fun checkAndLoadSettings() {
+        val updatedSettingsFields = demoSharedPreferences.getModuleSettings()
+        val isUpdated = currentSettingsFields != updatedSettingsFields
+        if (isUpdated) {
+            currentSettingsFields = updatedSettingsFields
+            setBackendMode(updatedSettingsFields.backendType)
+        } else {
+            // Settings unchanged, but still update media capabilities for current settings
+            setBackendMode(updatedSettingsFields.backendType)
+        }
+
+        val modelPath = updatedSettingsFields.modelFilePath
+        val tokenizerPath = updatedSettingsFields.tokenizerFilePath
+        if (module == null && (modelPath.isEmpty() || tokenizerPath.isEmpty())) {
+            addSystemMessage(systemPromptMessage)
         }
     }
 
