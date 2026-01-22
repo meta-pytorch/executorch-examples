@@ -37,7 +37,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.executorchllamademo.ui.screens.ChatScreen
 import com.example.executorchllamademo.ui.theme.LlamaDemoTheme
 import com.example.executorchllamademo.ui.viewmodel.ChatViewModel
-import com.google.gson.Gson
 
 class MainActivity : ComponentActivity() {
 
@@ -179,15 +178,7 @@ class MainActivity : ComponentActivity() {
 
     private fun loadAppearanceMode() {
         val prefs = DemoSharedPreferences(this)
-        val settingsJson = prefs.getSettings()
-        if (settingsJson.isNotEmpty()) {
-            try {
-                val settings = Gson().fromJson(settingsJson, SettingsFields::class.java)
-                appearanceMode = settings.appearanceMode
-            } catch (e: Exception) {
-                Log.e("MainActivity", "Error loading appearance mode", e)
-            }
-        }
+        appearanceMode = prefs.getAppSettings().appearanceMode
     }
 
     override fun onResume() {

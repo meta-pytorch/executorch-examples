@@ -27,7 +27,7 @@ import com.example.executorchllamademo.MessageType
 import com.example.executorchllamademo.ModelType
 import com.example.executorchllamademo.ModelUtils
 import com.example.executorchllamademo.PromptFormat
-import com.example.executorchllamademo.SettingsFields
+import com.example.executorchllamademo.ModuleSettings
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import org.json.JSONException
@@ -72,7 +72,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     private var module: LlmModule? = null
     private var resultMessage: Message? = null
     private val demoSharedPreferences = DemoSharedPreferences(application)
-    private var currentSettingsFields = SettingsFields()
+    private var currentSettingsFields = ModuleSettings()
     private var promptID = 0
     private var sawStartHeaderId = false
     private var audioFileToPrefill: String? = null
@@ -105,45 +105,40 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     private val systemPromptMessage = "To get started, select your desired model and tokenizer from the top right corner"
 
     fun checkAndLoadSettings() {
-        val gson = Gson()
-        val settingsFieldsJSON = demoSharedPreferences.getSettings()
-        if (settingsFieldsJSON.isNotEmpty()) {
-            val updatedSettingsFields = gson.fromJson(settingsFieldsJSON, SettingsFields::class.java)
-            if (updatedSettingsFields == null) {
-                addSystemMessage(systemPromptMessage)
-                return
-            }
-            val isUpdated = currentSettingsFields != updatedSettingsFields
-            val isLoadModel = updatedSettingsFields.isLoadModel
-            if (isUpdated) {
-                checkForClearChatHistory(updatedSettingsFields)
-                currentSettingsFields = SettingsFields(updatedSettingsFields)
-                // Update media capabilities after settings are updated
-                setBackendMode(updatedSettingsFields.backendType)
+        val updatedSettingsFields = demoSharedPreferences.getModuleSettings()
+        val isUpdated = currentSettingsFields != updatedSettingsFields
+        val isLoadModel = updatedSettingsFields.isLoadModel
+        if (isUpdated) {
+            checkForClearChatHistory(updatedSettingsFields)
+            // Update media capabilities after settings are updated
+            setBackendMode(updatedSettingsFields.backendType)
 
-                if (isLoadModel) {
-                    loadLocalModelAndParameters(
-                        updatedSettingsFields.modelFilePath,
-                        updatedSettingsFields.tokenizerFilePath,
-                        updatedSettingsFields.dataPath,
-                        updatedSettingsFields.temperature.toFloat()
-                    )
-                    updatedSettingsFields.saveLoadModelAction(false)
-                    demoSharedPreferences.addSettings(updatedSettingsFields)
-                } else if (module == null) {
-                    addSystemMessage(systemPromptMessage)
-                }
+            if (isLoadModel) {
+                loadLocalModelAndParameters(
+                    updatedSettingsFields.modelFilePath,
+                    updatedSettingsFields.tokenizerFilePath,
+                    updatedSettingsFields.dataPath,
+                    updatedSettingsFields.temperature.toFloat()
+                )
+                // Save with isLoadModel = false and update local copy to match,
+                // preventing duplicate "To get started..." messages on subsequent calls
+                val settingsWithLoadFlagCleared = updatedSettingsFields.copy(isLoadModel = false)
+                demoSharedPreferences.saveModuleSettings(settingsWithLoadFlagCleared)
+                currentSettingsFields = settingsWithLoadFlagCleared
             } else {
-                // Settings unchanged, but still update media capabilities for current settings
-                setBackendMode(updatedSettingsFields.backendType)
-                val modelPath = updatedSettingsFields.modelFilePath
-                val tokenizerPath = updatedSettingsFields.tokenizerFilePath
-                if (modelPath.isEmpty() || tokenizerPath.isEmpty()) {
+                currentSettingsFields = updatedSettingsFields.copy()
+                if (module == null) {
                     addSystemMessage(systemPromptMessage)
                 }
             }
-        } else if (module == null) {
-            addSystemMessage(systemPromptMessage)
+        } else {
+            // Settings unchanged, but still update media capabilities for current settings
+            setBackendMode(updatedSettingsFields.backendType)
+            val modelPath = updatedSettingsFields.modelFilePath
+            val tokenizerPath = updatedSettingsFields.tokenizerFilePath
+            if (modelPath.isEmpty() || tokenizerPath.isEmpty()) {
+                addSystemMessage(systemPromptMessage)
+            }
         }
     }
 
@@ -177,12 +172,11 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
         }
     }
 
-    private fun checkForClearChatHistory(updatedSettingsFields: SettingsFields) {
+    private fun checkForClearChatHistory(updatedSettingsFields: ModuleSettings) {
         if (updatedSettingsFields.isClearChatHistory) {
             _messages.clear()
             demoSharedPreferences.removeExistingMessages()
-            updatedSettingsFields.saveIsClearChatHistory(false)
-            demoSharedPreferences.addSettings(updatedSettingsFields)
+            demoSharedPreferences.saveModuleSettings(updatedSettingsFields.copy(isClearChatHistory = false))
             module?.resetContext()
         }
     }
@@ -239,6 +233,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
         var loadDuration = System.currentTimeMillis() - runStartTime
         var modelInfo: String
 
+        var loadSuccess = false
         try {
             module?.load()
             val pteName = modelPath.substringAfterLast('/')
@@ -251,8 +246,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                 module?.prefillPrompt(PromptFormat.getLlavaPresetPrompt())
                 ETLogging.getInstance().log("Llava completes prefill prompt")
             }
+            loadSuccess = true
         } catch (e: ExecutorchRuntimeException) {
-            modelInfo = "${e.message}\n"
+            modelInfo = "Model load failure: ${e.message}"
             loadDuration = 0
             modelLoadError = modelInfo
             showModelLoadErrorDialog = true
@@ -267,7 +263,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                 "Model loaded time: $loadDuration ms"
         ETLogging.getInstance().log("Load complete. $modelLoggingInfo")
 
-        isModelReady = true
+        isModelReady = loadSuccess
         _messages.remove(modelLoadingMessage)
         _messages.add(modelLoadedMessage)
     }
@@ -440,6 +436,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     }
 
     fun stopGeneration() {
+        Log.i("ChatViewModel", "stopGeneration called")
         module?.stop()
     }
 
