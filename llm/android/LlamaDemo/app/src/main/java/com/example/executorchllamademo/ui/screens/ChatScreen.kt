@@ -37,6 +37,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -45,6 +47,8 @@ import com.example.executorchllamademo.ui.components.MessageItem
 import com.example.executorchllamademo.ui.theme.LocalAppColors
 import com.example.executorchllamademo.ui.viewmodel.ChatViewModel
 import kotlinx.coroutines.delay
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -75,9 +79,18 @@ fun ChatScreen(
         }
     }
 
-    // Check settings on resume
-    LaunchedEffect(Unit) {
-        viewModel.checkAndLoadSettings()
+    // Check settings on resume (including when navigating back from Settings)
+    val lifecycleOwner = LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.checkAndLoadSettings()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     // Save messages when composable leaves composition
@@ -180,25 +193,6 @@ fun ChatScreen(
         }
     }
 
-    // Select model dialog
-    if (viewModel.showSelectModelDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissSelectModelDialog() },
-            title = { Text("Please Select a Model") },
-            text = {
-                Text("Please select a model and tokenizer from the settings (top right corner) to get started.")
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.dismissSelectModelDialog()
-                    viewModel.addSystemMessage("To get started, select your desired model and tokenizer from the top right corner")
-                }) {
-                    Text("OK")
-                }
-            }
-        )
-    }
-
     // Model load error dialog
     if (viewModel.showModelLoadErrorDialog) {
         AlertDialog(
@@ -207,7 +201,7 @@ fun ChatScreen(
             text = { Text(viewModel.modelLoadError) },
             confirmButton = {
                 TextButton(onClick = { viewModel.dismissModelLoadErrorDialog() }) {
-                    Text("OK")
+                    Text(stringResource(android.R.string.ok))
                 }
             }
         )
