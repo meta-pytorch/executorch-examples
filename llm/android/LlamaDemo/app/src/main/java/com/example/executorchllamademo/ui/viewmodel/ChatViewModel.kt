@@ -436,6 +436,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     }
 
     fun stopGeneration() {
+        Log.i("ChatViewModel", "stopGeneration called")
         module?.stop()
     }
 

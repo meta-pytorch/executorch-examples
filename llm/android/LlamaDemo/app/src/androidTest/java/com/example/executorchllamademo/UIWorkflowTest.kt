@@ -409,16 +409,16 @@ class UIWorkflowTest {
             Log.i(TAG, "Stop button not found - generation may have completed")
         }
 
+        // Give state time to fully synchronize
+        Thread.sleep(500)
+
         // Click stop
         composeTestRule.onNodeWithContentDescription("Stop").performClick()
-        Log.i(TAG, "111")
 
         composeTestRule.waitForIdle()
-        Log.i(TAG, "222")
 
         // Wait for generation to fully stop
         waitForGenerationComplete(30000)
-        Log.i(TAG, "333")
 
         // Verify that some response was generated (even if stopped early)
         assertModelResponseNotEmpty()
