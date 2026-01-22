@@ -12,7 +12,7 @@ plugins {
 }
 
 // Model files configuration for instrumentation tests
-// Supported presets: stories, llama, qwen3, custom
+// Supported presets: stories, llama, qwen3, llava, custom
 val modelPreset: String = (project.findProperty("modelPreset") as? String) ?: "stories"
 
 // Preset configurations
@@ -33,6 +33,12 @@ val modelPresets = mapOf(
     "baseUrl" to "https://huggingface.co/pytorch/Qwen3-4B-INT8-INT4/resolve/main",
     "pteFile" to "model.pte",
     "tokenizerFile" to "tokenizer.json",
+    "verifyChecksum" to false
+  ),
+  "llava" to mapOf(
+    "baseUrl" to "TODO_PLACEHOLDER_URL",
+    "pteFile" to "llava.pte",
+    "tokenizerFile" to "tokenizer.bin",
     "verifyChecksum" to false
   )
 )
@@ -283,6 +289,7 @@ dependencies {
   testImplementation("junit:junit:4.13.2")
   androidTestImplementation("androidx.test.ext:junit:1.1.5")
   androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+  androidTestImplementation("androidx.test.espresso:espresso-intents:3.5.1")
   androidTestImplementation("androidx.test.uiautomator:uiautomator:2.2.0")
   androidTestImplementation(platform("androidx.compose:compose-bom:2023.03.00"))
   androidTestImplementation("androidx.compose.ui:ui-test-junit4")

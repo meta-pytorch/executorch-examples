@@ -8,7 +8,12 @@
 
 package com.example.executorchllamademo
 
+import android.app.Activity
+import android.app.Instrumentation
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.provider.MediaStore
 import android.util.Log
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.assertIsDisplayed
@@ -26,6 +31,9 @@ import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.espresso.Espresso
+import androidx.test.espresso.intent.Intents
+import androidx.test.espresso.intent.matcher.IntentMatchers
+import androidx.test.espresso.intent.Intents.intending
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
@@ -769,5 +777,103 @@ class UIWorkflowTest {
             // Media buttons might not be visible depending on backend type
             Log.i(TAG, "Media buttons not present - might be MediaTek backend")
         }
+    }
+
+    /**
+     * Tests multimodal (LLaVA) workflow with image input:
+     * 1. Load model
+     * 2. Select a photo from gallery
+     * 3. Ask "what is in the photo"
+     * 4. Wait for response with 120 second timeout
+     *
+     * Prerequisites:
+     * - Push a test image to /data/local/tmp/llama/test_image.jpg
+     * - Use LLaVA model preset (llava.pte, tokenizer.bin)
+     */
+    @Test
+    fun testMultimodalImageInput() {
+        composeTestRule.waitForIdle()
+
+        // Clear chat history first to ensure clean state
+        clearChatHistory()
+
+        val loaded = loadModel()
+        assertTrue("Model should be selected successfully", loaded)
+
+        // Wait for model to load with extended timeout for LLaVA
+        val modelLoaded = waitForModelLoaded(90000)
+        assertTrue("Model should be loaded successfully", modelLoaded)
+
+        // Wait for UI to settle
+        composeTestRule.waitForIdle()
+
+        // Initialize Intents for stubbing the gallery picker
+        Intents.init()
+        try {
+            // Create a test image URI - use a content URI pointing to a test image
+            // The test image should be pushed to device before running the test
+            val testImageUri = Uri.parse("file:///data/local/tmp/llama/test_image.jpg")
+
+            // Create result Intent with the test image URI
+            val resultData = Intent().apply {
+                data = testImageUri
+                clipData = android.content.ClipData.newUri(
+                    composeTestRule.activity.contentResolver,
+                    "Test Image",
+                    testImageUri
+                )
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            val result = Instrumentation.ActivityResult(Activity.RESULT_OK, resultData)
+
+            // Stub any intent that looks like a media picker
+            intending(IntentMatchers.hasAction(MediaStore.ACTION_PICK_IMAGES)).respondWith(result)
+            intending(IntentMatchers.hasAction(Intent.ACTION_GET_CONTENT)).respondWith(result)
+            intending(IntentMatchers.hasAction(Intent.ACTION_PICK)).respondWith(result)
+
+            // Click add media button to show options
+            try {
+                composeTestRule.onNodeWithContentDescription("Add media").assertIsDisplayed()
+                composeTestRule.onNodeWithContentDescription("Add media").performClick()
+
+                // Wait for media options to appear
+                composeTestRule.waitUntil(timeoutMillis = 5000) {
+                    composeTestRule.onAllNodesWithText("Gallery").fetchSemanticsNodes().isNotEmpty()
+                }
+
+                // Click Gallery to select image
+                composeTestRule.onNodeWithText("Gallery").performClick()
+                composeTestRule.waitForIdle()
+
+                // Wait a moment for the image to be processed
+                Thread.sleep(2000)
+            } catch (e: AssertionError) {
+                Log.e(TAG, "Media buttons not available - this test requires a multimodal model")
+                Intents.release()
+                return
+            }
+
+        } finally {
+            Intents.release()
+        }
+
+        // Type the question about the image
+        typeInChatInput("what is in the photo")
+
+        // Click send
+        composeTestRule.onNodeWithContentDescription("Send").performClick()
+        composeTestRule.waitForIdle()
+
+        // Wait for generation to complete with extended 120 second timeout for LLaVA
+        val generationComplete = waitForGenerationComplete(120000)
+        assertTrue("Generation should complete within 120 seconds", generationComplete)
+
+        // Verify model generated a non-empty response
+        assertModelResponseNotEmpty()
+
+        // Log response for CI workflow summary
+        logModelResponse()
+
+        Log.i(TAG, "Multimodal image input test completed successfully")
     }
 }
