@@ -66,7 +66,6 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     val selectedImages: List<Uri> = _selectedImages
 
     // Dialog states
-    var showSelectModelDialog by mutableStateOf(false)
     var showModelLoadErrorDialog by mutableStateOf(false)
     var modelLoadError by mutableStateOf("")
 
@@ -103,13 +102,15 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
         demoSharedPreferences.addMessages(_messages.toList())
     }
 
+    private val systemPromptMessage = "To get started, select your desired model and tokenizer from the top right corner"
+
     fun checkAndLoadSettings() {
         val gson = Gson()
         val settingsFieldsJSON = demoSharedPreferences.getSettings()
         if (settingsFieldsJSON.isNotEmpty()) {
             val updatedSettingsFields = gson.fromJson(settingsFieldsJSON, SettingsFields::class.java)
             if (updatedSettingsFields == null) {
-                showSelectModelDialog = true
+                addSystemMessage(systemPromptMessage)
                 return
             }
             val isUpdated = currentSettingsFields != updatedSettingsFields
@@ -130,7 +131,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                     updatedSettingsFields.saveLoadModelAction(false)
                     demoSharedPreferences.addSettings(updatedSettingsFields)
                 } else if (module == null) {
-                    showSelectModelDialog = true
+                    addSystemMessage(systemPromptMessage)
                 }
             } else {
                 // Settings unchanged, but still update media capabilities for current settings
@@ -138,11 +139,11 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                 val modelPath = updatedSettingsFields.modelFilePath
                 val tokenizerPath = updatedSettingsFields.tokenizerFilePath
                 if (modelPath.isEmpty() || tokenizerPath.isEmpty()) {
-                    showSelectModelDialog = true
+                    addSystemMessage(systemPromptMessage)
                 }
             }
         } else if (module == null) {
-            showSelectModelDialog = true
+            addSystemMessage(systemPromptMessage)
         }
     }
 
@@ -461,10 +462,6 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
         } catch (e: IOException) {
             Log.e("AudioPrefill", "Audio file error")
         }
-    }
-
-    fun dismissSelectModelDialog() {
-        showSelectModelDialog = false
     }
 
     fun dismissModelLoadErrorDialog() {

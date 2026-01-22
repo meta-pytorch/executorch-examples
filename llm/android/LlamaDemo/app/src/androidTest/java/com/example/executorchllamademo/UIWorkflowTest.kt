@@ -106,17 +106,9 @@ class UIWorkflowTest {
             return
         }
 
-        // Click Clear Chat History button
+        // Click Clear Chat History button (clears immediately, no confirmation dialog)
         try {
             composeTestRule.onNodeWithText("Clear Chat History").performClick()
-            composeTestRule.waitForIdle()
-
-            // Wait for confirmation dialog and click Yes
-            composeTestRule.waitUntil(timeoutMillis = 2000) {
-                composeTestRule.onAllNodesWithText("Delete Chat History")
-                    .fetchSemanticsNodes().isNotEmpty()
-            }
-            composeTestRule.onNodeWithText("Yes").performClick()
             composeTestRule.waitForIdle()
             Log.i(TAG, "Chat history cleared")
         } catch (e: Exception) {
