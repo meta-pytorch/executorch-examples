@@ -24,6 +24,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
+import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
@@ -91,11 +92,15 @@ class UIWorkflowTest {
     private fun clearChatHistory() {
         composeTestRule.waitForIdle()
 
+        // Dismiss "Please Select a Model" dialog if present, as it blocks Settings button
+        dismissSelectModelDialogIfPresent()
+
         // Go to settings
         try {
             composeTestRule.onNodeWithContentDescription("Settings").performClick()
             composeTestRule.waitUntil(timeoutMillis = 3000) {
-                composeTestRule.onAllNodesWithText("Settings").fetchSemanticsNodes().isNotEmpty()
+                composeTestRule.onAllNodesWithText("Clear Chat History")
+                    .fetchSemanticsNodes().isNotEmpty()
             }
         } catch (e: Exception) {
             Log.d(TAG, "Could not open settings to clear history: ${e.message}")
@@ -106,18 +111,25 @@ class UIWorkflowTest {
         try {
             composeTestRule.onNodeWithText("Clear Chat History").performClick()
             composeTestRule.waitForIdle()
+
+            // Wait for confirmation dialog and click Yes
+            composeTestRule.waitUntil(timeoutMillis = 2000) {
+                composeTestRule.onAllNodesWithText("Delete Chat History")
+                    .fetchSemanticsNodes().isNotEmpty()
+            }
+            composeTestRule.onNodeWithText("Yes").performClick()
+            composeTestRule.waitForIdle()
             Log.i(TAG, "Chat history cleared")
-        } catch (e: AssertionError) {
-            Log.d(TAG, "Clear Chat History button not found")
+        } catch (e: Exception) {
+            Log.d(TAG, "Could not clear chat history: ${e.message}")
         }
 
-        // Go back to chat screen
+        // Go back to chat screen using system back
         try {
-            composeTestRule.onNodeWithContentDescription("Back").performClick()
+            Espresso.pressBack()
             composeTestRule.waitForIdle()
-        } catch (e: AssertionError) {
-            // Back button might not be there, that's fine
-            Log.d(TAG, "Back button not found after clearing history")
+        } catch (e: Exception) {
+            Log.d(TAG, "Could not press back after clearing history: ${e.message}")
         }
     }
 
@@ -130,7 +142,12 @@ class UIWorkflowTest {
             // Try to find and click the OK button on the select model dialog
             composeTestRule.onNodeWithText("OK").performClick()
             composeTestRule.waitForIdle()
-        } catch (e: AssertionError) {
+            // Wait for the dialog to actually be dismissed
+            composeTestRule.waitUntil(timeoutMillis = 2000) {
+                composeTestRule.onAllNodesWithText("Please Select a Model")
+                    .fetchSemanticsNodes().isEmpty()
+            }
+        } catch (e: Exception) {
             // Dialog might not be present, that's fine
             Log.d(TAG, "Select model dialog not present or already dismissed")
         }
@@ -322,7 +339,7 @@ class UIWorkflowTest {
     fun testSendMessageAndReceiveResponse() {
         composeTestRule.waitForIdle()
 
-        dismissSelectModelDialogIfPresent()
+        // Clear chat history first to ensure clean state
         clearChatHistory()
 
         val loaded = loadModel()
@@ -356,7 +373,7 @@ class UIWorkflowTest {
     fun testStopGeneration() {
         composeTestRule.waitForIdle()
 
-        dismissSelectModelDialogIfPresent()
+        // Clear chat history first to ensure clean state
         clearChatHistory()
 
         val loaded = loadModel()
@@ -652,7 +669,7 @@ class UIWorkflowTest {
     fun testMultipleMessagesConversation() {
         composeTestRule.waitForIdle()
 
-        dismissSelectModelDialogIfPresent()
+        // Clear chat history first to ensure clean state
         clearChatHistory()
 
         val loaded = loadModel()
