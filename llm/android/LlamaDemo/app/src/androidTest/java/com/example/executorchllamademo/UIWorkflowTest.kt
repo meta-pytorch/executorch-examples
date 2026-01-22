@@ -94,9 +94,6 @@ class UIWorkflowTest {
     private fun clearChatHistory() {
         composeTestRule.waitForIdle()
 
-        // Dismiss "Please Select a Model" dialog if present, as it blocks Settings button
-        dismissSelectModelDialogIfPresent()
-
         // Go to settings
         try {
             composeTestRule.onNodeWithContentDescription("Settings").performClick()
@@ -130,44 +127,8 @@ class UIWorkflowTest {
         try {
             Espresso.pressBack()
             composeTestRule.waitForIdle()
-            dismissSelectModelDialogIfPresent()
-            composeTestRule.waitForIdle()
         } catch (e: Exception) {
             Log.d(TAG, "Could not press back after clearing history: ${e.message}")
-        }
-    }
-
-    /**
-     * Dismisses the "Please Select a Model" dialog if it appears.
-     */
-    private fun dismissSelectModelDialogIfPresent() {
-        composeTestRule.waitForIdle()
-
-        // First check if the dialog is actually present
-        val dialogNodes = composeTestRule.onAllNodesWithText("Please Select a Model")
-            .fetchSemanticsNodes()
-
-        if (dialogNodes.isEmpty()) {
-            Log.d(TAG, "Select model dialog not present")
-            return
-        }
-
-        Log.d(TAG, "Select model dialog found, attempting to dismiss")
-
-        try {
-            // Click the OK button to dismiss
-            val okText = composeTestRule.activity.getString(android.R.string.ok)
-            composeTestRule.onNodeWithText(okText, ignoreCase = true).performClick()
-            composeTestRule.waitForIdle()
-
-            // Wait for the dialog to actually be dismissed
-            composeTestRule.waitUntil(timeoutMillis = 3001) {
-                composeTestRule.onAllNodesWithText("Please Select a Model")
-                    .fetchSemanticsNodes().isEmpty()
-            }
-            Log.d(TAG, "Select model dialog dismissed successfully")
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to dismiss select model dialog: ${e.message}")
         }
     }
 
@@ -318,19 +279,15 @@ class UIWorkflowTest {
 
     /**
      * Tests the complete model loading workflow:
-     * 1. Dismiss the "Please Select a Model" dialog
-     * 2. Click settings button
-     * 3. Verify model path and tokenizer path show default "no selection" text
-     * 4. Click model selection, select model.pte
-     * 5. Click tokenizer selection, select tokenizer.model
-     * 6. Click load model button
+     * 1. Click settings button
+     * 2. Verify model path and tokenizer path show default "no selection" text
+     * 3. Click model selection, select model.pte
+     * 4. Click tokenizer selection, select tokenizer.model
+     * 5. Click load model button
      */
     @Test
     fun testModelLoadingWorkflow() {
         composeTestRule.waitForIdle()
-
-        // Dismiss the "Please Select a Model" dialog
-        dismissSelectModelDialogIfPresent()
 
         // Click settings button
         composeTestRule.onNodeWithContentDescription("Settings").performClick()
@@ -465,8 +422,6 @@ class UIWorkflowTest {
     fun testEmptyPromptSend() {
         composeTestRule.waitForIdle()
 
-        dismissSelectModelDialogIfPresent()
-
         val loaded = loadModel()
         assertTrue("Model should be selected successfully", loaded)
 
@@ -486,7 +441,7 @@ class UIWorkflowTest {
         typeInChatInput("hello")
 
         // Wait for send button to become enabled
-        composeTestRule.waitUntil(timeoutMillis = 2000) {
+        composeTestRule.waitUntil(timeoutMillis = 2001) {
             try {
                 composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
                 true
@@ -502,7 +457,7 @@ class UIWorkflowTest {
         clearChatInput()
 
         // Wait for send button to become disabled
-        composeTestRule.waitUntil(timeoutMillis = 2000) {
+        composeTestRule.waitUntil(timeoutMillis = 2002) {
             try {
                 composeTestRule.onNodeWithContentDescription("Send").assertIsNotEnabled()
                 true
@@ -521,8 +476,6 @@ class UIWorkflowTest {
     @Test
     fun testNoFilesInDirectory() {
         composeTestRule.waitForIdle()
-
-        dismissSelectModelDialogIfPresent()
 
         // Go to settings
         composeTestRule.onNodeWithContentDescription("Settings").performClick()
@@ -558,8 +511,6 @@ class UIWorkflowTest {
     @Test
     fun testCancelFileSelection() {
         composeTestRule.waitForIdle()
-
-        dismissSelectModelDialogIfPresent()
 
         // Go to settings
         composeTestRule.onNodeWithContentDescription("Settings").performClick()
@@ -612,8 +563,6 @@ class UIWorkflowTest {
     fun testLoadButtonDisabledState() {
         composeTestRule.waitForIdle()
 
-        dismissSelectModelDialogIfPresent()
-
         // Go to settings
         composeTestRule.onNodeWithContentDescription("Settings").performClick()
         composeTestRule.waitUntil(timeoutMillis = 5018) {
@@ -661,8 +610,6 @@ class UIWorkflowTest {
     fun testWhitespaceOnlyPrompt() {
         composeTestRule.waitForIdle()
 
-        dismissSelectModelDialogIfPresent()
-
         val loaded = loadModel()
         assertTrue("Model should be selected successfully", loaded)
 
@@ -689,7 +636,7 @@ class UIWorkflowTest {
         typeInChatInput("hello")
 
         // Wait for send button to become enabled
-        composeTestRule.waitUntil(timeoutMillis = 2000) {
+        composeTestRule.waitUntil(timeoutMillis = 2003) {
             try {
                 composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
                 true
@@ -756,7 +703,7 @@ class UIWorkflowTest {
         composeTestRule.waitForIdle()
 
         // Wait for second response to complete
-        val secondResponseComplete = waitForGenerationComplete(120000)
+        val secondResponseComplete = waitForGenerationComplete(120001)
         assertTrue("Second response should complete", secondResponseComplete)
 
         // Verify both user messages are visible in conversation
@@ -799,8 +746,6 @@ class UIWorkflowTest {
     @Test
     fun testCollapseMediaButton() {
         composeTestRule.waitForIdle()
-
-        dismissSelectModelDialogIfPresent()
 
         // Verify add media button is present
         try {

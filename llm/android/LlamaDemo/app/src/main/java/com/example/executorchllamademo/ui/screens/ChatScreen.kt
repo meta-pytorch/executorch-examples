@@ -193,25 +193,6 @@ fun ChatScreen(
         }
     }
 
-    // Select model dialog
-    if (viewModel.showSelectModelDialog) {
-        AlertDialog(
-            onDismissRequest = { viewModel.dismissSelectModelDialog() },
-            title = { Text("Please Select a Model") },
-            text = {
-                Text("Please select a model and tokenizer from the settings (top right corner) to get started.")
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.dismissSelectModelDialog()
-                    viewModel.addSystemMessage("To get started, select your desired model and tokenizer from the top right corner")
-                }) {
-                    Text(stringResource(android.R.string.ok))
-                }
-            }
-        )
-    }
-
     // Model load error dialog
     if (viewModel.showModelLoadErrorDialog) {
         AlertDialog(
