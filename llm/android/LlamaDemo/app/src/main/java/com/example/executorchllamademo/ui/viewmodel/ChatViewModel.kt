@@ -27,7 +27,7 @@ import com.example.executorchllamademo.MessageType
 import com.example.executorchllamademo.ModelType
 import com.example.executorchllamademo.ModelUtils
 import com.example.executorchllamademo.PromptFormat
-import com.example.executorchllamademo.SettingsFields
+import com.example.executorchllamademo.ModuleSettings
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import org.json.JSONException
@@ -73,7 +73,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     private var module: LlmModule? = null
     private var resultMessage: Message? = null
     private val demoSharedPreferences = DemoSharedPreferences(application)
-    private var currentSettingsFields = SettingsFields()
+    private var currentSettingsFields = ModuleSettings()
     private var promptID = 0
     private var sawStartHeaderId = false
     private var audioFileToPrefill: String? = null
@@ -104,45 +104,34 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     }
 
     fun checkAndLoadSettings() {
-        val gson = Gson()
-        val settingsFieldsJSON = demoSharedPreferences.getSettings()
-        if (settingsFieldsJSON.isNotEmpty()) {
-            val updatedSettingsFields = gson.fromJson(settingsFieldsJSON, SettingsFields::class.java)
-            if (updatedSettingsFields == null) {
-                showSelectModelDialog = true
-                return
-            }
-            val isUpdated = currentSettingsFields != updatedSettingsFields
-            val isLoadModel = updatedSettingsFields.isLoadModel
-            if (isUpdated) {
-                checkForClearChatHistory(updatedSettingsFields)
-                currentSettingsFields = SettingsFields(updatedSettingsFields)
-                // Update media capabilities after settings are updated
-                setBackendMode(updatedSettingsFields.backendType)
+        val updatedSettingsFields = demoSharedPreferences.getModuleSettings()
+        val isUpdated = currentSettingsFields != updatedSettingsFields
+        val isLoadModel = updatedSettingsFields.isLoadModel
+        if (isUpdated) {
+            checkForClearChatHistory(updatedSettingsFields)
+            currentSettingsFields = updatedSettingsFields.copy()
+            // Update media capabilities after settings are updated
+            setBackendMode(updatedSettingsFields.backendType)
 
-                if (isLoadModel) {
-                    loadLocalModelAndParameters(
-                        updatedSettingsFields.modelFilePath,
-                        updatedSettingsFields.tokenizerFilePath,
-                        updatedSettingsFields.dataPath,
-                        updatedSettingsFields.temperature.toFloat()
-                    )
-                    updatedSettingsFields.saveLoadModelAction(false)
-                    demoSharedPreferences.addSettings(updatedSettingsFields)
-                } else if (module == null) {
-                    showSelectModelDialog = true
-                }
-            } else {
-                // Settings unchanged, but still update media capabilities for current settings
-                setBackendMode(updatedSettingsFields.backendType)
-                val modelPath = updatedSettingsFields.modelFilePath
-                val tokenizerPath = updatedSettingsFields.tokenizerFilePath
-                if (modelPath.isEmpty() || tokenizerPath.isEmpty()) {
-                    showSelectModelDialog = true
-                }
+            if (isLoadModel) {
+                loadLocalModelAndParameters(
+                    updatedSettingsFields.modelFilePath,
+                    updatedSettingsFields.tokenizerFilePath,
+                    updatedSettingsFields.dataPath,
+                    updatedSettingsFields.temperature.toFloat()
+                )
+                demoSharedPreferences.saveModuleSettings(updatedSettingsFields.copy(isLoadModel = false))
+            } else if (module == null) {
+                showSelectModelDialog = true
             }
-        } else if (module == null) {
-            showSelectModelDialog = true
+        } else {
+            // Settings unchanged, but still update media capabilities for current settings
+            setBackendMode(updatedSettingsFields.backendType)
+            val modelPath = updatedSettingsFields.modelFilePath
+            val tokenizerPath = updatedSettingsFields.tokenizerFilePath
+            if (modelPath.isEmpty() || tokenizerPath.isEmpty()) {
+                showSelectModelDialog = true
+            }
         }
     }
 
@@ -176,12 +165,11 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
         }
     }
 
-    private fun checkForClearChatHistory(updatedSettingsFields: SettingsFields) {
+    private fun checkForClearChatHistory(updatedSettingsFields: ModuleSettings) {
         if (updatedSettingsFields.isClearChatHistory) {
             _messages.clear()
             demoSharedPreferences.removeExistingMessages()
-            updatedSettingsFields.saveIsClearChatHistory(false)
-            demoSharedPreferences.addSettings(updatedSettingsFields)
+            demoSharedPreferences.saveModuleSettings(updatedSettingsFields.copy(isClearChatHistory = false))
             module?.resetContext()
         }
     }

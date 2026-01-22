@@ -14,18 +14,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import com.example.executorchllamademo.AppearanceMode
+import com.example.executorchllamademo.AppSettings
 import com.example.executorchllamademo.BackendType
 import com.example.executorchllamademo.DemoSharedPreferences
-import com.example.executorchllamademo.ETLogging
 import com.example.executorchllamademo.ModelType
+import com.example.executorchllamademo.ModuleSettings
 import com.example.executorchllamademo.PromptFormat
 import com.example.executorchllamademo.SettingsActivity
-import com.example.executorchllamademo.SettingsFields
-import com.google.gson.Gson
 
 class SettingsViewModel : ViewModel() {
 
-    var settingsFields by mutableStateOf(SettingsFields())
+    var moduleSettings by mutableStateOf(ModuleSettings())
+        private set
+
+    var appSettings by mutableStateOf(AppSettings())
         private set
 
     // Dialog states
@@ -58,15 +60,15 @@ class SettingsViewModel : ViewModel() {
     }
 
     private fun loadSettings() {
-        val gson = Gson()
-        val settingsFieldsJSON = demoSharedPreferences?.getSettings() ?: ""
-        if (settingsFieldsJSON.isNotEmpty()) {
-            settingsFields = gson.fromJson(settingsFieldsJSON, SettingsFields::class.java)
+        demoSharedPreferences?.let { prefs ->
+            moduleSettings = prefs.getModuleSettings()
+            appSettings = prefs.getAppSettings()
         }
     }
 
     fun saveSettings() {
-        demoSharedPreferences?.addSettings(settingsFields)
+        demoSharedPreferences?.saveModuleSettings(moduleSettings)
+        demoSharedPreferences?.saveAppSettings(appSettings)
     }
 
     fun refreshFileLists() {
@@ -77,107 +79,90 @@ class SettingsViewModel : ViewModel() {
 
     // Backend selection
     fun selectBackend(backendType: BackendType) {
-        val newSettings = SettingsFields(settingsFields)
-        newSettings.saveBackendType(backendType)
-        applyBackendDefaults(newSettings)
-        settingsFields = newSettings
+        var newSettings = moduleSettings.copy(backendType = backendType)
+        newSettings = applyBackendDefaults(newSettings)
+        moduleSettings = newSettings
     }
 
-    private fun applyBackendDefaults(settings: SettingsFields) {
-        if (settings.backendType == BackendType.MEDIATEK) {
-            if (settings.modelFilePath.isEmpty()) {
-                settings.saveModelPath("/in/mtk/llama/runner")
-            }
-            if (settings.tokenizerFilePath.isEmpty()) {
-                settings.saveTokenizerPath("/in/mtk/llama/runner")
-            }
+    private fun applyBackendDefaults(settings: ModuleSettings): ModuleSettings {
+        return if (settings.backendType == BackendType.MEDIATEK) {
+            settings.copy(
+                modelFilePath = settings.modelFilePath.ifEmpty { "/in/mtk/llama/runner" },
+                tokenizerFilePath = settings.tokenizerFilePath.ifEmpty { "/in/mtk/llama/runner" }
+            )
+        } else {
+            settings
         }
     }
 
     // Model selection
     fun selectModel(modelPath: String) {
-        val newSettings = SettingsFields(settingsFields)
-        newSettings.saveModelPath(modelPath)
-        autoSelectModelType(newSettings, modelPath)
-        settingsFields = newSettings
+        var newSettings = moduleSettings.copy(modelFilePath = modelPath)
+        newSettings = autoSelectModelType(newSettings, modelPath)
+        moduleSettings = newSettings
     }
 
-    private fun autoSelectModelType(settings: SettingsFields, filePath: String) {
+    private fun autoSelectModelType(settings: ModuleSettings, filePath: String): ModuleSettings {
         val detectedType = ModelType.fromFilePath(filePath)
-        if (detectedType != null) {
-            settings.saveModelType(detectedType)
-            settings.savePrompts(
-                settings.systemPrompt,
-                PromptFormat.getUserPromptTemplate(detectedType)
+        return if (detectedType != null) {
+            settings.copy(
+                modelType = detectedType,
+                userPrompt = PromptFormat.getUserPromptTemplate(detectedType)
             )
+        } else {
+            settings
         }
     }
 
     // Tokenizer selection
     fun selectTokenizer(tokenizerPath: String) {
-        val newSettings = SettingsFields(settingsFields)
-        newSettings.saveTokenizerPath(tokenizerPath)
-        settingsFields = newSettings
+        moduleSettings = moduleSettings.copy(tokenizerFilePath = tokenizerPath)
     }
 
     // Data path selection
     fun selectDataPath(dataPath: String) {
-        val newSettings = SettingsFields(settingsFields)
-        newSettings.saveDataPath(dataPath)
-        settingsFields = newSettings
+        moduleSettings = moduleSettings.copy(dataPath = dataPath)
     }
 
     // Model type selection
     fun selectModelType(modelType: ModelType) {
-        val newSettings = SettingsFields(settingsFields)
-        newSettings.saveModelType(modelType)
-        newSettings.savePrompts(
-            newSettings.systemPrompt,
-            PromptFormat.getUserPromptTemplate(modelType)
+        moduleSettings = moduleSettings.copy(
+            modelType = modelType,
+            userPrompt = PromptFormat.getUserPromptTemplate(modelType)
         )
-        settingsFields = newSettings
     }
 
     // Temperature
     fun updateTemperature(temperature: Double) {
-        val newSettings = SettingsFields(settingsFields)
-        newSettings.saveParameters(temperature)
-        newSettings.saveLoadModelAction(true)
-        settingsFields = newSettings
+        moduleSettings = moduleSettings.copy(
+            temperature = temperature,
+            isLoadModel = true
+        )
         saveSettings()
     }
 
     // System prompt
     fun updateSystemPrompt(prompt: String) {
-        val newSettings = SettingsFields(settingsFields)
-        newSettings.savePrompts(prompt, newSettings.userPrompt)
-        settingsFields = newSettings
+        moduleSettings = moduleSettings.copy(systemPrompt = prompt)
     }
 
     fun resetSystemPrompt() {
-        val newSettings = SettingsFields(settingsFields)
-        newSettings.savePrompts(PromptFormat.DEFAULT_SYSTEM_PROMPT, newSettings.userPrompt)
-        settingsFields = newSettings
+        moduleSettings = moduleSettings.copy(systemPrompt = PromptFormat.DEFAULT_SYSTEM_PROMPT)
     }
 
     // User prompt
     fun updateUserPrompt(prompt: String) {
         if (isValidUserPrompt(prompt)) {
-            val newSettings = SettingsFields(settingsFields)
-            newSettings.savePrompts(newSettings.systemPrompt, prompt)
-            settingsFields = newSettings
+            moduleSettings = moduleSettings.copy(userPrompt = prompt)
         } else {
             showInvalidPromptDialog = true
         }
     }
 
     fun resetUserPrompt() {
-        val newSettings = SettingsFields(settingsFields)
-        newSettings.savePrompts(
-            newSettings.systemPrompt,
-            PromptFormat.getUserPromptTemplate(newSettings.modelType)
+        moduleSettings = moduleSettings.copy(
+            userPrompt = PromptFormat.getUserPromptTemplate(moduleSettings.modelType)
         )
-        settingsFields = newSettings
     }
 
     private fun isValidUserPrompt(userPrompt: String): Boolean {
@@ -187,36 +172,30 @@ class SettingsViewModel : ViewModel() {
     // Load model action
     fun confirmLoadModel() {
         saveSettings()
-        val newSettings = SettingsFields(settingsFields)
-        newSettings.saveLoadModelAction(true)
-        settingsFields = newSettings
+        moduleSettings = moduleSettings.copy(isLoadModel = true)
     }
 
     // Clear chat
     fun confirmClearChat() {
-        val newSettings = SettingsFields(settingsFields)
-        newSettings.saveIsClearChatHistory(true)
-        settingsFields = newSettings
+        moduleSettings = moduleSettings.copy(isClearChatHistory = true)
     }
 
     // Validation
     fun isLoadModelEnabled(): Boolean {
-        return settingsFields.modelFilePath.isNotEmpty() && settingsFields.tokenizerFilePath.isNotEmpty()
+        return moduleSettings.modelFilePath.isNotEmpty() && moduleSettings.tokenizerFilePath.isNotEmpty()
     }
 
     fun isMediaTekMode(): Boolean {
-        return settingsFields.backendType == BackendType.MEDIATEK
+        return moduleSettings.backendType == BackendType.MEDIATEK
     }
 
     fun getFilenameFromPath(path: String): String {
         return if (path.isEmpty()) "" else path.substringAfterLast('/')
     }
 
-    // Appearance mode selection
+    // Appearance mode selection (app-wide setting)
     fun selectAppearanceMode(mode: AppearanceMode) {
-        val newSettings = SettingsFields(settingsFields)
-        newSettings.saveAppearanceMode(mode)
-        settingsFields = newSettings
-        saveSettings()
+        appSettings = appSettings.copy(appearanceMode = mode)
+        demoSharedPreferences?.saveAppSettings(appSettings)
     }
 }

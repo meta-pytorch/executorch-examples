@@ -10,7 +10,6 @@ package com.example.executorchllamademo
 
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -25,7 +24,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.executorchllamademo.ui.screens.SettingsScreen
 import com.example.executorchllamademo.ui.theme.LlamaDemoTheme
 import com.example.executorchllamademo.ui.viewmodel.SettingsViewModel
-import com.google.gson.Gson
 import java.io.File
 
 class SettingsActivity : ComponentActivity() {
@@ -72,15 +70,7 @@ class SettingsActivity : ComponentActivity() {
 
     private fun loadAppearanceMode() {
         val prefs = DemoSharedPreferences(this)
-        val settingsJson = prefs.getSettings()
-        if (settingsJson.isNotEmpty()) {
-            try {
-                val settings = Gson().fromJson(settingsJson, SettingsFields::class.java)
-                appearanceMode = settings.appearanceMode
-            } catch (e: Exception) {
-                Log.e("SettingsActivity", "Error loading appearance mode", e)
-            }
-        }
+        appearanceMode = prefs.getAppSettings().appearanceMode
     }
 
     override fun onResume() {
