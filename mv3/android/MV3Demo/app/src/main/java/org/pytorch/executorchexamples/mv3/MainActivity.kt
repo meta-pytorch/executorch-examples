@@ -64,7 +64,7 @@ import kotlin.math.exp
 
 class MainActivity : ComponentActivity() {
     companion object {
-        private const val MODEL_URL = "https://ossci-android.s3.amazonaws.com/executorch/models/snapshot-20260116/mv3_xnnpack_fp32.pte"
+        private const val MODEL_URL = "https://ossci-android.s3.amazonaws.com/executorch/models/snapshot-20260123/mv3_xnnpack_fp32.pte"
         private const val MODEL_FILENAME = "mv3.pte"
     }
 
