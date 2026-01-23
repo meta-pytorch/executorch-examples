@@ -44,6 +44,7 @@ import org.junit.runner.RunWith
  * - Push a tokenizer file (.bin, .json, or .model) to /data/local/tmp/llama/
  *
  * This test validates:
+ * - Welcome screen navigation
  * - Settings screen shows empty model/tokenizer paths by default
  * - File selection dialogs display pushed files
  * - User can select model and tokenizer files
@@ -65,7 +66,7 @@ class UIWorkflowTest {
     }
 
     @get:Rule
-    val composeTestRule = createAndroidComposeRule<MainActivity>()
+    val composeTestRule = createAndroidComposeRule<WelcomeActivity>()
 
     private lateinit var modelFile: String
     private lateinit var tokenizerFile: String
@@ -88,36 +89,42 @@ class UIWorkflowTest {
     }
 
     /**
-     * Clears chat history via the Settings UI.
+     * Clears chat history via the App Settings UI.
      * This ensures each test starts with a clean state.
+     * Must be called from the Welcome screen.
      */
     private fun clearChatHistory() {
         composeTestRule.waitForIdle()
 
-        // Go to settings
+        // Go to App Settings from Welcome screen
         try {
-            composeTestRule.onNodeWithContentDescription("Settings").performClick()
+            composeTestRule.onNodeWithText("App Settings").performClick()
             composeTestRule.waitUntil(timeoutMillis = 3000) {
-                composeTestRule.onAllNodesWithText("Clear Chat History")
+                composeTestRule.onAllNodesWithText("Clear Conversation History")
                     .fetchSemanticsNodes().isNotEmpty()
             }
         } catch (e: Exception) {
-            Log.d(TAG, "Could not open settings to clear history: ${e.message}")
+            Log.d(TAG, "Could not open App Settings to clear history: ${e.message}")
             return
         }
 
-        // Click Clear Chat History button (clears immediately, no confirmation dialog)
+        // Click Clear Conversation History button
         try {
-            composeTestRule.onNodeWithText("Clear Chat History").performClick()
+            composeTestRule.onNodeWithText("Clear Conversation History").performClick()
+            composeTestRule.waitUntil(timeoutMillis = 3000) {
+                composeTestRule.onAllNodesWithText("Clear").fetchSemanticsNodes().isNotEmpty()
+            }
+            // Confirm in dialog
+            composeTestRule.onNodeWithText("Clear").performClick()
             composeTestRule.waitForIdle()
             Log.i(TAG, "Chat history cleared")
         } catch (e: Exception) {
             Log.d(TAG, "Could not clear chat history: ${e.message}")
         }
 
-        // Go back to chat screen using system back
+        // Go back to Welcome screen using back button
         try {
-            Espresso.pressBack()
+            composeTestRule.onNodeWithContentDescription("Back").performClick()
             composeTestRule.waitForIdle()
         } catch (e: Exception) {
             Log.d(TAG, "Could not press back after clearing history: ${e.message}")
@@ -125,14 +132,14 @@ class UIWorkflowTest {
     }
 
     /**
-     * Navigates to settings and selects model/tokenizer files.
+     * Navigates from Welcome screen to settings and selects model/tokenizer files.
      * Returns true if successful.
      */
     private fun loadModel(): Boolean {
-        // Click settings button
-        composeTestRule.onNodeWithContentDescription("Settings").performClick()
+        // Click "Load local model" card on Welcome screen
+        composeTestRule.onNodeWithText("Load local model").performClick()
         composeTestRule.waitUntil(timeoutMillis = 5001) {
-            composeTestRule.onAllNodesWithText("Settings").fetchSemanticsNodes().isNotEmpty()
+            composeTestRule.onAllNodesWithText("Select a Model").fetchSemanticsNodes().isNotEmpty()
         }
 
         // Click model row to open model selection dialog
@@ -266,7 +273,7 @@ class UIWorkflowTest {
 
     /**
      * Tests the complete model loading workflow:
-     * 1. Click settings button
+     * 1. Click "Load Local LLM Model" card on Welcome screen
      * 2. Verify model path and tokenizer path show default "no selection" text
      * 3. Click model selection, select model.pte
      * 4. Click tokenizer selection, select tokenizer.model
@@ -276,14 +283,14 @@ class UIWorkflowTest {
     fun testModelLoadingWorkflow() {
         composeTestRule.waitForIdle()
 
-        // Click settings button
-        composeTestRule.onNodeWithContentDescription("Settings").performClick()
+        // Click "Load local model" card on Welcome screen
+        composeTestRule.onNodeWithText("Load local model").performClick()
         composeTestRule.waitUntil(timeoutMillis = 5005) {
-            composeTestRule.onAllNodesWithText("Settings").fetchSemanticsNodes().isNotEmpty()
+            composeTestRule.onAllNodesWithText("Select a Model").fetchSemanticsNodes().isNotEmpty()
         }
 
         // Verify we're in settings
-        composeTestRule.onNodeWithText("Settings").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Select a Model").assertIsDisplayed()
         composeTestRule.onNodeWithText("Load Model").assertIsDisplayed()
         composeTestRule.onNodeWithText("no model selected").assertIsDisplayed()
         composeTestRule.onNodeWithText("no tokenizer selected").assertIsDisplayed()
@@ -488,14 +495,14 @@ class UIWorkflowTest {
     fun testNoFilesInDirectory() {
         composeTestRule.waitForIdle()
 
-        // Go to settings
-        composeTestRule.onNodeWithContentDescription("Settings").performClick()
+        // Go to settings from Welcome screen
+        composeTestRule.onNodeWithText("Load local model").performClick()
         composeTestRule.waitUntil(timeoutMillis = 5011) {
-            composeTestRule.onAllNodesWithText("Settings").fetchSemanticsNodes().isNotEmpty()
+            composeTestRule.onAllNodesWithText("Select a Model").fetchSemanticsNodes().isNotEmpty()
         }
 
         // Verify settings screen
-        composeTestRule.onNodeWithText("Settings").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Select a Model").assertIsDisplayed()
 
         // Click model selection
         composeTestRule.onNodeWithText("Model").performClick()
@@ -523,10 +530,10 @@ class UIWorkflowTest {
     fun testCancelFileSelection() {
         composeTestRule.waitForIdle()
 
-        // Go to settings
-        composeTestRule.onNodeWithContentDescription("Settings").performClick()
+        // Go to settings from Welcome screen
+        composeTestRule.onNodeWithText("Load local model").performClick()
         composeTestRule.waitUntil(timeoutMillis = 5013) {
-            composeTestRule.onAllNodesWithText("Settings").fetchSemanticsNodes().isNotEmpty()
+            composeTestRule.onAllNodesWithText("Select a Model").fetchSemanticsNodes().isNotEmpty()
         }
 
         // Verify initial state
@@ -574,10 +581,10 @@ class UIWorkflowTest {
     fun testLoadButtonDisabledState() {
         composeTestRule.waitForIdle()
 
-        // Go to settings
-        composeTestRule.onNodeWithContentDescription("Settings").performClick()
+        // Go to settings from Welcome screen
+        composeTestRule.onNodeWithText("Load local model").performClick()
         composeTestRule.waitUntil(timeoutMillis = 5018) {
-            composeTestRule.onAllNodesWithText("Settings").fetchSemanticsNodes().isNotEmpty()
+            composeTestRule.onAllNodesWithText("Select a Model").fetchSemanticsNodes().isNotEmpty()
         }
 
         // Verify load button is initially disabled
@@ -788,5 +795,54 @@ class UIWorkflowTest {
             // Media buttons might not be visible depending on backend type
             Log.i(TAG, "Media buttons not present - might be MediaTek backend")
         }
+    }
+
+    /**
+     * Tests Welcome screen displays and navigation works correctly.
+     */
+    @Test
+    fun testWelcomeScreenNavigation() {
+        composeTestRule.waitForIdle()
+
+        // Verify Welcome screen elements are displayed
+        composeTestRule.onNodeWithText("ExecuTorch Llama Demo").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Welcome to ExecuTorch Llama Demo").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Load local model").assertIsDisplayed()
+        composeTestRule.onNodeWithText("App Settings").assertIsDisplayed()
+
+        // Test navigation to App Settings
+        composeTestRule.onNodeWithText("App Settings").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 3000) {
+            composeTestRule.onAllNodesWithText("App Settings", useUnmergedTree = true)
+                .fetchSemanticsNodes().size >= 1
+        }
+
+        // Verify App Settings screen
+        composeTestRule.onNodeWithText("Appearance").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Theme").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Clear Conversation History").assertIsDisplayed()
+
+        // Go back to Welcome screen
+        composeTestRule.onNodeWithContentDescription("Back").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 3000) {
+            composeTestRule.onAllNodesWithText("ExecuTorch Llama Demo").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Verify we're back on Welcome screen
+        composeTestRule.onNodeWithText("ExecuTorch Llama Demo").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Load local model").assertIsDisplayed()
+
+        // Test navigation to Model Settings
+        composeTestRule.onNodeWithText("Load local model").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 3000) {
+            composeTestRule.onAllNodesWithText("Select a Model").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Verify Model Settings screen
+        composeTestRule.onNodeWithText("Select a Model").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Backend").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Load Model").assertIsDisplayed()
+
+        Log.i(TAG, "Welcome screen navigation test completed successfully")
     }
 }

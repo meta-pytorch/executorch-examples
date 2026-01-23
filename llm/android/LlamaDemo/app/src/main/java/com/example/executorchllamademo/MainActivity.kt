@@ -9,7 +9,6 @@
 package com.example.executorchllamademo
 
 import android.Manifest
-import android.app.AlertDialog
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -81,8 +80,12 @@ class MainActivity : ComponentActivity() {
 
                     ChatScreen(
                         viewModel = viewModel,
+                        onBackClick = {
+                            startActivity(Intent(this@MainActivity, WelcomeActivity::class.java))
+                            finish()
+                        },
                         onSettingsClick = {
-                            startActivity(Intent(this@MainActivity, SettingsActivity::class.java))
+                            startActivity(Intent(this@MainActivity, ModelSettingsActivity::class.java))
                         },
                         onLogsClick = {
                             startActivity(Intent(this@MainActivity, LogsActivity::class.java))
@@ -103,8 +106,9 @@ class MainActivity : ComponentActivity() {
                                 launchCamera()
                             }
                         },
-                        onAudioClick = { _ ->
-                            showAudioFileSelector()
+                        audioFiles = ModelSettingsActivity.listLocalFile("/data/local/tmp/audio/", arrayOf(".bin")).toList(),
+                        onAudioFileSelected = { audioFile ->
+                            chatViewModel?.setAudioFile(audioFile)
                         }
                     )
                 }
@@ -162,18 +166,6 @@ class MainActivity : ComponentActivity() {
         }
         cameraImageUri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
         cameraImageUri?.let { cameraRoll.launch(it) }
-    }
-
-    private fun showAudioFileSelector() {
-        val audioFiles = SettingsActivity.listLocalFile("/data/local/tmp/audio/", arrayOf(".bin"))
-        AlertDialog.Builder(this)
-            .setTitle("Select audio feature path")
-            .setSingleChoiceItems(audioFiles, -1) { dialog, item ->
-                chatViewModel?.setAudioFile(audioFiles[item])
-                dialog.dismiss()
-            }
-            .create()
-            .show()
     }
 
     private fun loadAppearanceMode() {

@@ -8,6 +8,7 @@
 
 package com.example.executorchllamademo
 
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -20,13 +21,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.executorchllamademo.ui.screens.SettingsScreen
+import com.example.executorchllamademo.ui.screens.WelcomeScreen
 import com.example.executorchllamademo.ui.theme.LlamaDemoTheme
-import com.example.executorchllamademo.ui.viewmodel.SettingsViewModel
-import java.io.File
 
-class SettingsActivity : ComponentActivity() {
+class WelcomeActivity : ComponentActivity() {
 
     private var appearanceMode by mutableStateOf(AppearanceMode.SYSTEM)
 
@@ -49,18 +47,15 @@ class SettingsActivity : ComponentActivity() {
 
             LlamaDemoTheme(darkTheme = isDarkTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    val viewModel: SettingsViewModel = viewModel()
-                    SettingsScreen(
-                        viewModel = viewModel,
-                        onBackPressed = {
-                            viewModel.saveSettings()
-                            finish()
+                    WelcomeScreen(
+                        onLoadModelClick = {
+                            startActivity(Intent(this@WelcomeActivity, ModelSettingsActivity::class.java))
                         },
-                        onLoadModel = {
-                            // Settings are saved by viewModel.confirmLoadModel()
+                        onAppSettingsClick = {
+                            startActivity(Intent(this@WelcomeActivity, AppSettingsActivity::class.java))
                         },
-                        onAppearanceChanged = { mode ->
-                            appearanceMode = mode
+                        onStartChatClick = {
+                            startActivity(Intent(this@WelcomeActivity, MainActivity::class.java))
                         }
                     )
                 }
@@ -76,24 +71,5 @@ class SettingsActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         loadAppearanceMode()
-    }
-
-    companion object {
-        private fun fileHasExtension(file: String, suffix: Array<String>): Boolean {
-            return suffix.any { file.endsWith(it) }
-        }
-
-        @JvmStatic
-        fun listLocalFile(path: String, suffix: Array<String>): Array<String> {
-            val directory = File(path)
-            if (directory.exists() && directory.isDirectory) {
-                val files = directory.listFiles { _, name -> fileHasExtension(name, suffix) }
-                return files?.filter { it.isFile && fileHasExtension(it.name, suffix) }
-                    ?.map { it.absolutePath }
-                    ?.toTypedArray()
-                    ?: emptyArray()
-            }
-            return emptyArray()
-        }
     }
 }

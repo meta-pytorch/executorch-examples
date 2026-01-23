@@ -29,6 +29,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Refresh
@@ -67,11 +68,11 @@ import com.example.executorchllamademo.ui.components.SettingsRow
 import com.example.executorchllamademo.ui.theme.BtnDisabled
 import com.example.executorchllamademo.ui.theme.BtnEnabled
 import com.example.executorchllamademo.ui.theme.LocalAppColors
-import com.example.executorchllamademo.ui.viewmodel.SettingsViewModel
+import com.example.executorchllamademo.ui.viewmodel.ModelSettingsViewModel
 
 @Composable
-fun SettingsScreen(
-    viewModel: SettingsViewModel = viewModel(),
+fun ModelSettingsScreen(
+    viewModel: ModelSettingsViewModel = viewModel(),
     onBackPressed: () -> Unit = {},
     onLoadModel: () -> Unit = {},
     onAppearanceChanged: (AppearanceMode) -> Unit = {}
@@ -95,11 +96,18 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(appColors.navBar)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 4.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            IconButton(onClick = onBackPressed) {
+                Icon(
+                    imageVector = Icons.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = appColors.textOnNavBar
+                )
+            }
             Text(
-                text = "Settings",
+                text = "Select a Model",
                 color = appColors.textOnNavBar,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
@@ -114,15 +122,6 @@ fun SettingsScreen(
                 .verticalScroll(scrollState)
                 .padding(12.dp)
         ) {
-            // Appearance selector (first)
-            SettingsRow(
-                label = "Appearance",
-                value = viewModel.appSettings.appearanceMode.displayName,
-                onClick = { viewModel.showAppearanceDialog = true }
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
             // Backend selector
             SettingsRow(
                 label = "Backend",
@@ -323,18 +322,6 @@ fun SettingsScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Clear Chat button
-            Button(
-                onClick = { viewModel.confirmClearChat() },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = BtnEnabled),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text("Clear Chat History", color = Color.White)
-            }
-
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
@@ -401,7 +388,7 @@ private fun PromptSection(
 }
 
 @Composable
-private fun BackendDialog(viewModel: SettingsViewModel) {
+private fun BackendDialog(viewModel: ModelSettingsViewModel) {
     if (viewModel.showBackendDialog) {
         SingleChoiceDialog(
             title = "Select backend type",
@@ -417,7 +404,7 @@ private fun BackendDialog(viewModel: SettingsViewModel) {
 
 @Composable
 private fun AppearanceDialog(
-    viewModel: SettingsViewModel,
+    viewModel: ModelSettingsViewModel,
     onAppearanceChanged: (AppearanceMode) -> Unit
 ) {
     if (viewModel.showAppearanceDialog) {
@@ -436,7 +423,7 @@ private fun AppearanceDialog(
 }
 
 @Composable
-private fun ModelDialog(viewModel: SettingsViewModel) {
+private fun ModelDialog(viewModel: ModelSettingsViewModel) {
     if (viewModel.showModelDialog) {
         if (viewModel.modelFiles.isEmpty()) {
             AlertDialog(
@@ -466,7 +453,7 @@ private fun ModelDialog(viewModel: SettingsViewModel) {
 }
 
 @Composable
-private fun TokenizerDialog(viewModel: SettingsViewModel) {
+private fun TokenizerDialog(viewModel: ModelSettingsViewModel) {
     if (viewModel.showTokenizerDialog) {
         if (viewModel.tokenizerFiles.isEmpty()) {
             AlertDialog(
@@ -496,7 +483,7 @@ private fun TokenizerDialog(viewModel: SettingsViewModel) {
 }
 
 @Composable
-private fun DataPathDialog(viewModel: SettingsViewModel) {
+private fun DataPathDialog(viewModel: ModelSettingsViewModel) {
     if (viewModel.showDataPathDialog) {
         val options = if (viewModel.dataPathFiles.isEmpty()) {
             listOf("(unused)")
@@ -521,7 +508,7 @@ private fun DataPathDialog(viewModel: SettingsViewModel) {
 }
 
 @Composable
-private fun ModelTypeDialog(viewModel: SettingsViewModel) {
+private fun ModelTypeDialog(viewModel: ModelSettingsViewModel) {
     if (viewModel.showModelTypeDialog) {
         SingleChoiceDialog(
             title = "Select model type",
@@ -537,7 +524,7 @@ private fun ModelTypeDialog(viewModel: SettingsViewModel) {
 
 @Composable
 private fun LoadModelDialog(
-    viewModel: SettingsViewModel,
+    viewModel: ModelSettingsViewModel,
     onLoadModel: () -> Unit,
     onBackPressed: () -> Unit
 ) {
@@ -574,7 +561,7 @@ private fun LoadModelDialog(
 }
 
 @Composable
-private fun ResetSystemPromptDialog(viewModel: SettingsViewModel) {
+private fun ResetSystemPromptDialog(viewModel: ModelSettingsViewModel) {
     if (viewModel.showResetSystemPromptDialog) {
         AlertDialog(
             onDismissRequest = { viewModel.showResetSystemPromptDialog = false },
@@ -606,7 +593,7 @@ private fun ResetSystemPromptDialog(viewModel: SettingsViewModel) {
 }
 
 @Composable
-private fun ResetUserPromptDialog(viewModel: SettingsViewModel) {
+private fun ResetUserPromptDialog(viewModel: ModelSettingsViewModel) {
     if (viewModel.showResetUserPromptDialog) {
         AlertDialog(
             onDismissRequest = { viewModel.showResetUserPromptDialog = false },
@@ -638,7 +625,7 @@ private fun ResetUserPromptDialog(viewModel: SettingsViewModel) {
 }
 
 @Composable
-private fun InvalidPromptDialog(viewModel: SettingsViewModel) {
+private fun InvalidPromptDialog(viewModel: ModelSettingsViewModel) {
     if (viewModel.showInvalidPromptDialog) {
         AlertDialog(
             onDismissRequest = { viewModel.showInvalidPromptDialog = false },

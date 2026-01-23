@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.ContentCopy
@@ -51,7 +52,8 @@ import com.example.executorchllamademo.ui.viewmodel.LogsViewModel
 
 @Composable
 fun LogsScreen(
-    viewModel: LogsViewModel = viewModel()
+    viewModel: LogsViewModel = viewModel(),
+    onBackClick: () -> Unit = {}
 ) {
     var showClearDialog by remember { mutableStateOf(false) }
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -83,9 +85,17 @@ fun LogsScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(appColors.navBar)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 4.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            IconButton(onClick = onBackClick) {
+                Icon(
+                    imageVector = Icons.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = appColors.textOnNavBar
+                )
+            }
+
             Text(
                 text = "Logs",
                 color = appColors.textOnNavBar,

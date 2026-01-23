@@ -8,6 +8,7 @@
 
 package com.example.executorchllamademo
 
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -20,10 +21,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
-import com.example.executorchllamademo.ui.screens.LogsScreen
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.executorchllamademo.ui.screens.ModelSettingsScreen
 import com.example.executorchllamademo.ui.theme.LlamaDemoTheme
+import com.example.executorchllamademo.ui.viewmodel.ModelSettingsViewModel
+import java.io.File
 
-class LogsActivity : ComponentActivity() {
+class ModelSettingsActivity : ComponentActivity() {
 
     private var appearanceMode by mutableStateOf(AppearanceMode.SYSTEM)
 
@@ -46,8 +50,21 @@ class LogsActivity : ComponentActivity() {
 
             LlamaDemoTheme(darkTheme = isDarkTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    LogsScreen(
-                        onBackClick = { finish() }
+                    val viewModel: ModelSettingsViewModel = viewModel()
+                    ModelSettingsScreen(
+                        viewModel = viewModel,
+                        onBackPressed = {
+                            viewModel.saveSettings()
+                            finish()
+                        },
+                        onLoadModel = {
+                            // Navigate to MainActivity (conversation) after loading model
+                            startActivity(Intent(this@ModelSettingsActivity, MainActivity::class.java))
+                            finish()
+                        },
+                        onAppearanceChanged = { mode ->
+                            appearanceMode = mode
+                        }
                     )
                 }
             }
@@ -62,5 +79,24 @@ class LogsActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         loadAppearanceMode()
+    }
+
+    companion object {
+        private fun fileHasExtension(file: String, suffix: Array<String>): Boolean {
+            return suffix.any { file.endsWith(it) }
+        }
+
+        @JvmStatic
+        fun listLocalFile(path: String, suffix: Array<String>): Array<String> {
+            val directory = File(path)
+            if (directory.exists() && directory.isDirectory) {
+                val files = directory.listFiles { _, name -> fileHasExtension(name, suffix) }
+                return files?.filter { it.isFile && fileHasExtension(it.name, suffix) }
+                    ?.map { it.absolutePath }
+                    ?.toTypedArray()
+                    ?: emptyArray()
+            }
+            return emptyArray()
+        }
     }
 }
