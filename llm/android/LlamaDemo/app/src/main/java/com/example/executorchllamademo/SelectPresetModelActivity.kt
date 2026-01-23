@@ -16,15 +16,18 @@ import androidx.activity.compose.setContent
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
-import com.example.executorchllamademo.ui.screens.WelcomeScreen
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.executorchllamademo.ui.screens.SelectPresetModelScreen
 import com.example.executorchllamademo.ui.theme.LlamaDemoTheme
+import com.example.executorchllamademo.ui.viewmodel.SelectPresetModelViewModel
 
-class WelcomeActivity : ComponentActivity() {
+class SelectPresetModelActivity : ComponentActivity() {
 
     private var appearanceMode by mutableStateOf(AppearanceMode.SYSTEM)
 
@@ -47,18 +50,25 @@ class WelcomeActivity : ComponentActivity() {
 
             LlamaDemoTheme(darkTheme = isDarkTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    WelcomeScreen(
-                        onLoadModelClick = {
-                            startActivity(Intent(this@WelcomeActivity, ModelSettingsActivity::class.java))
+                    val viewModel: SelectPresetModelViewModel = viewModel()
+
+                    LaunchedEffect(Unit) {
+                        viewModel.initialize(this@SelectPresetModelActivity)
+                    }
+
+                    SelectPresetModelScreen(
+                        availableModels = viewModel.availableModels,
+                        modelStates = viewModel.modelStates,
+                        onBackPressed = { finish() },
+                        onDownloadClick = { key ->
+                            viewModel.downloadModel(key)
                         },
-                        onDownloadModelClick = {
-                            startActivity(Intent(this@WelcomeActivity, SelectPresetModelActivity::class.java))
-                        },
-                        onAppSettingsClick = {
-                            startActivity(Intent(this@WelcomeActivity, AppSettingsActivity::class.java))
-                        },
-                        onStartChatClick = {
-                            startActivity(Intent(this@WelcomeActivity, MainActivity::class.java))
+                        onModelClick = { key ->
+                            if (viewModel.loadModelAndStartChat(key)) {
+                                // Navigate to MainActivity (conversation) after loading model
+                                startActivity(Intent(this@SelectPresetModelActivity, MainActivity::class.java))
+                                finish()
+                            }
                         }
                     )
                 }
