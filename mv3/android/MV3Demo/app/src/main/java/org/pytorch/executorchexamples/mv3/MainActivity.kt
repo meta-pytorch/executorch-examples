@@ -35,6 +35,10 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -85,6 +89,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     fun MV3App() {
         var bitmap by remember { mutableStateOf<Bitmap?>(null) }
@@ -138,88 +143,149 @@ class MainActivity : ComponentActivity() {
         }
 
         MaterialTheme {
-            Surface(
-                modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.background
-            ) {
-                Column(
+            Scaffold(
+                bottomBar = {
+                    BottomAppBar(
+                        actions = {
+                            // Run Inference Button
+                            IconButton(
+                                onClick = {
+                                    if (!isLiveCameraMode) {
+                                        bitmap?.let { bmp ->
+                                            scope.launch {
+                                                isProcessing = true
+                                                val result = runInference(bmp)
+                                                classificationResults = result.first
+                                                inferenceTime = result.second
+                                                isProcessing = false
+                                            }
+                                        }
+                                    }
+                                },
+                                enabled = !isProcessing && modelReady && !isLiveCameraMode && bitmap != null,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.PlayArrow,
+                                    contentDescription = "Run Inference"
+                                )
+                            }
+
+                            // Pick Image Button
+                            IconButton(
+                                onClick = {
+                                    imagePickerLauncher.launch("image/*")
+                                },
+                                enabled = !isLiveCameraMode,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.PhotoLibrary,
+                                    contentDescription = "Pick Image"
+                                )
+                            }
+
+                            // Live Camera Button
+                            IconButton(
+                                onClick = {
+                                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                                        isLiveCameraMode = !isLiveCameraMode
+                                    } else {
+                                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                    }
+                                },
+                                modifier = Modifier.weight(1f),
+                                colors = IconButtonDefaults.iconButtonColors(
+                                    containerColor = if (isLiveCameraMode) MaterialTheme.colorScheme.secondaryContainer else androidx.compose.ui.graphics.Color.Transparent
+                                )
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.PhotoCamera,
+                                    contentDescription = "Live Camera"
+                                )
+                            }
+                        }
+                    )
+                }
+            ) { innerPadding ->
+                Surface(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .padding(innerPadding),
+                    color = MaterialTheme.colorScheme.background
                 ) {
-                    // Image display area (Image or Camera Preview)
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        if (isLiveCameraMode) {
-                            if (modelReady) {
-                                CameraPreview(
-                                    onFrameAnalyzed = { analyzedResults, time ->
-                                        classificationResults = analyzedResults
-                                        inferenceTime = time
-                                    }
-                                )
-                            } else {
-                                Text("Load model first to start camera")
-                            }
-                        } else {
-                            if (bitmap != null) {
-                                Image(
-                                    bitmap = bitmap!!.asImageBitmap(),
-                                    contentDescription = "Input Image",
-                                    modifier = Modifier.fillMaxSize()
-                                )
-                            } else {
-                                Text("Pick an image to start or use Live Camera", style = MaterialTheme.typography.bodyLarge)
-                            }
-                        }
-
-                        if (isProcessing || isDownloading) {
-                            CircularProgressIndicator()
-                        }
-                    }
-
-                    // Inference time
-                    inferenceTime?.let {
-                        Text(
-                            text = "Inference: $it ms",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-                    }
-
-                    // Results list
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(120.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        items(classificationResults) { result ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.SpaceBetween
-                            ) {
-                                Text(text = result.first, style = MaterialTheme.typography.bodyMedium)
-                                Text(text = String.format("%.2f", result.second), style = MaterialTheme.typography.bodyMedium)
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    // Buttons
                     Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        if (!modelReady) {
+                        // Image display area (Image or Camera Preview)
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (isLiveCameraMode) {
+                                if (modelReady) {
+                                    CameraPreview(
+                                        onFrameAnalyzed = { analyzedResults, time ->
+                                            classificationResults = analyzedResults
+                                            inferenceTime = time
+                                        }
+                                    )
+                                } else {
+                                    Text("Load model first to start camera")
+                                }
+                            } else {
+                                if (bitmap != null) {
+                                    Image(
+                                        bitmap = bitmap!!.asImageBitmap(),
+                                        contentDescription = "Input Image",
+                                        modifier = Modifier.fillMaxSize()
+                                    )
+                                } else {
+                                    Text("Pick an image to start or use Live Camera", style = MaterialTheme.typography.bodyLarge)
+                                }
+                            }
+
+                            if (isProcessing || isDownloading) {
+                                CircularProgressIndicator()
+                            }
+                        }
+
+                        // Inference time
+                        inferenceTime?.let {
+                            Text(
+                                text = "Inference: $it ms",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+                        }
+
+                        // Results list
+                        LazyColumn(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(120.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            items(classificationResults) { result ->
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(text = result.first, style = MaterialTheme.typography.bodyMedium)
+                                    Text(text = String.format("%.2f", result.second), style = MaterialTheme.typography.bodyMedium)
+                                }
+                            }
+                        }
+                        
+                        // Download button if needed
+                         if (!modelReady) {
+                             Spacer(modifier = Modifier.height(16.dp))
                             Button(
                                 onClick = {
                                     scope.launch {
@@ -240,68 +306,6 @@ class MainActivity : ComponentActivity() {
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(if (isDownloading) "Downloading..." else "Download Model")
-                            }
-                        } else {
-                            Button(
-                                onClick = { },
-                                enabled = false,
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(
-                                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            ) {
-                                Text("Model Loaded")
-                            }
-
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Button(
-                                    onClick = {
-                                        // Run single inference if not in live mode
-                                        if (!isLiveCameraMode) {
-                                            bitmap?.let { bmp ->
-                                                scope.launch {
-                                                    isProcessing = true
-                                                    val result = runInference(bmp)
-                                                    classificationResults = result.first
-                                                    inferenceTime = result.second
-                                                    isProcessing = false
-                                                }
-                                            } ?: showToast("Please pick an image first")
-                                        }
-                                    },
-                                    enabled = !isProcessing && modelReady && !isLiveCameraMode,
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text("Run")
-                                }
-
-                                Button(
-                                    onClick = {
-                                        imagePickerLauncher.launch("image/*")
-                                    },
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text("Pick")
-                                }
-                            }
-                            
-                            // Live Camera Button
-                            Button(
-                                onClick = {
-                                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-                                        isLiveCameraMode = !isLiveCameraMode
-                                    } else {
-                                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
-                                    }
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = if (isLiveCameraMode) ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary) else ButtonDefaults.buttonColors()
-                            ) {
-                                Text(if (isLiveCameraMode) "Stop Camera" else "Live Camera")
                             }
                         }
                     }
