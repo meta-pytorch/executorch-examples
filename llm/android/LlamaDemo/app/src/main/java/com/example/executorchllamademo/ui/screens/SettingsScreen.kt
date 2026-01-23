@@ -29,6 +29,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Refresh
@@ -95,11 +96,18 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(appColors.navBar)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(horizontal = 4.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            IconButton(onClick = onBackPressed) {
+                Icon(
+                    imageVector = Icons.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = appColors.textOnNavBar
+                )
+            }
             Text(
-                text = "Settings",
+                text = "Select a Model",
                 color = appColors.textOnNavBar,
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
@@ -114,15 +122,6 @@ fun SettingsScreen(
                 .verticalScroll(scrollState)
                 .padding(12.dp)
         ) {
-            // Appearance selector (first)
-            SettingsRow(
-                label = "Appearance",
-                value = viewModel.appSettings.appearanceMode.displayName,
-                onClick = { viewModel.showAppearanceDialog = true }
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
             // Backend selector
             SettingsRow(
                 label = "Backend",
@@ -321,18 +320,6 @@ fun SettingsScreen(
                         onReset = { viewModel.showResetUserPromptDialog = true }
                     )
                 }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Clear Chat button
-            Button(
-                onClick = { viewModel.confirmClearChat() },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(containerColor = BtnEnabled),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text("Clear Chat History", color = Color.White)
             }
 
             Spacer(modifier = Modifier.height(32.dp))

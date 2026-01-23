@@ -20,10 +20,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
-import com.example.executorchllamademo.ui.screens.LogsScreen
+import com.example.executorchllamademo.ui.screens.AppSettingsScreen
 import com.example.executorchllamademo.ui.theme.LlamaDemoTheme
 
-class LogsActivity : ComponentActivity() {
+class AppSettingsActivity : ComponentActivity() {
 
     private var appearanceMode by mutableStateOf(AppearanceMode.SYSTEM)
 
@@ -46,8 +46,11 @@ class LogsActivity : ComponentActivity() {
 
             LlamaDemoTheme(darkTheme = isDarkTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    LogsScreen(
-                        onBackClick = { finish() }
+                    AppSettingsScreen(
+                        onBackPressed = { finish() },
+                        onAppearanceChanged = { mode ->
+                            appearanceMode = mode
+                        }
                     )
                 }
             }

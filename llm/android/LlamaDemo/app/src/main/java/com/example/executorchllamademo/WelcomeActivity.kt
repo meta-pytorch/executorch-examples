@@ -8,6 +8,7 @@
 
 package com.example.executorchllamademo
 
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -20,10 +21,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
-import com.example.executorchllamademo.ui.screens.LogsScreen
+import com.example.executorchllamademo.ui.screens.WelcomeScreen
 import com.example.executorchllamademo.ui.theme.LlamaDemoTheme
 
-class LogsActivity : ComponentActivity() {
+class WelcomeActivity : ComponentActivity() {
 
     private var appearanceMode by mutableStateOf(AppearanceMode.SYSTEM)
 
@@ -46,8 +47,16 @@ class LogsActivity : ComponentActivity() {
 
             LlamaDemoTheme(darkTheme = isDarkTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    LogsScreen(
-                        onBackClick = { finish() }
+                    WelcomeScreen(
+                        onLoadModelClick = {
+                            startActivity(Intent(this@WelcomeActivity, SettingsActivity::class.java))
+                        },
+                        onAppSettingsClick = {
+                            startActivity(Intent(this@WelcomeActivity, AppSettingsActivity::class.java))
+                        },
+                        onStartChatClick = {
+                            startActivity(Intent(this@WelcomeActivity, MainActivity::class.java))
+                        }
                     )
                 }
             }

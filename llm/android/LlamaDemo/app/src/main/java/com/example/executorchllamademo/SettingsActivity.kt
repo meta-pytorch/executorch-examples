@@ -8,6 +8,7 @@
 
 package com.example.executorchllamademo
 
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -57,7 +58,9 @@ class SettingsActivity : ComponentActivity() {
                             finish()
                         },
                         onLoadModel = {
-                            // Settings are saved by viewModel.confirmLoadModel()
+                            // Navigate to MainActivity (conversation) after loading model
+                            startActivity(Intent(this@SettingsActivity, MainActivity::class.java))
+                            finish()
                         },
                         onAppearanceChanged = { mode ->
                             appearanceMode = mode
