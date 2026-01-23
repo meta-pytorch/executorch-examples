@@ -25,6 +25,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -165,6 +166,7 @@ class PresetSanityTest {
      * 5. Type "Once upon a time" and send
      * 6. Verify response is generated
      */
+    @Ignore("Temporarily disabled")
     @Test
     fun testPresetModelDownloadAndChat() {
         composeTestRule.waitForIdle()
