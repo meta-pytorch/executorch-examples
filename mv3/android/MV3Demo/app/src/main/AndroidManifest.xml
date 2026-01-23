@@ -3,10 +3,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     package="org.pytorch.executorchexamples.mv3">
 
-    <uses-sdk android:minSdkVersion="19"
-          android:targetSdkVersion="34"
-          android:maxSdkVersion="40" />
-
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -17,7 +13,6 @@
         android:label="MV3 Demo"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
-        android:extractNativeLibs="true"
         tools:targetApi="34">
 
         <activity
