@@ -8,8 +8,11 @@
 
 package org.pytorch.executorchexamples.mv3
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Matrix
 import android.os.Build
 import android.os.Bundle
 import android.os.SystemClock
@@ -22,6 +25,12 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageProxy
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -32,7 +41,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -43,11 +55,12 @@ import java.io.FileOutputStream
 import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
+import java.util.concurrent.Executors
 import kotlin.math.exp
 
 class MainActivity : ComponentActivity() {
     companion object {
-        private const val MODEL_URL = "https://ossci-android.s3.amazonaws.com/executorch/models/snapshot-20260116/mv3_xnnpack_fp32.pte" // TODO: Update with real MV3 URL if different
+        private const val MODEL_URL = "https://ossci-android.s3.amazonaws.com/executorch/models/snapshot-20260116/mv3_xnnpack_fp32.pte"
         private const val MODEL_FILENAME = "mv3.pte"
     }
 
@@ -80,9 +93,21 @@ class MainActivity : ComponentActivity() {
         var modelReady by remember { mutableStateOf(false) }
         var classificationResults by remember { mutableStateOf<List<Pair<String, Float>>>(emptyList()) }
         var inferenceTime by remember { mutableStateOf<Long?>(null) }
+        var isLiveCameraMode by remember { mutableStateOf(false) }
         
         val scope = rememberCoroutineScope()
         val context = LocalContext.current
+
+        // Permission launcher for Camera
+        val cameraPermissionLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted: Boolean ->
+            if (isGranted) {
+                isLiveCameraMode = true
+            } else {
+                showToast("Camera permission required for Live Camera")
+            }
+        }
 
         LaunchedEffect(Unit) {
             loadModelOrShowDownloadButton { ready ->
@@ -101,6 +126,7 @@ class MainActivity : ComponentActivity() {
                         bitmap = Bitmap.createScaledBitmap(selectedBitmap, 224, 224, true)
                         classificationResults = emptyList()
                         inferenceTime = null
+                        isLiveCameraMode = false 
                         showToast("Image loaded")
                     }
                     inputStream?.close()
@@ -122,21 +148,34 @@ class MainActivity : ComponentActivity() {
                         .padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Image display
+                    // Image display area (Image or Camera Preview)
                     Box(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxWidth(),
                         contentAlignment = Alignment.Center
                     ) {
-                        if (bitmap != null) {
-                            Image(
-                                bitmap = bitmap!!.asImageBitmap(),
-                                contentDescription = "Input Image",
-                                modifier = Modifier.fillMaxSize()
-                            )
+                        if (isLiveCameraMode) {
+                            if (modelReady) {
+                                CameraPreview(
+                                    onFrameAnalyzed = { analyzedResults, time ->
+                                        classificationResults = analyzedResults
+                                        inferenceTime = time
+                                    }
+                                )
+                            } else {
+                                Text("Load model first to start camera")
+                            }
                         } else {
-                            Text("Pick an image to start", style = MaterialTheme.typography.bodyLarge)
+                            if (bitmap != null) {
+                                Image(
+                                    bitmap = bitmap!!.asImageBitmap(),
+                                    contentDescription = "Input Image",
+                                    modifier = Modifier.fillMaxSize()
+                                )
+                            } else {
+                                Text("Pick an image to start or use Live Camera", style = MaterialTheme.typography.bodyLarge)
+                            }
                         }
 
                         if (isProcessing || isDownloading) {
@@ -221,17 +260,20 @@ class MainActivity : ComponentActivity() {
                             ) {
                                 Button(
                                     onClick = {
-                                        bitmap?.let { bmp ->
-                                            scope.launch {
-                                                isProcessing = true
-                                                val result = runInference(bmp)
-                                                classificationResults = result.first
-                                                inferenceTime = result.second
-                                                isProcessing = false
-                                            }
-                                        } ?: showToast("Please pick an image first")
+                                        // Run single inference if not in live mode
+                                        if (!isLiveCameraMode) {
+                                            bitmap?.let { bmp ->
+                                                scope.launch {
+                                                    isProcessing = true
+                                                    val result = runInference(bmp)
+                                                    classificationResults = result.first
+                                                    inferenceTime = result.second
+                                                    isProcessing = false
+                                                }
+                                            } ?: showToast("Please pick an image first")
+                                        }
                                     },
-                                    enabled = !isProcessing && modelReady,
+                                    enabled = !isProcessing && modelReady && !isLiveCameraMode,
                                     modifier = Modifier.weight(1f)
                                 ) {
                                     Text("Run")
@@ -246,10 +288,138 @@ class MainActivity : ComponentActivity() {
                                     Text("Pick")
                                 }
                             }
+                            
+                            // Live Camera Button
+                            Button(
+                                onClick = {
+                                    if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
+                                        isLiveCameraMode = !isLiveCameraMode
+                                    } else {
+                                        cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = if (isLiveCameraMode) ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary) else ButtonDefaults.buttonColors()
+                            ) {
+                                Text(if (isLiveCameraMode) "Stop Camera" else "Live Camera")
+                            }
                         }
                     }
                 }
             }
+        }
+    }
+
+    @Composable
+    fun CameraPreview(
+        onFrameAnalyzed: (List<Pair<String, Float>>, Long) -> Unit
+    ) {
+        val lifecycleOwner = LocalLifecycleOwner.current
+        val context = LocalContext.current
+        val cameraProviderFuture = remember { ProcessCameraProvider.getInstance(context) }
+        
+        AndroidView(
+            factory = { ctx ->
+                val previewView = PreviewView(ctx)
+                val executor = Executors.newSingleThreadExecutor()
+                
+                cameraProviderFuture.addListener({
+                    val cameraProvider = cameraProviderFuture.get()
+                    val preview = Preview.Builder().build().also {
+                        it.setSurfaceProvider(previewView.surfaceProvider)
+                    }
+
+                    val imageAnalyzer = ImageAnalysis.Builder()
+                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                        .build()
+                        .also {
+                            it.setAnalyzer(executor) { imageProxy ->
+                                processImageProxy(imageProxy, onFrameAnalyzed)
+                            }
+                        }
+
+                    val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
+                    try {
+                        cameraProvider.unbindAll()
+                        cameraProvider.bindToLifecycle(
+                            lifecycleOwner,
+                            cameraSelector,
+                            preview,
+                            imageAnalyzer
+                        )
+                    } catch (exc: Exception) {
+                        Log.e("MainActivity", "Use case binding failed", exc)
+                    }
+                }, ContextCompat.getMainExecutor(ctx))
+                
+                previewView
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+
+    private var lastAnalysisTime = 0L
+    private fun processImageProxy(
+        imageProxy: ImageProxy, 
+        onFrameAnalyzed: (List<Pair<String, Float>>, Long) -> Unit
+    ) {
+        val currentTime = System.currentTimeMillis()
+        if (currentTime - lastAnalysisTime < 100) { // Throttle to ~100ms
+            imageProxy.close()
+            return
+        }
+        lastAnalysisTime = currentTime
+
+        try {
+            val rotation = imageProxy.imageInfo.rotationDegrees
+            val bitmap = imageProxy.toBitmap() // requires androidx.camera:camera-core:1.3.0+
+            
+            // Rotate and crop/scale to 224x224
+            val matrix = Matrix().apply {
+                postRotate(rotation.toFloat())
+            }
+            val rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true)
+            val scaledBitmap = Bitmap.createScaledBitmap(rotatedBitmap, 224, 224, true)
+
+            // Run inference
+            val inputTensor = TensorImageUtils.bitmapToFloat32Tensor(
+                scaledBitmap,
+                TensorImageUtils.TORCHVISION_NORM_MEAN_RGB,
+                TensorImageUtils.TORCHVISION_NORM_STD_RGB
+            )
+
+            val loadedModule = module
+            if (loadedModule == null) {
+                imageProxy.close()
+                return
+            }
+
+            val startTime = SystemClock.elapsedRealtime()
+            val outputTensor = loadedModule.forward(EValue.from(inputTensor))[0].toTensor()
+            val inferenceTime = SystemClock.elapsedRealtime() - startTime
+
+            val scores = outputTensor.dataAsFloatArray
+            val top3 = getTopK(scores, 3)
+
+            val results = top3.map { (index, score) ->
+                val label = if (index in ImageNetClasses.IMAGENET_CLASSES.indices) {
+                    ImageNetClasses.IMAGENET_CLASSES[index]
+                } else {
+                    "Unknown($index)"
+                }
+                label to score
+            }
+            
+            // Post result to UI thread
+            runOnUiThread {
+                onFrameAnalyzed(results, inferenceTime)
+            }
+            
+        } catch (e: Exception) {
+            Log.e("MainActivity", "Image analysis failed", e)
+        } finally {
+            imageProxy.close()
         }
     }
 
@@ -338,9 +508,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun getTopK(scores: FloatArray, k: Int): List<Pair<Int, Float>> {
-        // Apply softmax first if needed, but for ranking, raw scores are fine. 
-        // Showing raw scores might not be ideal, but user asked for "scores".
-        // Usually softmax is better for display.
         val probabilities = softmax(scores)
         
         return probabilities.withIndex()
