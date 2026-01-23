@@ -92,16 +92,11 @@ adb logcat > /tmp/logcat.txt &
 LOGCAT_PID=$!
 
 echo "=== Starting Gradle ==="
+GRADLE_ARGS="-PskipModelDownload=true -PmodelPreset=$MODEL_PRESET"
 if [ "$USE_LOCAL_AAR" = "true" ]; then
-  ./gradlew connectedCheck \
-    -PskipModelDownload=true \
-    -PmodelPreset="$MODEL_PRESET" \
-    -PuseLocalAar=true
-else
-  ./gradlew connectedCheck \
-    -PskipModelDownload=true \
-    -PmodelPreset="$MODEL_PRESET"
+  GRADLE_ARGS="$GRADLE_ARGS -PuseLocalAar=true"
 fi
+./gradlew connectedCheck $GRADLE_ARGS
 TEST_EXIT_CODE=$?
 
 echo "=== Model directory after Gradle ==="
