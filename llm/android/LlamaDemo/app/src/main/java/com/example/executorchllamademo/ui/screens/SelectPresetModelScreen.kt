@@ -95,25 +95,33 @@ fun SelectPresetModelScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                text = "Select a model to download and use",
-                fontSize = 14.sp,
-                color = appColors.settingsSecondaryText
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            availableModels.forEach { (key, modelInfo) ->
-                val state = modelStates[key] ?: ModelDownloadState()
-                val isReady = state.isModelDownloaded && state.isTokenizerDownloaded
-
-                PresetModelCard(
-                    modelInfo = modelInfo,
-                    state = state,
-                    isReady = isReady,
-                    onDownloadClick = { onDownloadClick(key) },
-                    onCardClick = { if (isReady) onModelClick(key) }
+            if (availableModels.isEmpty()) {
+                Text(
+                    text = "No preset models available. Stay tuned!",
+                    fontSize = 14.sp,
+                    color = appColors.settingsSecondaryText
                 )
+            } else {
+                Text(
+                    text = "Select a model to download and use",
+                    fontSize = 14.sp,
+                    color = appColors.settingsSecondaryText
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                availableModels.forEach { (key, modelInfo) ->
+                    val state = modelStates[key] ?: ModelDownloadState()
+                    val isReady = state.isModelDownloaded && state.isTokenizerDownloaded
+
+                    PresetModelCard(
+                        modelInfo = modelInfo,
+                        state = state,
+                        isReady = isReady,
+                        onDownloadClick = { onDownloadClick(key) },
+                        onCardClick = { if (isReady) onModelClick(key) }
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

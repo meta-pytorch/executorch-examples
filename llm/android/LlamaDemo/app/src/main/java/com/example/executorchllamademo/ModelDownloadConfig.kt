@@ -28,14 +28,6 @@ data class ModelInfo(
 object ModelDownloadConfig {
 
     private val AVAILABLE_MODELS: LinkedHashMap<String, ModelInfo> = linkedMapOf(
-        "stories" to ModelInfo(
-            displayName = "Stories 110M",
-            modelUrl = "https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114/stories110M.pte",
-            modelFilename = "stories110M.pte",
-            tokenizerUrl = "https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114/tokenizer.model",
-            tokenizerFilename = "tokenizer.model",
-            modelType = ModelType.LLAMA_3
-        )
     )
 
     fun getAvailableModels(): Map<String, ModelInfo> = AVAILABLE_MODELS
