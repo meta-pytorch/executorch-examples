@@ -191,4 +191,29 @@ class SelectPresetModelViewModel : ViewModel() {
         demoSharedPreferences?.saveModuleSettings(moduleSettings)
         return true
     }
+
+    fun deleteModel(key: String) {
+        val modelInfo = availableModels[key] ?: return
+        val modelsDir = getModelsDirectory()
+
+        val modelFile = File(modelsDir, modelInfo.modelFilename)
+        val tokenizerFile = File(modelsDir, modelInfo.tokenizerFilename)
+
+        // Delete both files
+        if (modelFile.exists()) {
+            modelFile.delete()
+        }
+        if (tokenizerFile.exists()) {
+            tokenizerFile.delete()
+        }
+
+        // Update state
+        modelStates[key] = ModelDownloadState(
+            isModelDownloaded = false,
+            isTokenizerDownloaded = false,
+            isDownloading = false,
+            downloadProgress = 0f,
+            downloadError = null
+        )
+    }
 }

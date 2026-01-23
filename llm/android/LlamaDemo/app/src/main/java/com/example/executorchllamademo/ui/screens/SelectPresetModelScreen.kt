@@ -26,6 +26,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -53,6 +54,7 @@ fun SelectPresetModelScreen(
     modelStates: Map<String, ModelDownloadState>,
     onBackPressed: () -> Unit,
     onDownloadClick: (String) -> Unit,
+    onDeleteClick: (String) -> Unit,
     onModelClick: (String) -> Unit
 ) {
     val appColors = LocalAppColors.current
@@ -119,6 +121,7 @@ fun SelectPresetModelScreen(
                         state = state,
                         isReady = isReady,
                         onDownloadClick = { onDownloadClick(key) },
+                        onDeleteClick = { onDeleteClick(key) },
                         onCardClick = { if (isReady) onModelClick(key) }
                     )
                 }
@@ -135,6 +138,7 @@ private fun PresetModelCard(
     state: ModelDownloadState,
     isReady: Boolean,
     onDownloadClick: () -> Unit,
+    onDeleteClick: () -> Unit,
     onCardClick: () -> Unit
 ) {
     val appColors = LocalAppColors.current
@@ -190,12 +194,25 @@ private fun PresetModelCard(
                         strokeWidth = 3.dp
                     )
                 } else if (isReady) {
-                    Icon(
-                        imageVector = Icons.Filled.Check,
-                        contentDescription = "Ready",
-                        tint = Color(0xFF4CAF50),
-                        modifier = Modifier.size(36.dp)
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Check,
+                            contentDescription = "Ready",
+                            tint = Color(0xFF4CAF50),
+                            modifier = Modifier.size(36.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        IconButton(onClick = onDeleteClick) {
+                            Icon(
+                                imageVector = Icons.Filled.Delete,
+                                contentDescription = "Delete",
+                                tint = Color.Red,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
                 } else {
                     Button(
                         onClick = onDownloadClick,

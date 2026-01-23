@@ -63,6 +63,9 @@ class SelectPresetModelActivity : ComponentActivity() {
                         onDownloadClick = { key ->
                             viewModel.downloadModel(key)
                         },
+                        onDeleteClick = { key ->
+                            viewModel.deleteModel(key)
+                        },
                         onModelClick = { key ->
                             if (viewModel.loadModelAndStartChat(key)) {
                                 // Navigate to MainActivity (conversation) after loading model
