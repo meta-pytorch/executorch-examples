@@ -49,7 +49,7 @@ class WelcomeActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     WelcomeScreen(
                         onLoadModelClick = {
-                            startActivity(Intent(this@WelcomeActivity, SettingsActivity::class.java))
+                            startActivity(Intent(this@WelcomeActivity, ModelSettingsActivity::class.java))
                         },
                         onAppSettingsClick = {
                             startActivity(Intent(this@WelcomeActivity, AppSettingsActivity::class.java))

@@ -22,7 +22,7 @@
             android:name=".LogsActivity"
             android:exported="false" />
         <activity
-            android:name=".SettingsActivity"
+            android:name=".ModelSettingsActivity"
             android:exported="false" />
         <activity
             android:name=".AppSettingsActivity"

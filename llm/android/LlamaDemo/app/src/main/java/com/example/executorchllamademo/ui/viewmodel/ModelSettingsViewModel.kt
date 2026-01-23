@@ -17,12 +17,12 @@ import com.example.executorchllamademo.AppearanceMode
 import com.example.executorchllamademo.AppSettings
 import com.example.executorchllamademo.BackendType
 import com.example.executorchllamademo.DemoSharedPreferences
+import com.example.executorchllamademo.ModelSettingsActivity
 import com.example.executorchllamademo.ModelType
 import com.example.executorchllamademo.ModuleSettings
 import com.example.executorchllamademo.PromptFormat
-import com.example.executorchllamademo.SettingsActivity
 
-class SettingsViewModel : ViewModel() {
+class ModelSettingsViewModel : ViewModel() {
 
     var moduleSettings by mutableStateOf(ModuleSettings())
         private set
@@ -71,9 +71,9 @@ class SettingsViewModel : ViewModel() {
     }
 
     fun refreshFileLists() {
-        modelFiles = SettingsActivity.listLocalFile("/data/local/tmp/llama/", arrayOf(".pte"))
-        tokenizerFiles = SettingsActivity.listLocalFile("/data/local/tmp/llama/", arrayOf(".bin", ".json", ".model"))
-        dataPathFiles = SettingsActivity.listLocalFile("/data/local/tmp/llama/", arrayOf(".ptd"))
+        modelFiles = ModelSettingsActivity.listLocalFile("/data/local/tmp/llama/", arrayOf(".pte"))
+        tokenizerFiles = ModelSettingsActivity.listLocalFile("/data/local/tmp/llama/", arrayOf(".bin", ".json", ".model"))
+        dataPathFiles = ModelSettingsActivity.listLocalFile("/data/local/tmp/llama/", arrayOf(".ptd"))
     }
 
     // Backend selection

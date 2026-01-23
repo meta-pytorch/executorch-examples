@@ -85,7 +85,7 @@ class MainActivity : ComponentActivity() {
                             finish()
                         },
                         onSettingsClick = {
-                            startActivity(Intent(this@MainActivity, SettingsActivity::class.java))
+                            startActivity(Intent(this@MainActivity, ModelSettingsActivity::class.java))
                         },
                         onLogsClick = {
                             startActivity(Intent(this@MainActivity, LogsActivity::class.java))
@@ -106,7 +106,7 @@ class MainActivity : ComponentActivity() {
                                 launchCamera()
                             }
                         },
-                        audioFiles = SettingsActivity.listLocalFile("/data/local/tmp/audio/", arrayOf(".bin")).toList(),
+                        audioFiles = ModelSettingsActivity.listLocalFile("/data/local/tmp/audio/", arrayOf(".bin")).toList(),
                         onAudioFileSelected = { audioFile ->
                             chatViewModel?.setAudioFile(audioFile)
                         }

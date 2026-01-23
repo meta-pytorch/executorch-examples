@@ -22,12 +22,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.executorchllamademo.ui.screens.SettingsScreen
+import com.example.executorchllamademo.ui.screens.ModelSettingsScreen
 import com.example.executorchllamademo.ui.theme.LlamaDemoTheme
-import com.example.executorchllamademo.ui.viewmodel.SettingsViewModel
+import com.example.executorchllamademo.ui.viewmodel.ModelSettingsViewModel
 import java.io.File
 
-class SettingsActivity : ComponentActivity() {
+class ModelSettingsActivity : ComponentActivity() {
 
     private var appearanceMode by mutableStateOf(AppearanceMode.SYSTEM)
 
@@ -50,8 +50,8 @@ class SettingsActivity : ComponentActivity() {
 
             LlamaDemoTheme(darkTheme = isDarkTheme) {
                 Surface(modifier = Modifier.fillMaxSize()) {
-                    val viewModel: SettingsViewModel = viewModel()
-                    SettingsScreen(
+                    val viewModel: ModelSettingsViewModel = viewModel()
+                    ModelSettingsScreen(
                         viewModel = viewModel,
                         onBackPressed = {
                             viewModel.saveSettings()
@@ -59,7 +59,7 @@ class SettingsActivity : ComponentActivity() {
                         },
                         onLoadModel = {
                             // Navigate to MainActivity (conversation) after loading model
-                            startActivity(Intent(this@SettingsActivity, MainActivity::class.java))
+                            startActivity(Intent(this@ModelSettingsActivity, MainActivity::class.java))
                             finish()
                         },
                         onAppearanceChanged = { mode ->
