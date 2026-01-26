@@ -176,7 +176,7 @@ class MainActivity : ComponentActivity() {
                                 onClick = {
                                     imagePickerLauncher.launch("image/*")
                                 },
-                                enabled = !isLiveCameraMode,
+                                enabled = !isLiveCameraMode && modelReady,
                                 modifier = Modifier.weight(1f)
                             ) {
                                 Icon(
@@ -194,6 +194,7 @@ class MainActivity : ComponentActivity() {
                                         cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
                                     }
                                 },
+                                enabled = modelReady,
                                 modifier = Modifier.weight(1f),
                                 colors = IconButtonDefaults.iconButtonColors(
                                     containerColor = if (isLiveCameraMode) MaterialTheme.colorScheme.secondaryContainer else androidx.compose.ui.graphics.Color.Transparent
@@ -246,7 +247,11 @@ class MainActivity : ComponentActivity() {
                                         modifier = Modifier.fillMaxSize()
                                     )
                                 } else {
-                                    Text("Pick an image to start or use Live Camera", style = MaterialTheme.typography.bodyLarge)
+                                    if (modelReady) {
+                                        Text("Pick an image to start or use Live Camera", style = MaterialTheme.typography.bodyLarge)
+                                    } else {
+                                        Text("Please download the model to start", style = MaterialTheme.typography.bodyLarge)
+                                    }
                                 }
                             }
 
