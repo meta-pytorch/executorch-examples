@@ -8,18 +8,58 @@
 
 package com.example.executorchllamademo
 
-enum class ModelType(private vararg val patterns: String) {
-    GEMMA_3("gemma"),
-    LLAMA_3("llama"),
-    LLAVA_1_5("llava"),
-    LLAMA_GUARD_3("llama_guard", "llama-guard", "llamaguard"),
-    QWEN_3("qwen"),
-    VOXTRAL("voxtral");
+/**
+ * Defines the media capabilities supported by a model.
+ */
+enum class MediaCapability {
+    TEXT,      // Text-only models
+    IMAGE,     // Image input support
+    AUDIO      // Audio input support
+}
+
+enum class ModelType(
+    private val patterns: Array<String>,
+    val mediaCapabilities: Set<MediaCapability>
+) {
+    GEMMA_3(
+        arrayOf("gemma"),
+        setOf(MediaCapability.TEXT, MediaCapability.IMAGE)
+    ),
+    LLAMA_3(
+        arrayOf("llama"),
+        setOf(MediaCapability.TEXT)
+    ),
+    LLAVA_1_5(
+        arrayOf("llava"),
+        setOf(MediaCapability.TEXT, MediaCapability.IMAGE)
+    ),
+    LLAMA_GUARD_3(
+        arrayOf("llama_guard", "llama-guard", "llamaguard"),
+        setOf(MediaCapability.TEXT)
+    ),
+    QWEN_3(
+        arrayOf("qwen"),
+        setOf(MediaCapability.TEXT)
+    ),
+    VOXTRAL(
+        arrayOf("voxtral"),
+        setOf(MediaCapability.TEXT, MediaCapability.AUDIO)
+    );
 
     /**
-     * Returns a copy of the file name patterns associated with this model type.
+     * Checks if this model supports image input.
      */
-    fun getPatterns(): Array<String> = patterns.toList().toTypedArray()
+    fun supportsImage(): Boolean = mediaCapabilities.contains(MediaCapability.IMAGE)
+
+    /**
+     * Checks if this model supports audio input.
+     */
+    fun supportsAudio(): Boolean = mediaCapabilities.contains(MediaCapability.AUDIO)
+
+    /**
+     * Checks if this model is text-only (no image or audio support).
+     */
+    fun isTextOnly(): Boolean = mediaCapabilities.size == 1 && mediaCapabilities.contains(MediaCapability.TEXT)
 
     /**
      * Checks if the given lowercase filename contains any of this model type's patterns.

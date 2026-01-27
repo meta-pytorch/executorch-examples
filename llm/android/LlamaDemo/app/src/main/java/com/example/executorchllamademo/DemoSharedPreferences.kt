@@ -20,6 +20,10 @@ class DemoSharedPreferences(private val context: Context) {
         Context.MODE_PRIVATE
     )
 
+    private val gson = Gson()
+
+    // --- Messages ---
+
     fun getSavedMessages(): String {
         return sharedPreferences.getString(
             context.getString(R.string.saved_messages_json_key),
@@ -27,10 +31,9 @@ class DemoSharedPreferences(private val context: Context) {
         ) ?: ""
     }
 
-    fun addMessages(messageAdapter: MessageAdapter) {
+    fun addMessages(messages: List<Message>) {
         val editor = sharedPreferences.edit()
-        val gson = Gson()
-        val msgJSON = gson.toJson(messageAdapter.savedMessages)
+        val msgJSON = gson.toJson(messages)
         editor.putString(context.getString(R.string.saved_messages_json_key), msgJSON)
         editor.apply()
     }
@@ -41,24 +44,50 @@ class DemoSharedPreferences(private val context: Context) {
         editor.apply()
     }
 
-    fun addSettings(settingsFields: SettingsFields) {
+    // --- App Settings (app-wide, e.g., appearance) ---
+
+    fun getAppSettings(): AppSettings {
+        val json = sharedPreferences.getString(PREF_KEY_APP_SETTINGS, null)
+        return if (json.isNullOrEmpty()) {
+            AppSettings()
+        } else {
+            try {
+                gson.fromJson(json, AppSettings::class.java) ?: AppSettings()
+            } catch (e: Exception) {
+                AppSettings()
+            }
+        }
+    }
+
+    fun saveAppSettings(settings: AppSettings) {
         val editor = sharedPreferences.edit()
-        val gson = Gson()
-        val settingsJSON = gson.toJson(settingsFields)
-        editor.putString(context.getString(R.string.settings_json_key), settingsJSON)
+        editor.putString(PREF_KEY_APP_SETTINGS, gson.toJson(settings))
         editor.apply()
     }
 
-    fun getSettings(): String {
-        return sharedPreferences.getString(
-            context.getString(R.string.settings_json_key),
-            ""
-        ) ?: ""
+    // --- Module Settings (per-model configuration) ---
+
+    fun getModuleSettings(): ModuleSettings {
+        val json = sharedPreferences.getString(PREF_KEY_MODULE_SETTINGS, null)
+        return if (json.isNullOrEmpty()) {
+            ModuleSettings()
+        } else {
+            try {
+                gson.fromJson(json, ModuleSettings::class.java) ?: ModuleSettings()
+            } catch (e: Exception) {
+                ModuleSettings()
+            }
+        }
+    }
+
+    fun saveModuleSettings(settings: ModuleSettings) {
+        val editor = sharedPreferences.edit()
+        editor.putString(PREF_KEY_MODULE_SETTINGS, gson.toJson(settings))
+        editor.apply()
     }
 
     fun saveLogs() {
         val editor = sharedPreferences.edit()
-        val gson = Gson()
         // Create a copy to avoid ConcurrentModificationException if logs are added during serialization
         val logsCopy = ArrayList(ETLogging.getInstance().getLogs())
         val msgJSON = gson.toJson(logsCopy)
@@ -80,8 +109,12 @@ class DemoSharedPreferences(private val context: Context) {
         if (logsJSONString.isNullOrEmpty()) {
             return ArrayList()
         }
-        val gson = Gson()
         val type = object : TypeToken<ArrayList<AppLog>>() {}.type
         return gson.fromJson(logsJSONString, type) ?: ArrayList()
+    }
+
+    companion object {
+        private const val PREF_KEY_APP_SETTINGS = "app_settings_json"
+        private const val PREF_KEY_MODULE_SETTINGS = "module_settings_json"
     }
 }

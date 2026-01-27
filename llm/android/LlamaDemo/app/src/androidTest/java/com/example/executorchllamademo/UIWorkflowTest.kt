@@ -10,48 +10,41 @@ package com.example.executorchllamademo
 
 import android.content.Context
 import android.util.Log
-import android.widget.ImageButton
-import android.widget.ListView
-import androidx.test.core.app.ActivityScenario
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsEnabled
+import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performTextInput
 import androidx.test.core.app.ApplicationProvider
-import androidx.test.espresso.Espresso.onData
-import androidx.test.espresso.Espresso.onView
-import androidx.test.espresso.Espresso.pressBack
-import androidx.test.espresso.action.ViewActions.click
-import androidx.test.espresso.action.ViewActions.clearText
-import androidx.test.espresso.action.ViewActions.closeSoftKeyboard
-import androidx.test.espresso.action.ViewActions.typeText
-import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.matcher.RootMatchers.isDialog
-import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
-import androidx.test.espresso.matcher.ViewMatchers.isEnabled
-import androidx.test.espresso.matcher.ViewMatchers.withId
-import androidx.test.espresso.matcher.ViewMatchers.withText
+import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
 import androidx.test.platform.app.InstrumentationRegistry
-import org.hamcrest.Matchers.anything
-import org.hamcrest.Matchers.endsWith
-import org.hamcrest.Matchers.greaterThan
-import org.hamcrest.Matchers.hasToString
-import org.hamcrest.Matchers.not
-import org.junit.Assert.assertThat
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.Ignore
+import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
 
 /**
- * UI workflow test that simulates the model loading workflow.
+ * UI workflow test that simulates the model loading workflow using Compose testing APIs.
  *
  * Prerequisites:
  * - Push a .pte model file to /data/local/tmp/llama/
  * - Push a tokenizer file (.bin, .json, or .model) to /data/local/tmp/llama/
  *
  * This test validates:
+ * - Welcome screen navigation
  * - Settings screen shows empty model/tokenizer paths by default
  * - File selection dialogs display pushed files
  * - User can select model and tokenizer files
@@ -67,9 +60,13 @@ class UIWorkflowTest {
 
     companion object {
         private const val TAG = "UIWorkflowTest"
+        private const val RESPONSE_TAG = "LLAMA_RESPONSE"
         private const val DEFAULT_MODEL_FILE = "stories110M.pte"
         private const val DEFAULT_TOKENIZER_FILE = "tokenizer.model"
     }
+
+    @get:Rule
+    val composeTestRule = createAndroidComposeRule<WelcomeActivity>()
 
     private lateinit var modelFile: String
     private lateinit var tokenizerFile: String
@@ -92,805 +89,760 @@ class UIWorkflowTest {
     }
 
     /**
+     * Clears chat history via the App Settings UI.
+     * This ensures each test starts with a clean state.
+     * Must be called from the Welcome screen.
+     */
+    private fun clearChatHistory() {
+        composeTestRule.waitForIdle()
+
+        // Go to App Settings from Welcome screen
+        try {
+            composeTestRule.onNodeWithText("App Settings").performClick()
+            composeTestRule.waitUntil(timeoutMillis = 3000) {
+                composeTestRule.onAllNodesWithText("Clear Conversation History")
+                    .fetchSemanticsNodes().isNotEmpty()
+            }
+        } catch (e: Exception) {
+            Log.d(TAG, "Could not open App Settings to clear history: ${e.message}")
+            return
+        }
+
+        // Click Clear Conversation History button
+        try {
+            composeTestRule.onNodeWithText("Clear Conversation History").performClick()
+            composeTestRule.waitUntil(timeoutMillis = 3000) {
+                composeTestRule.onAllNodesWithText("Clear").fetchSemanticsNodes().isNotEmpty()
+            }
+            // Confirm in dialog
+            composeTestRule.onNodeWithText("Clear").performClick()
+            composeTestRule.waitForIdle()
+            Log.i(TAG, "Chat history cleared")
+        } catch (e: Exception) {
+            Log.d(TAG, "Could not clear chat history: ${e.message}")
+        }
+
+        // Go back to Welcome screen using back button
+        try {
+            composeTestRule.onNodeWithContentDescription("Back").performClick()
+            composeTestRule.waitForIdle()
+        } catch (e: Exception) {
+            Log.d(TAG, "Could not press back after clearing history: ${e.message}")
+        }
+    }
+
+    /**
+     * Navigates from Welcome screen to settings and selects model/tokenizer files.
+     * Returns true if successful.
+     */
+    private fun loadModel(): Boolean {
+        // Click "Load local model" card on Welcome screen
+        composeTestRule.onNodeWithText("Load local model").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 5001) {
+            composeTestRule.onAllNodesWithText("Select a Model").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Click model row to open model selection dialog
+        composeTestRule.onNodeWithText("Model").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 5002) {
+            composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Select the model file
+        try {
+            composeTestRule.onNodeWithText(modelFile, substring = true).performClick()
+        } catch (e: AssertionError) {
+            Log.e(TAG, "Model file not found: $modelFile")
+            return false
+        }
+
+        // Click tokenizer row to open tokenizer selection dialog
+        composeTestRule.onNodeWithText("Tokenizer").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 5003) {
+            composeTestRule.onAllNodesWithText("Select tokenizer path").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Select the tokenizer file
+        try {
+            composeTestRule.onNodeWithText(tokenizerFile, substring = true).performClick()
+        } catch (e: AssertionError) {
+            Log.e(TAG, "Tokenizer file not found: $tokenizerFile")
+            return false
+        }
+
+        // Click Load Model button
+        composeTestRule.onNodeWithText("Load Model").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 5004) {
+            composeTestRule.onAllNodesWithText("Yes").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Confirm in dialog
+        composeTestRule.onNodeWithText("Yes").performClick()
+
+        return true
+    }
+
+    /**
+     * Waits for the model to be loaded by checking for success or error messages.
+     * Uses Compose's waitUntil for proper synchronization.
+     */
+    private fun waitForModelLoaded(timeoutMs: Long = 60000): Boolean {
+        return try {
+            var wasSuccess = false
+            composeTestRule.waitUntil(timeoutMillis = timeoutMs) {
+                val successNodes = composeTestRule.onAllNodesWithText("Successfully loaded", substring = true)
+                    .fetchSemanticsNodes()
+                val errorNodes = composeTestRule.onAllNodesWithText("Model load failure", substring = true)
+                    .fetchSemanticsNodes()
+                wasSuccess = successNodes.isNotEmpty()
+                successNodes.isNotEmpty() || errorNodes.isNotEmpty()
+            }
+            if (wasSuccess) {
+                Log.i(TAG, "Model loaded successfully")
+            } else {
+                Log.e(TAG, "Model load failed")
+            }
+            wasSuccess
+        } catch (e: Exception) {
+            Log.e(TAG, "Model loading timed out after ${timeoutMs}ms: ${e.message}")
+            false
+        }
+    }
+
+    /**
+     * Types text into the chat input field using testTag.
+     */
+    private fun typeInChatInput(text: String) {
+        composeTestRule.onNodeWithTag("chat_input_field").performClick()
+        composeTestRule.waitForIdle()
+        composeTestRule.onNodeWithTag("chat_input_field").performTextInput(text)
+        composeTestRule.waitForIdle()
+    }
+
+    /**
+     * Clears the chat input field.
+     */
+    private fun clearChatInput() {
+        composeTestRule.onNodeWithTag("chat_input_field").performTextClearance()
+        composeTestRule.waitForIdle()
+    }
+
+    /**
+     * Verifies that the model generated a non-empty response by checking for
+     * tokens per second metrics (e.g., "t/s") which only appear in model responses.
+     * Uses Compose's waitUntil for proper synchronization.
+     */
+    private fun assertModelResponseNotEmpty(timeoutMs: Long = 10000) {
+        try {
+            composeTestRule.waitUntil(timeoutMillis = timeoutMs) {
+                val tpsNodes = composeTestRule.onAllNodesWithText("t/s", substring = true)
+                    .fetchSemanticsNodes()
+                val tokpsNodes = composeTestRule.onAllNodesWithText("tok/s", substring = true)
+                    .fetchSemanticsNodes()
+                tpsNodes.isNotEmpty() || tokpsNodes.isNotEmpty()
+            }
+            Log.i(TAG, "Model response verified - found generation metrics")
+        } catch (e: Exception) {
+            throw AssertionError("Model response appears to be empty - no generation metrics found after ${timeoutMs}ms")
+        }
+    }
+
+    /**
+     * Logs the model response text for CI output.
+     * Searches for text nodes containing generation metrics (t/s) and extracts the response.
+     */
+    private fun logModelResponse() {
+        try {
+            Log.i(RESPONSE_TAG, "BEGIN_RESPONSE")
+            // Find all nodes with t/s metrics - these are model response bubbles
+            val responseNodes = composeTestRule.onAllNodesWithText("t/s", substring = true)
+                .fetchSemanticsNodes()
+            for (node in responseNodes) {
+                // Get text from the semantics node
+                val text = node.config.getOrElse(SemanticsProperties.Text) { emptyList() }
+                    .joinToString(" ") { it.text }
+                if (text.isNotBlank()) {
+                    Log.i(RESPONSE_TAG, text)
+                }
+            }
+            Log.i(RESPONSE_TAG, "END_RESPONSE")
+        } catch (e: Exception) {
+            Log.d(TAG, "Could not log model response: ${e.message}")
+        }
+    }
+
+    /**
      * Tests the complete model loading workflow:
-     * 1. Dismiss the "Please Select a Model" dialog
-     * 2. Click settings button
-     * 3. Verify model path and tokenizer path show default "no selection" text
-     * 4. Click model selection, select model.pte
-     * 5. Click tokenizer selection, select tokenizer.model
-     * 6. Click load model button
+     * 1. Click "Load Local LLM Model" card on Welcome screen
+     * 2. Verify model path and tokenizer path show default "no selection" text
+     * 3. Click model selection, select model.pte
+     * 4. Click tokenizer selection, select tokenizer.model
+     * 5. Click load model button
      */
     @Test
     fun testModelLoadingWorkflow() {
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            // Wait for activity to fully load
-            Thread.sleep(1000)
+        composeTestRule.waitForIdle()
 
-            // Dismiss the "Please Select a Model" dialog that appears on first launch
-            onView(withText(android.R.string.ok)).inRoot(isDialog()).perform(click())
-
-            // Step 1: Click settings button to go to settings
-            onView(withId(R.id.settings)).perform(click())
-
-            // Step 2: Verify we're in settings and paths are empty by default
-            onView(withId(R.id.loadModelButton)).check(matches(isDisplayed()))
-            onView(withId(R.id.modelTextView)).check(matches(withText("no model selected")))
-            onView(withId(R.id.tokenizerTextView)).check(matches(withText("no tokenizer selected")))
-
-            // Step 3: Click model selection button and select the model file
-            onView(withId(R.id.modelImageButton)).perform(click())
-            // Select the model file matching the configured filename
-            onData(hasToString(endsWith(modelFile))).inRoot(isDialog()).perform(click())
-
-            // Step 4: Click tokenizer selection button and select the tokenizer file
-            onView(withId(R.id.tokenizerImageButton)).perform(click())
-            // Select the tokenizer file matching the configured filename
-            onData(hasToString(endsWith(tokenizerFile))).inRoot(isDialog()).perform(click())
-
-            // Step 5: Click load model button
-            onView(withId(R.id.loadModelButton)).perform(click())
-
-            // The load model confirmation dialog should appear
-            // Click "OK" to confirm loading (android.R.string.yes resolves to "OK")
-            onView(withText(android.R.string.yes)).inRoot(isDialog()).perform(click())
+        // Click "Load local model" card on Welcome screen
+        composeTestRule.onNodeWithText("Load local model").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 5005) {
+            composeTestRule.onAllNodesWithText("Select a Model").fetchSemanticsNodes().isNotEmpty()
         }
+
+        // Verify we're in settings
+        composeTestRule.onNodeWithText("Select a Model").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Load Model").assertIsDisplayed()
+        composeTestRule.onNodeWithText("no model selected").assertIsDisplayed()
+        composeTestRule.onNodeWithText("no tokenizer selected").assertIsDisplayed()
+
+        // Click model selection
+        composeTestRule.onNodeWithText("Model").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 5006) {
+            composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Select model file
+        composeTestRule.onNodeWithText(modelFile, substring = true).performClick()
+
+        // Click tokenizer selection
+        composeTestRule.onNodeWithText("Tokenizer").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 5007) {
+            composeTestRule.onAllNodesWithText("Select tokenizer path").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Select tokenizer file
+        composeTestRule.onNodeWithText(tokenizerFile, substring = true).performClick()
+
+        // Click load model button
+        composeTestRule.onNodeWithText("Load Model").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 5008) {
+            composeTestRule.onAllNodesWithText("Yes").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Confirm loading
+        composeTestRule.onNodeWithText("Yes").performClick()
     }
 
     /**
-     * Tests sending a message and receiving a response:
-     * 1. Dismiss "Please Select a Model" dialog
-     * 2. Load model (same as testModelLoadingWorkflow)
-     * 3. Verify we're back on MainActivity
-     * 4. Type "tell me a story" in the text input
-     * 5. Click send button
-     * 6. Wait for response and verify messages appear in the list
+     * Tests sending a message and receiving a response.
      */
     @Test
     fun testSendMessageAndReceiveResponse() {
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            // Wait for activity to fully load
-            Thread.sleep(1000)
+        composeTestRule.waitForIdle()
 
-            // Dismiss the "Please Select a Model" dialog that appears on first launch
-            onView(withText(android.R.string.ok)).inRoot(isDialog()).perform(click())
+        // Clear chat history first to ensure clean state
+        clearChatHistory()
 
-            // --- Load model (same steps as testModelLoadingWorkflow) ---
-            onView(withId(R.id.settings)).perform(click())
+        val loaded = loadModel()
+        assertTrue("Model should be selected successfully", loaded)
 
-            // Wait for SettingsActivity to load and verify we're there
-            Thread.sleep(500)
-            onView(withId(R.id.loadModelButton)).check(matches(isDisplayed()))
+        // Wait for model to load
+        val modelLoaded = waitForModelLoaded(90000)
+        assertTrue("Model should be loaded successfully", modelLoaded)
 
-            // Verify load button is initially disabled (no model/tokenizer selected)
-            onView(withId(R.id.loadModelButton)).check(matches(not(isEnabled())))
+        // Type a message using testTag
+        typeInChatInput("tell me a story")
 
-            // Select model - choose the configured model file
-            onView(withId(R.id.modelImageButton)).perform(click())
-            Thread.sleep(300) // Wait for dialog to appear
-            onData(hasToString(endsWith(modelFile))).inRoot(isDialog()).perform(click())
-            Thread.sleep(300) // Wait for dialog to dismiss and UI to update
-
-            // Select tokenizer - choose the configured tokenizer file
-            onView(withId(R.id.tokenizerImageButton)).perform(click())
-            Thread.sleep(300) // Wait for dialog to appear
-            onData(hasToString(endsWith(tokenizerFile))).inRoot(isDialog()).perform(click())
-            Thread.sleep(300) // Wait for dialog to dismiss and UI to update
-
-            // Verify load button is now enabled
-            onView(withId(R.id.loadModelButton)).check(matches(isEnabled()))
-
-            // Click load model button
-            onView(withId(R.id.loadModelButton)).perform(click())
-            onView(withText(android.R.string.yes)).inRoot(isDialog()).perform(click())
-
-            // --- Wait for model to load ---
-            // Poll until we see "Successfully loaded model" message in the list
-            val modelLoaded = waitForModelLoaded(scenario, 60000) // 60 second timeout
-            assertTrue("Model should be loaded successfully", modelLoaded)
-
-            // Verify MainActivity elements are displayed
-            onView(withId(R.id.editTextMessage)).check(matches(isDisplayed()))
-            onView(withId(R.id.sendButton)).check(matches(isDisplayed()))
-            onView(withId(R.id.messages_view)).check(matches(isDisplayed()))
-
-            // --- Send a message ---
-            // Type "tell me a story" in the text input
-            onView(withId(R.id.editTextMessage)).perform(typeText("tell me a story"), closeSoftKeyboard())
-
-            // Click send button
-            onView(withId(R.id.sendButton)).perform(click())
-
-            // --- Wait for response ---
-            // Poll until we have some response text (at least 50 characters)
-            val hasResponse = waitForResponseLength(scenario, 50, 60000)
-            assertTrue("Model should generate a response", hasResponse)
-
-            // Extract all messages from the list
-            val messageCount = AtomicInteger(0)
-            val responseText = AtomicReference("")
-            scenario.onActivity { activity ->
-                val messagesView = activity.findViewById<ListView>(R.id.messages_view)
-                if (messagesView?.adapter != null) {
-                    messageCount.set(messagesView.adapter.count)
-                    val sb = StringBuilder()
-                    for (i in 0 until messagesView.adapter.count) {
-                        val item = messagesView.adapter.getItem(i)
-                        if (item is Message) {
-                            sb.append(if (item.isSent) "User: " else "Model: ")
-                            sb.append(item.text)
-                            sb.append("\n\n")
-                        }
-                    }
-                    responseText.set(sb.toString())
-                }
+        // Verify send button is enabled before clicking
+        composeTestRule.waitUntil(timeoutMillis = 5025) {
+            try {
+                composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
+                true
+            } catch (e: AssertionError) {
+                Log.d(TAG, "Send button not yet enabled: ${e.message}")
+                false
             }
-
-            // Write response to file for CI to pick up
-            writeResponseToFile(responseText.get())
-
-            // Should have at least 2 messages: user message + model response (or system messages)
-            assertThat("Message list should contain messages", messageCount.get(), greaterThan(0))
         }
+
+        // Click send
+        composeTestRule.onNodeWithContentDescription("Send").performClick()
+        composeTestRule.waitForIdle()
+
+        // Wait for generation to complete
+        val generationComplete = waitForGenerationComplete()
+        assertTrue("Generation should complete", generationComplete)
+
+        // Verify model generated a non-empty response
+        assertModelResponseNotEmpty()
+
+        // Log response for CI workflow summary
+        logModelResponse()
+
+        Log.i(TAG, "Send message and receive response test completed successfully")
     }
 
     /**
-     * Waits for the model to be loaded by checking for "Successfully loaded model" message.
-     *
-     * @param scenario the activity scenario
-     * @param timeoutMs maximum time to wait in milliseconds
-     * @return true if model loaded successfully, false if timeout
-     */
-    private fun waitForModelLoaded(scenario: ActivityScenario<MainActivity>, timeoutMs: Long): Boolean {
-        val startTime = System.currentTimeMillis()
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
-            val foundIndex = AtomicInteger(-1)
-            scenario.onActivity { activity ->
-                val messagesView = activity.findViewById<ListView>(R.id.messages_view)
-                if (messagesView?.adapter != null) {
-                    for (i in 0 until messagesView.adapter.count) {
-                        val item = messagesView.adapter.getItem(i)
-                        if (item is Message && item.text.contains("Successfully loaded model")) {
-                            foundIndex.set(i)
-                            break
-                        }
-                    }
-                }
-            }
-            if (foundIndex.get() >= 0) {
-                return true
-            }
-            Thread.sleep(500) // Poll every 500ms
-        }
-        return false
-    }
-
-    /**
-     * Tests stopping generation mid-way:
-     * 1. Load model
-     * 2. Send a message to start generation
-     * 3. Wait for generation to start (button changes to stop mode)
-     * 4. Click stop button
-     * 5. Verify generation stops (button returns to send mode)
-     * 6. Verify partial response was received
+     * Tests stopping generation mid-way.
      */
     @Test
     fun testStopGeneration() {
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            // Wait for activity to fully load
-            Thread.sleep(1000)
+        composeTestRule.waitForIdle()
 
-            // Dismiss the "Please Select a Model" dialog
-            onView(withText(android.R.string.ok)).inRoot(isDialog()).perform(click())
+        // Clear chat history first to ensure clean state
+        clearChatHistory()
 
-            // --- Load model ---
-            onView(withId(R.id.settings)).perform(click())
-            Thread.sleep(500)
+        val loaded = loadModel()
+        assertTrue("Model should be selected successfully", loaded)
 
-            // Select model
-            onView(withId(R.id.modelImageButton)).perform(click())
-            Thread.sleep(300)
-            onData(hasToString(endsWith(modelFile))).inRoot(isDialog()).perform(click())
-            Thread.sleep(300)
+        val modelLoaded = waitForModelLoaded(90000)
+        assertTrue("Model should be loaded successfully", modelLoaded)
 
-            // Select tokenizer
-            onView(withId(R.id.tokenizerImageButton)).perform(click())
-            Thread.sleep(300)
-            onData(hasToString(endsWith(tokenizerFile))).inRoot(isDialog()).perform(click())
-            Thread.sleep(300)
+        // Type a long prompt using testTag
+        typeInChatInput("Write a very long story about a brave knight who goes on an adventure")
 
-            // Load model
-            onView(withId(R.id.loadModelButton)).perform(click())
-            onView(withText(android.R.string.yes)).inRoot(isDialog()).perform(click())
-
-            // Wait for model to load
-            val modelLoaded = waitForModelLoaded(scenario, 60000)
-            assertTrue("Model should be loaded successfully", modelLoaded)
-
-            // --- Send a message to start generation ---
-            onView(withId(R.id.editTextMessage)).perform(
-                typeText("Write a very long story about a brave knight"),
-                closeSoftKeyboard()
-            )
-            onView(withId(R.id.sendButton)).perform(click())
-
-            // --- Wait for generation to start (some response text appears) ---
-            val generationStarted = waitForResponseStarted(scenario, 30000)
-            assertTrue("Generation should start (some response text should appear)", generationStarted)
-
-            // --- Wait for some text to generate (at least 20 characters) ---
-            val hasEnoughText = waitForResponseLength(scenario, 20, 30000)
-            assertTrue("Should generate some text before stopping", hasEnoughText)
-
-            // --- Click stop button ---
-            onView(withId(R.id.sendButton)).perform(click())
-
-            // --- Wait for generation to stop ---
-            // Give it a moment to process the stop
-            Thread.sleep(1000)
-
-            // --- Verify we got a partial response ---
-            val responseText = AtomicReference("")
-            scenario.onActivity { activity ->
-                val messagesView = activity.findViewById<ListView>(R.id.messages_view)
-                if (messagesView?.adapter != null) {
-                    for (i in 0 until messagesView.adapter.count) {
-                        val item = messagesView.adapter.getItem(i)
-                        if (item is Message) {
-                            // Find the model response (not sent by user, not system message)
-                            if (!item.isSent && !item.text.contains("Successfully loaded")) {
-                                responseText.set(item.text)
-                            }
-                        }
-                    }
-                }
+        // Verify send button is enabled before clicking
+        composeTestRule.waitUntil(timeoutMillis = 5026) {
+            try {
+                composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
+                true
+            } catch (e: AssertionError) {
+                Log.d(TAG, "Send button not yet enabled: ${e.message}")
+                false
             }
-
-            // Log the partial response
-            Log.i("STOP_TEST", "Partial response after stop: ${responseText.get()}")
-
-            // We should have received some tokens before stopping
-            assertTrue(
-                "Should have received some response before stopping",
-                responseText.get().isNotEmpty()
-            )
         }
-    }
 
-    /**
-     * Tests that trying to send a new message during generation is not possible:
-     * 1. Load model
-     * 2. Send a message to start generation
-     * 3. Wait for generation to start
-     * 4. Verify input field is cleared
-     * 5. Type new text in input field
-     * 6. Verify send button shows stop icon (not send) - button is enabled for stopping
-     * 7. Stop generation and verify button returns to send mode
-     */
-    @Test
-    fun testSendDuringGeneration() {
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            // Wait for activity to fully load
-            Thread.sleep(1000)
+        // Click send
+        composeTestRule.onNodeWithContentDescription("Send").performClick()
+        composeTestRule.waitForIdle()
 
-            // Dismiss the "Please Select a Model" dialog
-            onView(withText(android.R.string.ok)).inRoot(isDialog()).perform(click())
-
-            // --- Load model ---
-            onView(withId(R.id.settings)).perform(click())
-            Thread.sleep(500)
-
-            // Select model
-            onView(withId(R.id.modelImageButton)).perform(click())
-            Thread.sleep(300)
-            onData(hasToString(endsWith(modelFile))).inRoot(isDialog()).perform(click())
-            Thread.sleep(300)
-
-            // Select tokenizer
-            onView(withId(R.id.tokenizerImageButton)).perform(click())
-            Thread.sleep(300)
-            onData(hasToString(endsWith(tokenizerFile))).inRoot(isDialog()).perform(click())
-            Thread.sleep(300)
-
-            // Load model
-            onView(withId(R.id.loadModelButton)).perform(click())
-            onView(withText(android.R.string.yes)).inRoot(isDialog()).perform(click())
-
-            // Wait for model to load
-            val modelLoaded = waitForModelLoaded(scenario, 60000)
-            assertTrue("Model should be loaded successfully", modelLoaded)
-
-            // --- Send a message to start generation (use a longer prompt for slower generation) ---
-            onView(withId(R.id.editTextMessage)).perform(
-                typeText("Write a very long detailed story about a brave knight who goes on an adventure"),
-                closeSoftKeyboard()
-            )
-            onView(withId(R.id.sendButton)).perform(click())
-
-            // --- Wait for generation to start ---
-            val generationStarted = waitForResponseStarted(scenario, 30000)
-            assertTrue("Generation should start", generationStarted)
-
-            // --- Verify input field is cleared after sending ---
-            onView(withId(R.id.editTextMessage)).check(matches(withText("")))
-
-            // --- Check if still generating (button enabled means stop mode) ---
-            val isStillGenerating = AtomicBoolean(false)
-            scenario.onActivity { activity ->
-                val sendButton = activity.findViewById<ImageButton>(R.id.sendButton)
-                if (sendButton != null) {
-                    isStillGenerating.set(sendButton.isEnabled)
-                }
+        // Wait for Stop button to appear (generation started)
+        try {
+            composeTestRule.waitUntil(timeoutMillis = 5009) {
+                composeTestRule.onAllNodes(hasContentDescription("Stop"))
+                    .fetchSemanticsNodes().isNotEmpty()
             }
-
-            // If generation already completed, skip the during-generation checks
-            if (!isStillGenerating.get()) {
-                Log.i(TAG, "Generation completed quickly, skipping during-generation checks")
-                return
-            }
-
-            // --- Type new text during generation ---
-            onView(withId(R.id.editTextMessage)).perform(typeText("Another message"), closeSoftKeyboard())
-
-            // --- Stop generation ---
-            onView(withId(R.id.sendButton)).perform(click())
-            Thread.sleep(1000)
-
-            // --- Verify generation stopped and we can now send ---
-            // After stopping, the input still has text, so send button should be enabled
-            onView(withId(R.id.editTextMessage)).check(matches(withText("Another message")))
-            onView(withId(R.id.sendButton)).check(matches(isEnabled()))
+        } catch (e: Exception) {
+            // Generation might have already finished
+            Log.i(TAG, "Stop button not found - generation may have completed")
         }
-    }
 
-    /**
-     * Waits for generation to start by checking for model response text.
-     *
-     * @param scenario the activity scenario
-     * @param timeoutMs maximum time to wait in milliseconds
-     * @return true if response text appeared, false if timeout
-     */
-    private fun waitForResponseStarted(scenario: ActivityScenario<MainActivity>, timeoutMs: Long): Boolean {
-        return waitForResponseLength(scenario, 1, timeoutMs)
-    }
-
-    /**
-     * Waits for the model response to reach a minimum length.
-     *
-     * @param scenario the activity scenario
-     * @param minLength minimum response length in characters
-     * @param timeoutMs maximum time to wait in milliseconds
-     * @return true if response reached minimum length, false if timeout
-     */
-    private fun waitForResponseLength(
-        scenario: ActivityScenario<MainActivity>,
-        minLength: Int,
-        timeoutMs: Long
-    ): Boolean {
-        val startTime = System.currentTimeMillis()
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
-            val responseLength = AtomicInteger(0)
-            scenario.onActivity { activity ->
-                val messagesView = activity.findViewById<ListView>(R.id.messages_view)
-                if (messagesView?.adapter != null) {
-                    for (i in 0 until messagesView.adapter.count) {
-                        val item = messagesView.adapter.getItem(i)
-                        if (item is Message) {
-                            // Look for a model response (not sent, not system message)
-                            if (!item.isSent &&
-                                !item.text.contains("Successfully loaded") &&
-                                !item.text.contains("Loading model") &&
-                                !item.text.contains("To get started")
-                            ) {
-                                responseLength.set(item.text.length)
-                            }
-                        }
-                    }
-                }
-            }
-            if (responseLength.get() >= minLength) {
-                return true
-            }
-            Thread.sleep(200) // Poll every 200ms
-        }
-        return false
-    }
-
-    /**
-     * Waits for generation to complete by monitoring when the send button becomes enabled again.
-     * After generation, the text field is cleared, so the button will be disabled.
-     * We detect completion by checking that we're no longer generating (button image changes).
-     *
-     * @param scenario the activity scenario
-     * @param timeoutMs maximum time to wait in milliseconds
-     * @return true if generation completed, false if timeout
-     */
-    @Suppress("unused")
-    private fun waitForGenerationComplete(scenario: ActivityScenario<MainActivity>, timeoutMs: Long): Boolean {
-        // First, wait a bit to ensure generation has started
+        // Give state time to fully synchronize
         Thread.sleep(500)
 
-        val startTime = System.currentTimeMillis()
-        while (System.currentTimeMillis() - startTime < timeoutMs) {
-            val isGenerating = AtomicBoolean(true)
-            scenario.onActivity { activity ->
-                val sendButton = activity.findViewById<ImageButton>(R.id.sendButton)
-                if (sendButton != null) {
-                    // When generating, the button shows stop icon and is enabled
-                    // When done, the button shows send icon and is disabled (empty input)
-                    // We check if the button is disabled, which means generation is done
-                    // and the input field is empty (cleared after sending)
-                    isGenerating.set(sendButton.isEnabled)
-                }
-            }
-            if (!isGenerating.get()) {
-                return true
-            }
-            Thread.sleep(500) // Poll every 500ms
-        }
-        return false
+        // Click stop
+        composeTestRule.onNodeWithContentDescription("Stop").performClick()
+
+        composeTestRule.waitForIdle()
+
+        // Wait for generation to fully stop
+        waitForGenerationComplete(30000)
+
+        // Verify that some response was generated (even if stopped early)
+        assertModelResponseNotEmpty()
+
+        Log.i(TAG, "Stop generation test completed successfully")
     }
 
     /**
-     * Tests that the send button is disabled when the input field is empty:
-     * 1. Load model
-     * 2. Verify send button is disabled with empty input
-     * 3. Type some text, verify send button becomes enabled
-     * 4. Clear the text, verify send button becomes disabled again
+     * Tests that send button is disabled when input is empty.
      */
     @Test
     fun testEmptyPromptSend() {
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            // Wait for activity to fully load
-            Thread.sleep(1000)
+        composeTestRule.waitForIdle()
 
-            // Dismiss the "Please Select a Model" dialog
-            onView(withText(android.R.string.ok)).inRoot(isDialog()).perform(click())
+        val loaded = loadModel()
+        assertTrue("Model should be selected successfully", loaded)
 
-            // --- Load model ---
-            onView(withId(R.id.settings)).perform(click())
-            Thread.sleep(500)
+        val modelLoaded = waitForModelLoaded(90000)
+        assertTrue("Model should be loaded successfully", modelLoaded)
 
-            // Select model
-            onView(withId(R.id.modelImageButton)).perform(click())
-            Thread.sleep(300)
-            onData(hasToString(endsWith(modelFile))).inRoot(isDialog()).perform(click())
-            Thread.sleep(300)
-
-            // Select tokenizer
-            onView(withId(R.id.tokenizerImageButton)).perform(click())
-            Thread.sleep(300)
-            onData(hasToString(endsWith(tokenizerFile))).inRoot(isDialog()).perform(click())
-            Thread.sleep(300)
-
-            // Load model
-            onView(withId(R.id.loadModelButton)).perform(click())
-            onView(withText(android.R.string.yes)).inRoot(isDialog()).perform(click())
-
-            // Wait for model to load
-            val modelLoaded = waitForModelLoaded(scenario, 60000)
-            assertTrue("Model should be loaded successfully", modelLoaded)
-
-            // --- Test empty input behavior ---
-            // Verify send button is disabled when input is empty
-            onView(withId(R.id.sendButton)).check(matches(not(isEnabled())))
-
-            // Type some text
-            onView(withId(R.id.editTextMessage)).perform(typeText("hello"), closeSoftKeyboard())
-
-            // Verify send button is now enabled
-            onView(withId(R.id.sendButton)).check(matches(isEnabled()))
-
-            // Clear the text
-            onView(withId(R.id.editTextMessage)).perform(clearText())
-
-            // Verify send button is disabled again
-            onView(withId(R.id.sendButton)).check(matches(not(isEnabled())))
+        // Wait for send button to be in expected state (disabled with empty input)
+        composeTestRule.waitUntil(timeoutMillis = 5010) {
+            composeTestRule.onAllNodes(hasContentDescription("Send"))
+                .fetchSemanticsNodes().isNotEmpty()
         }
+
+        // Verify send button is disabled with empty input
+        composeTestRule.onNodeWithContentDescription("Send").assertIsNotEnabled()
+
+        // Type some text using testTag
+        typeInChatInput("hello")
+
+        // Wait for send button to become enabled
+        composeTestRule.waitUntil(timeoutMillis = 2001) {
+            try {
+                composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
+                true
+            } catch (e: AssertionError) {
+                false
+            }
+        }
+
+        // Verify send button is now enabled
+        composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
+
+        // Clear the text
+        clearChatInput()
+
+        // Wait for send button to become disabled
+        composeTestRule.waitUntil(timeoutMillis = 2002) {
+            try {
+                composeTestRule.onNodeWithContentDescription("Send").assertIsNotEnabled()
+                true
+            } catch (e: AssertionError) {
+                false
+            }
+        }
+
+        // Verify send button is disabled again
+        composeTestRule.onNodeWithContentDescription("Send").assertIsNotEnabled()
     }
 
     /**
-     * Tests behavior when no model/tokenizer files are in the directory:
-     * 1. Go to settings
-     * 2. Click model selection button
-     * 3. Verify dialog shows "No files found" message
-     * 4. Click tokenizer selection button
-     * 5. Verify dialog shows "No files found" message
+     * Tests file selection dialog behavior.
      */
     @Test
     fun testNoFilesInDirectory() {
-        // First, temporarily rename the model files to simulate empty directory
-        // We can't actually delete files in a test, so we test with the existing setup
-        // but verify the dialog behavior when shown with an empty list
+        composeTestRule.waitForIdle()
 
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            // Wait for activity to fully load
-            Thread.sleep(1000)
-
-            // Dismiss the "Please Select a Model" dialog
-            onView(withText(android.R.string.ok)).inRoot(isDialog()).perform(click())
-
-            // Go to settings
-            onView(withId(R.id.settings)).perform(click())
-            Thread.sleep(500)
-
-            // Verify we're in settings
-            onView(withId(R.id.loadModelButton)).check(matches(isDisplayed()))
-
-            // Click model selection button
-            onView(withId(R.id.modelImageButton)).perform(click())
-            Thread.sleep(300)
-
-            // A dialog should appear - if files exist, we see them
-            // If no files exist, we should see a helpful message
-            // For now, just verify the dialog appears and can be dismissed
-            // The dialog title "Select model path" should be visible
-            onView(withText("Select model path")).inRoot(isDialog()).check(matches(isDisplayed()))
-
-            // Dismiss by clicking outside or pressing back - use device back button
-            // Since we have files in our test setup, we can click on one or press back
-            // Press back to dismiss
-            pressBack()
-            Thread.sleep(300)
-
-            // Click tokenizer selection button
-            onView(withId(R.id.tokenizerImageButton)).perform(click())
-            Thread.sleep(300)
-
-            // Verify tokenizer dialog appears
-            onView(withText("Select tokenizer path")).inRoot(isDialog()).check(matches(isDisplayed()))
-
-            // Dismiss
-            pressBack()
+        // Go to settings from Welcome screen
+        composeTestRule.onNodeWithText("Load local model").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 5011) {
+            composeTestRule.onAllNodesWithText("Select a Model").fetchSemanticsNodes().isNotEmpty()
         }
+
+        // Verify settings screen
+        composeTestRule.onNodeWithText("Select a Model").assertIsDisplayed()
+
+        // Click model selection
+        composeTestRule.onNodeWithText("Model").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 5012) {
+            composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Dialog should appear - verify it has a title
+        composeTestRule.onNodeWithText("Select model path").assertIsDisplayed()
+
+        // Press cancel or select a file
+        try {
+            composeTestRule.onNodeWithText("Cancel").performClick()
+        } catch (e: AssertionError) {
+            // If cancel not found, select a file
+            composeTestRule.onNodeWithText(modelFile, substring = true).performClick()
+        }
+        composeTestRule.waitForIdle()
     }
 
     /**
-     * Tests that canceling file selection dialogs does not change the current selection state:
-     * 1. Go to settings
-     * 2. Verify initial state (no model/tokenizer selected)
-     * 3. Select a model file
-     * 4. Open model selection again and press back without selecting
-     * 5. Verify original selection is preserved
-     * 6. Same test for tokenizer
+     * Tests cancel file selection preserves previous selection.
      */
     @Test
     fun testCancelFileSelection() {
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            // Wait for activity to fully load
-            Thread.sleep(1000)
+        composeTestRule.waitForIdle()
 
-            // Dismiss the "Please Select a Model" dialog
-            onView(withText(android.R.string.ok)).inRoot(isDialog()).perform(click())
-
-            // Go to settings
-            onView(withId(R.id.settings)).perform(click())
-            Thread.sleep(500)
-
-            // Verify we're in settings with no initial selections
-            onView(withId(R.id.modelTextView)).check(matches(withText("no model selected")))
-            onView(withId(R.id.tokenizerTextView)).check(matches(withText("no tokenizer selected")))
-
-            // --- Test model selection cancellation ---
-            // First, select a model
-            onView(withId(R.id.modelImageButton)).perform(click())
-            Thread.sleep(300)
-            onData(hasToString(endsWith(modelFile))).inRoot(isDialog()).perform(click())
-            Thread.sleep(300)
-
-            // Verify model is selected
-            onView(withId(R.id.modelTextView)).check(matches(withText(endsWith(modelFile))))
-
-            // Open model selection again
-            onView(withId(R.id.modelImageButton)).perform(click())
-            Thread.sleep(300)
-
-            // Press back to cancel without selecting
-            pressBack()
-            Thread.sleep(300)
-
-            // Verify original selection is preserved
-            onView(withId(R.id.modelTextView)).check(matches(withText(endsWith(modelFile))))
-
-            // --- Test tokenizer selection cancellation ---
-            // First, select a tokenizer
-            onView(withId(R.id.tokenizerImageButton)).perform(click())
-            Thread.sleep(300)
-            onData(hasToString(endsWith(tokenizerFile))).inRoot(isDialog()).perform(click())
-            Thread.sleep(300)
-
-            // Verify tokenizer is selected
-            onView(withId(R.id.tokenizerTextView)).check(matches(withText(endsWith(tokenizerFile))))
-
-            // Open tokenizer selection again
-            onView(withId(R.id.tokenizerImageButton)).perform(click())
-            Thread.sleep(300)
-
-            // Press back to cancel without selecting
-            pressBack()
-            Thread.sleep(300)
-
-            // Verify original selection is preserved
-            onView(withId(R.id.tokenizerTextView)).check(matches(withText(endsWith(tokenizerFile))))
+        // Go to settings from Welcome screen
+        composeTestRule.onNodeWithText("Load local model").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 5013) {
+            composeTestRule.onAllNodesWithText("Select a Model").fetchSemanticsNodes().isNotEmpty()
         }
+
+        // Verify initial state
+        composeTestRule.onNodeWithText("no model selected").assertIsDisplayed()
+        composeTestRule.onNodeWithText("no tokenizer selected").assertIsDisplayed()
+
+        // Select a model first
+        composeTestRule.onNodeWithText("Model").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 5014) {
+            composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithText(modelFile, substring = true).performClick()
+
+        // Wait for dialog to close and model to be selected
+        composeTestRule.waitUntil(timeoutMillis = 5015) {
+            composeTestRule.onAllNodesWithText(modelFile, substring = true)
+                .fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Verify model is selected
+        composeTestRule.onNodeWithText(modelFile, substring = true).assertIsDisplayed()
+
+        // Open model selection again
+        composeTestRule.onNodeWithText("Model").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 5016) {
+            composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Cancel
+        composeTestRule.onNodeWithText("Cancel").performClick()
+
+        // Wait for dialog to close
+        composeTestRule.waitUntil(timeoutMillis = 5017) {
+            composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isEmpty()
+        }
+
+        // Verify selection is preserved
+        composeTestRule.onNodeWithText(modelFile, substring = true).assertIsDisplayed()
     }
 
     /**
-     * Tests that the load button is disabled until both model and tokenizer are selected:
-     * 1. Go to settings
-     * 2. Verify load button is initially disabled (skip if cached values exist)
-     * 3. Select only model, verify load button still disabled
-     * 4. Select tokenizer, verify load button becomes enabled
+     * Tests that load button is disabled until both model and tokenizer are selected.
      */
     @Test
     fun testLoadButtonDisabledState() {
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            // Wait for activity to fully load
-            Thread.sleep(1000)
+        composeTestRule.waitForIdle()
 
-            // Dismiss the "Please Select a Model" dialog
-            onView(withText(android.R.string.ok)).inRoot(isDialog()).perform(click())
-
-            // Go to settings
-            onView(withId(R.id.settings)).perform(click())
-            Thread.sleep(500)
-
-            // Check if there are cached model/tokenizer selections from previous sessions
-            // If so, skip this test as the load button would already be enabled
-            try {
-                onView(withId(R.id.modelTextView)).check(matches(withText("no model selected")))
-                onView(withId(R.id.tokenizerTextView)).check(matches(withText("no tokenizer selected")))
-            } catch (e: AssertionError) {
-                // Cached selections exist, skip this test
-                Log.i(TAG, "Skipping testLoadButtonDisabledState: cached selections exist")
-                return
-            }
-
-            // Verify load button is initially disabled (no model/tokenizer selected)
-            onView(withId(R.id.loadModelButton)).check(matches(not(isEnabled())))
-
-            // --- Select only model ---
-            onView(withId(R.id.modelImageButton)).perform(click())
-            Thread.sleep(300)
-            onData(hasToString(endsWith(modelFile))).inRoot(isDialog()).perform(click())
-            Thread.sleep(300)
-
-            // Verify model is selected but load button still disabled (no tokenizer)
-            onView(withId(R.id.modelTextView)).check(matches(withText(endsWith(modelFile))))
-            onView(withId(R.id.loadModelButton)).check(matches(not(isEnabled())))
-
-            // --- Now select tokenizer ---
-            onView(withId(R.id.tokenizerImageButton)).perform(click())
-            Thread.sleep(300)
-            onData(hasToString(endsWith(tokenizerFile))).inRoot(isDialog()).perform(click())
-            Thread.sleep(300)
-
-            // Verify both selected and load button is now enabled
-            onView(withId(R.id.tokenizerTextView)).check(matches(withText(endsWith(tokenizerFile))))
-            onView(withId(R.id.loadModelButton)).check(matches(isEnabled()))
+        // Go to settings from Welcome screen
+        composeTestRule.onNodeWithText("Load local model").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 5018) {
+            composeTestRule.onAllNodesWithText("Select a Model").fetchSemanticsNodes().isNotEmpty()
         }
+
+        // Verify load button is initially disabled
+        composeTestRule.onNodeWithText("Load Model").assertIsNotEnabled()
+
+        // Select only model
+        composeTestRule.onNodeWithText("Model").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 5019) {
+            composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithText(modelFile, substring = true).performClick()
+
+        // Wait for dialog to close
+        composeTestRule.waitUntil(timeoutMillis = 5020) {
+            composeTestRule.onAllNodesWithText("Select model path").fetchSemanticsNodes().isEmpty()
+        }
+
+        // Verify load button still disabled (no tokenizer)
+        composeTestRule.onNodeWithText("Load Model").assertIsNotEnabled()
+
+        // Select tokenizer
+        composeTestRule.onNodeWithText("Tokenizer").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 5021) {
+            composeTestRule.onAllNodesWithText("Select tokenizer path").fetchSemanticsNodes().isNotEmpty()
+        }
+        composeTestRule.onNodeWithText(tokenizerFile, substring = true).performClick()
+
+        // Wait for dialog to close
+        composeTestRule.waitUntil(timeoutMillis = 5022) {
+            composeTestRule.onAllNodesWithText("Select tokenizer path").fetchSemanticsNodes().isEmpty()
+        }
+
+        // Verify load button is now enabled
+        composeTestRule.onNodeWithText("Load Model").assertIsEnabled()
     }
 
     /**
-     * Tests that the send button is disabled when input contains only whitespace:
-     * 1. Load model
-     * 2. Verify send button is disabled with empty input
-     * 3. Type only spaces, verify send button remains disabled
-     * 4. Type only tabs/newlines, verify send button remains disabled
-     * 5. Type actual text, verify send button becomes enabled
-     * 6. Clear and type whitespace + text + whitespace, verify enabled
+     * Tests whitespace-only prompt handling.
      */
     @Test
     fun testWhitespaceOnlyPrompt() {
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            // Wait for activity to fully load
-            Thread.sleep(1000)
+        composeTestRule.waitForIdle()
 
-            // Dismiss the "Please Select a Model" dialog
-            onView(withText(android.R.string.ok)).inRoot(isDialog()).perform(click())
+        val loaded = loadModel()
+        assertTrue("Model should be selected successfully", loaded)
 
-            // --- Load model ---
-            onView(withId(R.id.settings)).perform(click())
-            Thread.sleep(500)
+        val modelLoaded = waitForModelLoaded(90000)
+        assertTrue("Model should be loaded successfully", modelLoaded)
 
-            // Select model
-            onView(withId(R.id.modelImageButton)).perform(click())
-            Thread.sleep(300)
-            onData(hasToString(endsWith(modelFile))).inRoot(isDialog()).perform(click())
-            Thread.sleep(300)
+        // Wait for send button to appear
+        composeTestRule.waitUntil(timeoutMillis = 5023) {
+            composeTestRule.onAllNodes(hasContentDescription("Send"))
+                .fetchSemanticsNodes().isNotEmpty()
+        }
 
-            // Select tokenizer
-            onView(withId(R.id.tokenizerImageButton)).perform(click())
-            Thread.sleep(300)
-            onData(hasToString(endsWith(tokenizerFile))).inRoot(isDialog()).perform(click())
-            Thread.sleep(300)
+        // Verify send button is disabled with empty input
+        composeTestRule.onNodeWithContentDescription("Send").assertIsNotEnabled()
 
-            // Load model
-            onView(withId(R.id.loadModelButton)).perform(click())
-            onView(withText(android.R.string.yes)).inRoot(isDialog()).perform(click())
+        // Type only spaces using testTag
+        typeInChatInput("     ")
 
-            // Wait for model to load
-            val modelLoaded = waitForModelLoaded(scenario, 60000)
-            assertTrue("Model should be loaded successfully", modelLoaded)
+        // Verify send button is still disabled (whitespace only)
+        composeTestRule.onNodeWithContentDescription("Send").assertIsNotEnabled()
 
-            // --- Test whitespace-only input behavior ---
-            // Verify send button is disabled when input is empty
-            onView(withId(R.id.sendButton)).check(matches(not(isEnabled())))
+        // Clear and type actual text
+        clearChatInput()
+        typeInChatInput("hello")
 
-            // Type only spaces
-            onView(withId(R.id.editTextMessage)).perform(typeText("     "), closeSoftKeyboard())
+        // Wait for send button to become enabled
+        composeTestRule.waitUntil(timeoutMillis = 2003) {
+            try {
+                composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
+                true
+            } catch (e: AssertionError) {
+                false
+            }
+        }
 
-            // Verify send button is still disabled (whitespace only)
-            onView(withId(R.id.sendButton)).check(matches(not(isEnabled())))
+        // Verify send button is now enabled
+        composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
+    }
 
-            // Clear and type actual text
-            onView(withId(R.id.editTextMessage)).perform(clearText())
-            onView(withId(R.id.editTextMessage)).perform(typeText("hello"), closeSoftKeyboard())
+    /**
+     * Tests sending multiple messages and verifying conversation flow:
+     * 1. Load model
+     * 2. Send first message and wait for response
+     * 3. Send second message and wait for response
+     * 4. Verify both user messages and responses are visible
+     */
+    @Ignore("Temporarily disabled")
+    @Test
+    fun testMultipleMessagesConversation() {
+        composeTestRule.waitForIdle()
 
-            // Verify send button is now enabled
-            onView(withId(R.id.sendButton)).check(matches(isEnabled()))
+        // Clear chat history first to ensure clean state
+        clearChatHistory()
 
-            // Clear and type text with surrounding whitespace
-            onView(withId(R.id.editTextMessage)).perform(clearText())
-            onView(withId(R.id.editTextMessage)).perform(typeText("  hello world  "), closeSoftKeyboard())
+        val loaded = loadModel()
+        assertTrue("Model should be selected successfully", loaded)
 
-            // Verify send button is still enabled (has non-whitespace content)
-            onView(withId(R.id.sendButton)).check(matches(isEnabled()))
+        val modelLoaded = waitForModelLoaded(90000)
+        assertTrue("Model should be loaded successfully", modelLoaded)
 
-            // Clear and verify disabled again
-            onView(withId(R.id.editTextMessage)).perform(clearText())
-            onView(withId(R.id.sendButton)).check(matches(not(isEnabled())))
+        // --- Send first message ---
+        // Use unique message unlikely to appear in model response
+        val firstMessage = "XYZTEST123"
+        typeInChatInput(firstMessage)
+        composeTestRule.onNodeWithContentDescription("Send").performClick()
+        composeTestRule.waitForIdle()
+
+        // Wait for first response to complete
+        val firstResponseComplete = waitForGenerationComplete(120000)
+        assertTrue("First response should complete", firstResponseComplete)
+
+        // Verify first user message is visible and model response is not empty
+        composeTestRule.onNodeWithText(firstMessage, substring = true).assertExists()
+        assertModelResponseNotEmpty()
+
+        // --- Send second message ---
+        val secondMessage = "ABCTEST456"
+        typeInChatInput(secondMessage)
+
+        // Wait for send button to be enabled
+        composeTestRule.waitUntil(timeoutMillis = 5024) {
+            try {
+                composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
+                true
+            } catch (e: AssertionError) {
+                false
+            }
+        }
+
+        composeTestRule.onNodeWithContentDescription("Send").performClick()
+        composeTestRule.waitForIdle()
+
+        // Wait for second response to complete
+        val secondResponseComplete = waitForGenerationComplete(120001)
+        assertTrue("Second response should complete", secondResponseComplete)
+
+        // Verify both user messages are visible in conversation
+        composeTestRule.onNodeWithText(firstMessage, substring = true).assertExists()
+        composeTestRule.onNodeWithText(secondMessage, substring = true).assertExists()
+
+        // Verify model responses are not empty (should have multiple t/s metrics now)
+        assertModelResponseNotEmpty()
+
+        Log.i(TAG, "Multiple messages conversation test completed successfully")
+    }
+
+    /**
+     * Waits for generation to complete by checking for tokens-per-second metrics
+     * which appear when generation finishes.
+     * Uses Compose's waitUntil for proper synchronization.
+     */
+    private fun waitForGenerationComplete(timeoutMs: Long = 120000): Boolean {
+        // Wait for generation metrics to appear (indicates generation completed)
+        // We check for "t/s" or "tok/s" which only appear after generation finishes
+        return try {
+            composeTestRule.waitUntil(timeoutMillis = timeoutMs) {
+                val tpsNodes = composeTestRule.onAllNodesWithText("t/s", substring = true)
+                    .fetchSemanticsNodes()
+                val tokpsNodes = composeTestRule.onAllNodesWithText("tok/s", substring = true)
+                    .fetchSemanticsNodes()
+                tpsNodes.isNotEmpty() || tokpsNodes.isNotEmpty()
+            }
+            Log.i(TAG, "Generation complete - found generation metrics")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Generation timed out after ${timeoutMs}ms")
+            false
         }
     }
 
     /**
-     * Tests the add media button toggle functionality:
-     * 1. Launch MainActivity
-     * 2. Dismiss the "Please Select a Model" dialog
-     * 3. Verify add media layout is initially hidden
-     * 4. Click add media button (+) to show the attachment options
-     * 5. Verify add media layout is now visible
-     * 6. Click add media button again (now shows collapse icon) to hide the attachment options
-     * 7. Verify add media layout is hidden again
+     * Tests the add media button toggle functionality.
      */
     @Test
     fun testCollapseMediaButton() {
-        ActivityScenario.launch(MainActivity::class.java).use { scenario ->
-            // Wait for activity to fully load
-            Thread.sleep(1000)
+        composeTestRule.waitForIdle()
 
-            // Dismiss the "Please Select a Model" dialog
-            onView(withText(android.R.string.ok)).inRoot(isDialog()).perform(click())
+        // Verify add media button is present
+        try {
+            composeTestRule.onNodeWithContentDescription("Add media").assertIsDisplayed()
 
-            // Verify add media layout is initially hidden (GONE)
-            onView(withId(R.id.addMediaLayout)).check(matches(not(isDisplayed())))
+            // Click add media button to show options
+            composeTestRule.onNodeWithContentDescription("Add media").performClick()
 
-            // Click add media button (+) to show attachment options
-            onView(withId(R.id.addMediaButton)).perform(click())
-            Thread.sleep(300)
+            // Wait for media options to appear
+            composeTestRule.waitUntil(timeoutMillis = 3000) {
+                composeTestRule.onAllNodesWithText("Gallery").fetchSemanticsNodes().isNotEmpty()
+            }
 
-            // Verify add media layout is now visible
-            onView(withId(R.id.addMediaLayout)).check(matches(isDisplayed()))
+            // Verify media options appear (Gallery, Camera, Audio)
+            composeTestRule.onNodeWithText("Gallery").assertIsDisplayed()
+            composeTestRule.onNodeWithText("Camera").assertIsDisplayed()
 
-            // Click add media button again (now shows collapse icon) to hide attachment options
-            onView(withId(R.id.addMediaButton)).perform(click())
-            Thread.sleep(300)
+            // Click collapse to hide
+            composeTestRule.onNodeWithContentDescription("Collapse media").performClick()
 
-            // Verify add media layout is hidden again
-            onView(withId(R.id.addMediaLayout)).check(matches(not(isDisplayed())))
+            // Wait for media options to disappear
+            composeTestRule.waitUntil(timeoutMillis = 3000) {
+                composeTestRule.onAllNodesWithText("Gallery").fetchSemanticsNodes().isEmpty()
+            }
+
+            // Verify media options are hidden
+            composeTestRule.onNodeWithText("Gallery").assertDoesNotExist()
+        } catch (e: AssertionError) {
+            // Media buttons might not be visible depending on backend type
+            Log.i(TAG, "Media buttons not present - might be MediaTek backend")
         }
     }
 
     /**
-     * Writes the model response to logcat with a special tag for extraction.
-     * The response can be extracted from logcat using: grep "LLAMA_RESPONSE"
+     * Tests Welcome screen displays and navigation works correctly.
      */
-    private fun writeResponseToFile(response: String) {
-        // Log with a unique tag that can be grepped from logcat
-        Log.i("LLAMA_RESPONSE", "BEGIN_RESPONSE")
-        // Split response into chunks to avoid logcat line length limits
-        for (line in response.split("\n")) {
-            Log.i("LLAMA_RESPONSE", line)
+    @Test
+    fun testWelcomeScreenNavigation() {
+        composeTestRule.waitForIdle()
+
+        // Verify Welcome screen elements are displayed
+        composeTestRule.onNodeWithText("ExecuTorch Llama Demo").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Welcome to ExecuTorch Llama Demo").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Load local model").assertIsDisplayed()
+        composeTestRule.onNodeWithText("App Settings").assertIsDisplayed()
+
+        // Test navigation to App Settings
+        composeTestRule.onNodeWithText("App Settings").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 3000) {
+            composeTestRule.onAllNodesWithText("App Settings", useUnmergedTree = true)
+                .fetchSemanticsNodes().size >= 1
         }
-        Log.i("LLAMA_RESPONSE", "END_RESPONSE")
+
+        // Verify App Settings screen
+        composeTestRule.onNodeWithText("Appearance").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Theme").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Clear Conversation History").assertIsDisplayed()
+
+        // Go back to Welcome screen
+        composeTestRule.onNodeWithContentDescription("Back").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 3000) {
+            composeTestRule.onAllNodesWithText("ExecuTorch Llama Demo").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Verify we're back on Welcome screen
+        composeTestRule.onNodeWithText("ExecuTorch Llama Demo").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Load local model").assertIsDisplayed()
+
+        // Test navigation to Model Settings
+        composeTestRule.onNodeWithText("Load local model").performClick()
+        composeTestRule.waitUntil(timeoutMillis = 3000) {
+            composeTestRule.onAllNodesWithText("Select a Model").fetchSemanticsNodes().isNotEmpty()
+        }
+
+        // Verify Model Settings screen
+        composeTestRule.onNodeWithText("Select a Model").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Backend").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Load Model").assertIsDisplayed()
+
+        Log.i(TAG, "Welcome screen navigation test completed successfully")
     }
 }

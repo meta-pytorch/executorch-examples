@@ -32,6 +32,10 @@ on:
         description: 'Custom URL for tokenizer file (only used when model_preset is custom)'
         required: false
         type: string
+      local_aar:
+        description: 'URL to download a local AAR file. When set, the workflow will download the AAR and use it instead of the Maven dependency.'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -73,6 +77,12 @@ jobs:
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
+
+      - name: Download local AAR
+        if: ${{ inputs.local_aar }}
+        run: |
+          mkdir -p llm/android/LlamaDemo/app/libs
+          curl -fL -o llm/android/LlamaDemo/app/libs/executorch.aar "${{ inputs.local_aar }}"
 
       - name: AVD cache
         uses: actions/cache@v4
@@ -145,6 +155,7 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         env:
           MODEL_PRESET: ${{ inputs.model_preset || 'stories' }}
+          USE_LOCAL_AAR: ${{ inputs.local_aar != '' }}
         with:
           api-level: ${{ env.API_LEVEL }}
           arch: ${{ env.ARCH }}
@@ -154,7 +165,7 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot-save -memory 16384
           disable-animations: true
           working-directory: llm/android/LlamaDemo
-          script: bash ./scripts/run-ci-tests.sh "$MODEL_PRESET" "$MODEL_FILE" "$TOKENIZER_FILE"
+          script: bash ./scripts/run-ci-tests.sh "$MODEL_PRESET" "$MODEL_FILE" "$TOKENIZER_FILE" "$USE_LOCAL_AAR"
 
       - name: Add model response to summary
         if: always()

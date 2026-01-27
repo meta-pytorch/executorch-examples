@@ -6,7 +6,7 @@
 # LICENSE file in the root directory of this source tree.
 
 # CI test script for running instrumentation tests with pre-downloaded models
-# Usage: ./run-ci-tests.sh <model_preset> <model_file> <tokenizer_file>
+# Usage: ./run-ci-tests.sh <model_preset> <model_file> <tokenizer_file> [use_local_aar]
 #
 # This script is designed for CI environments where models are pre-downloaded
 # to /tmp/llama_models/ before the emulator starts.
@@ -16,11 +16,13 @@ set -ex
 MODEL_PRESET="$1"
 MODEL_FILE="$2"
 TOKENIZER_FILE="$3"
+USE_LOCAL_AAR="${4:-false}"
 
 echo "=== Test Configuration ==="
 echo "MODEL_PRESET: $MODEL_PRESET"
 echo "MODEL_FILE: $MODEL_FILE"
 echo "TOKENIZER_FILE: $TOKENIZER_FILE"
+echo "USE_LOCAL_AAR: $USE_LOCAL_AAR"
 
 echo "=== Emulator Memory Info ==="
 adb shell cat /proc/meminfo | head -5
@@ -90,9 +92,11 @@ adb logcat > /tmp/logcat.txt &
 LOGCAT_PID=$!
 
 echo "=== Starting Gradle ==="
-./gradlew connectedCheck \
-  -PskipModelDownload=true \
-  -PmodelPreset="$MODEL_PRESET"
+GRADLE_ARGS="-PskipModelDownload=true -PmodelPreset=\"$MODEL_PRESET\""
+if [ "$USE_LOCAL_AAR" = "true" ]; then
+  GRADLE_ARGS="$GRADLE_ARGS -PuseLocalAar=true"
+fi
+eval ./gradlew connectedCheck "$GRADLE_ARGS"
 TEST_EXIT_CODE=$?
 
 echo "=== Model directory after Gradle ==="
