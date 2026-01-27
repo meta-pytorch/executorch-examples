@@ -110,23 +110,26 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
         val isLoadModel = updatedSettingsFields.isLoadModel
         if (isUpdated) {
             checkForClearChatHistory(updatedSettingsFields)
-            // Update media capabilities after settings are updated
-            setBackendMode(updatedSettingsFields.backendType)
 
             if (isLoadModel) {
+                // Update local copy BEFORE checking media capabilities
+                val settingsWithLoadFlagCleared = updatedSettingsFields.copy(isLoadModel = false)
+                currentSettingsFields = settingsWithLoadFlagCleared
+                demoSharedPreferences.saveModuleSettings(settingsWithLoadFlagCleared)
+
+                // Update media capabilities after settings are updated
+                setBackendMode(updatedSettingsFields.backendType)
+
                 loadLocalModelAndParameters(
                     updatedSettingsFields.modelFilePath,
                     updatedSettingsFields.tokenizerFilePath,
                     updatedSettingsFields.dataPath,
                     updatedSettingsFields.temperature.toFloat()
                 )
-                // Save with isLoadModel = false and update local copy to match,
-                // preventing duplicate "To get started..." messages on subsequent calls
-                val settingsWithLoadFlagCleared = updatedSettingsFields.copy(isLoadModel = false)
-                demoSharedPreferences.saveModuleSettings(settingsWithLoadFlagCleared)
-                currentSettingsFields = settingsWithLoadFlagCleared
             } else {
                 currentSettingsFields = updatedSettingsFields.copy()
+                // Update media capabilities after settings are updated
+                setBackendMode(updatedSettingsFields.backendType)
                 if (module == null) {
                     addSystemMessage(systemPromptMessage)
                 }
