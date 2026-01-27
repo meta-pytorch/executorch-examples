@@ -11,6 +11,7 @@ on:
     branches: [main]
     paths:
       - 'dl3/android/**'
+      - 'mv3/android/**'
       - '.github/workflows/android-emulator.yml'
   workflow_dispatch:
     inputs:
@@ -26,12 +27,19 @@ permissions:
 jobs:
   instrumentation-test:
     runs-on: 8-core-ubuntu
+    strategy:
+      matrix:
+        demo:
+          - path: 'dl3/android/DeepLabV3Demo'
+            name: 'DeepLabV3Demo'
+          - path: 'mv3/android/MV3Demo'
+            name: 'MV3Demo'
     env:
       API_LEVEL: 34
       ARCH: x86_64
-      DEMO_PATH: ${{ inputs.demo_path || 'dl3/android/DeepLabV3Demo' }}
+      DEMO_PATH: ${{ inputs.demo_path || matrix.demo.path }}
 
-    name: Instrumentation Test Android Emulator
+    name: Instrumentation Test ${{ matrix.demo.name }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -42,6 +50,9 @@ jobs:
           DEMO_NAME=$(basename "${{ env.DEMO_PATH }}")
           echo "demo_name=$DEMO_NAME" >> $GITHUB_OUTPUT
           echo "Testing: $DEMO_NAME"
+          echo "=== Test Configuration ==="
+          echo "Demo: $DEMO_NAME"
+          echo "Model will be downloaded by the test if not present"
 
       - name: Enable KVM group perms
         run: |
@@ -92,7 +103,43 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -no-snapshot-save -memory 8192
           disable-animations: true
           working-directory: ${{ env.DEMO_PATH }}
-          script: bash ./scripts/run-ci-tests.sh
+          script: |
+            set -ex
+            
+            DEMO_NAME=$(basename "$PWD")
+            LOGCAT_FILE="/tmp/logcat-${DEMO_NAME}.txt"
+            
+            echo "=== Emulator Memory Info ==="
+            adb shell cat /proc/meminfo | head -5
+            
+            echo "=== Emulator Disk Space ==="
+            adb shell df -h /data
+            
+            # Start logcat capture
+            adb logcat -c
+            adb logcat > "$LOGCAT_FILE" &
+            LOGCAT_PID=$!
+            
+            echo "=== Starting Gradle ==="
+            ./gradlew connectedCheck
+            TEST_EXIT_CODE=$?
+            
+            # Stop logcat
+            if [ -n "$LOGCAT_PID" ]; then
+              kill $LOGCAT_PID 2>/dev/null || true
+            fi
+            
+            echo "=== Test completion status ==="
+            if [ $TEST_EXIT_CODE -eq 0 ]; then
+              echo "✅ Tests passed successfully"
+            else
+              echo "❌ Tests failed with exit code $TEST_EXIT_CODE"
+            fi
+            
+            echo "=== Checking for test results in logcat ==="
+            grep -E "SanityCheck|UIWorkflowTest" "$LOGCAT_FILE" || echo "No test logs found"
+            
+            exit $TEST_EXIT_CODE
 
       - name: Upload logcat
         if: always()
