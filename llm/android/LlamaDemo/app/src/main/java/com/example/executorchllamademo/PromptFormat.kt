@@ -95,7 +95,7 @@ object PromptFormat {
 
     @JvmStatic
     fun getGemmaPreImagePrompt(): String {
-        return "<start_of_turn>user\n"
+        return "<start_of_turn>user\n<start_of_image>"
     }
 
     @JvmStatic

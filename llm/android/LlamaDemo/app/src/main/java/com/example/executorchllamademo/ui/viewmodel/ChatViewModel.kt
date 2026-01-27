@@ -317,13 +317,13 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
             val processedImageList = getProcessedImagesForModel(_selectedImages)
             if (processedImageList.isNotEmpty()) {
                 _messages.add(
-                    Message("Llava - Starting image Prefill.", false, MessageType.SYSTEM, 0)
+                    Message("Starting image prefill.", false, MessageType.SYSTEM, 0)
                 )
                 executor.execute {
                     android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_MORE_FAVORABLE)
                     ETLogging.getInstance().log("Starting runnable prefill image")
                     val img = processedImageList[0]
-                    ETLogging.getInstance().log("Llava start prefill image")
+                    ETLogging.getInstance().log("Starting prefill image")
                     if (currentSettingsFields.modelType == ModelType.LLAVA_1_5) {
                         module?.prefillImages(
                             img.getInts(),
