@@ -94,6 +94,21 @@ object PromptFormat {
     }
 
     @JvmStatic
+    fun getGemmaPreImagePrompt(): String {
+        return "<start_of_turn>user\n"
+    }
+
+    @JvmStatic
+    fun getGemmaPostImagePrompt(): String {
+        return "<end_of_image>"
+    }
+
+    @JvmStatic
+    fun getGemmaMultimodalUserPrompt(): String {
+        return "$USER_PLACEHOLDER<end_of_turn>\n<start_of_turn>model"
+    }
+
+    @JvmStatic
     fun getFormattedLlamaGuardPrompt(userPrompt: String): String {
         return getUserPromptTemplate(ModelType.LLAMA_GUARD_3)
             .replace(USER_PLACEHOLDER, getLlamaGuardPresetPrompt().replace(USER_PLACEHOLDER, userPrompt))

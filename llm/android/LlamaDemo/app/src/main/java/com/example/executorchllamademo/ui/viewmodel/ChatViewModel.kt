@@ -332,12 +332,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                             ModelUtils.VISION_MODEL_IMAGE_CHANNELS
                         )
                     } else if (currentSettingsFields.modelType == ModelType.GEMMA_3) {
+                        module?.prefillPrompt(PromptFormat.getGemmaPreImagePrompt())
                         module?.prefillImages(
                             img.getFloats(),
                             img.width,
                             img.height,
                             ModelUtils.VISION_MODEL_IMAGE_CHANNELS
                         )
+                        module?.prefillPrompt(PromptFormat.getGemmaPostImagePrompt())
                     }
                 }
             }
@@ -374,6 +376,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
 
         if (currentSettingsFields.modelType == ModelType.LLAVA_1_5 && shouldAddSystemPrompt) {
             finalPrompt = PromptFormat.getLlavaFirstTurnUserPrompt()
+                .replace(PromptFormat.USER_PLACEHOLDER, rawPrompt)
+        } else if (currentSettingsFields.modelType == ModelType.GEMMA_3 && _selectedImages.isNotEmpty()) {
+            finalPrompt = PromptFormat.getGemmaMultimodalUserPrompt()
                 .replace(PromptFormat.USER_PLACEHOLDER, rawPrompt)
         } else {
             finalPrompt = (if (shouldAddSystemPrompt) currentSettingsFields.getFormattedSystemPrompt() else "") +
