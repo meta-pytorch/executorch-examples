@@ -245,8 +245,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
             modelInfo = "Successfully loaded model. $pteName and tokenizer $tokenizerName in ${loadDuration.toFloat() / 1000} sec. $capabilityText"
 
             if (currentSettingsFields.modelType == ModelType.LLAVA_1_5) {
-                ETLogging.getInstance().log("Llava start prefill prompt")
-                module?.prefillPrompt(PromptFormat.getLlavaPresetPrompt())
+                val llavaPresetPrompt = PromptFormat.getLlavaPresetPrompt()
+                ETLogging.getInstance().log("Llava start prefill prompt: $llavaPresetPrompt")
+                module?.prefillPrompt(llavaPresetPrompt)
                 ETLogging.getInstance().log("Llava completes prefill prompt")
             }
             loadSuccess = true
@@ -335,7 +336,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                             ModelUtils.VISION_MODEL_IMAGE_CHANNELS
                         )
                     } else if (currentSettingsFields.modelType == ModelType.GEMMA_3) {
-                        module?.prefillPrompt(PromptFormat.getGemmaPreImagePrompt())
+                        val gemmaPreImagePrompt = PromptFormat.getGemmaPreImagePrompt()
+                        ETLogging.getInstance().log("Gemma prefill pre-image prompt: $gemmaPreImagePrompt")
+                        module?.prefillPrompt(gemmaPreImagePrompt)
                         module?.prefillImages(
                             img.getFloats(),
                             img.width,
@@ -416,8 +419,10 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                 if (currentSettingsFields.modelType == ModelType.VOXTRAL && audioFileToPrefill != null) {
                     prefillVoxtralAudio(audioFileToPrefill!!, finalPrompt)
                     audioFileToPrefill = null
+                    ETLogging.getInstance().log("Running vision model inference.. prompt=(empty after audio prefill)")
                     module?.generate("", ModelUtils.VISION_MODEL_SEQ_LEN, this, false)
                 } else {
+                    ETLogging.getInstance().log("Running vision model inference.. prompt=$finalPrompt")
                     module?.generate(finalPrompt, ModelUtils.VISION_MODEL_SEQ_LEN, this, false)
                 }
             } else if (currentSettingsFields.modelType == ModelType.LLAMA_GUARD_3) {
@@ -460,9 +465,13 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
             val bins = 128
             val frames = 3000
             val batchSize = floatCount / (bins * frames)
-            module?.prefillPrompt("<s>[INST][BEGIN_AUDIO]")
+            val preAudioPrompt = "<s>[INST][BEGIN_AUDIO]"
+            val postAudioPrompt = "$textPrompt[/INST]"
+            ETLogging.getInstance().log("Voxtral prefill pre-audio prompt: $preAudioPrompt")
+            module?.prefillPrompt(preAudioPrompt)
             module?.prefillAudio(floats, batchSize, bins, frames)
-            module?.prefillPrompt("$textPrompt[/INST]")
+            ETLogging.getInstance().log("Voxtral prefill post-audio prompt: $postAudioPrompt")
+            module?.prefillPrompt(postAudioPrompt)
         } catch (e: IOException) {
             Log.e("AudioPrefill", "Audio file error")
         }
