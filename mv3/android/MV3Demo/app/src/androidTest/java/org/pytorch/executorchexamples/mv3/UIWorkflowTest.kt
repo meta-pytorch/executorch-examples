@@ -224,7 +224,7 @@ class UIWorkflowTest {
      * Tests the full end-to-end classification workflow:
      * 1. App launches
      * 2. Download model if needed
-     * 3. Download cat image from HuggingFace
+     * 3. Download cat image from HuggingFace (in memory, no gallery save)
      * 4. Run inference
      * 5. Validate that the result is a cat class
      */
@@ -239,7 +239,7 @@ class UIWorkflowTest {
         val finalReady = waitForModelReady(300000)
         assertTrue("Model should be ready", finalReady)
 
-        // Step 2: Download cat image
+        // Step 2: Download cat image (in memory only, no cleanup needed)
         val bitmap = downloadImageFromUrl(CAT_IMAGE_URL)
         assertNotNull("Cat image should be downloaded", bitmap)
 
