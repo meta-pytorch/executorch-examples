@@ -130,9 +130,9 @@ class UIWorkflowTest {
         try {
             // Step 2: Restart activity to show download button
             composeTestRule.activityRule.scenario.recreate()
-            
+
             // Wait for UI to settle
-            Thread.sleep(1000)
+            composeTestRule.waitForIdle()
             
             // Download button should be visible
             composeTestRule.onNodeWithTag("downloadButton").assertIsDisplayed()
@@ -180,16 +180,16 @@ class UIWorkflowTest {
     fun testNextButtonCyclesSamples() {
         // Click Next button
         composeTestRule.onNodeWithTag("nextButton").performClick()
-        
-        // Wait for image to change
-        Thread.sleep(500)
-        
+
+        // Wait for UI to settle
+        composeTestRule.waitForIdle()
+
         // Image should still be displayed
         composeTestRule.onNodeWithTag("segmentationImage").assertExists()
-        
+
         // Can click Next again
         composeTestRule.onNodeWithTag("nextButton").performClick()
-        Thread.sleep(500)
+        composeTestRule.waitForIdle()
         composeTestRule.onNodeWithTag("segmentationImage").assertExists()
     }
 
@@ -241,9 +241,9 @@ class UIWorkflowTest {
         
         // Click Reset button
         composeTestRule.onNodeWithTag("resetButton").performClick()
-        
+
         // Wait for reset to complete
-        Thread.sleep(500)
+        composeTestRule.waitForIdle()
         
         // Reset button should be disabled again
         composeTestRule.onNodeWithTag("resetButton").assertIsNotEnabled()
@@ -259,7 +259,7 @@ class UIWorkflowTest {
     fun testCompleteWorkflow() {
         // Step 1: Click Next to change sample
         composeTestRule.onNodeWithTag("nextButton").performClick()
-        Thread.sleep(500)
+        composeTestRule.waitForIdle()
         
         // Step 2: Run segmentation
         composeTestRule.onNodeWithTag("runButton").performClick()
@@ -275,7 +275,7 @@ class UIWorkflowTest {
         
         // Step 3: Reset image
         composeTestRule.onNodeWithTag("resetButton").performClick()
-        Thread.sleep(500)
+        composeTestRule.waitForIdle()
         
         // Verify reset worked
         composeTestRule.onNodeWithTag("resetButton").assertIsNotEnabled()
@@ -310,7 +310,7 @@ class UIWorkflowTest {
             // Reset for next iteration (except last)
             if (i < 3) {
                 composeTestRule.onNodeWithTag("resetButton").performClick()
-                Thread.sleep(500)
+                composeTestRule.waitForIdle()
             }
         }
     }
