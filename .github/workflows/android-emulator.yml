@@ -14,12 +14,6 @@ on:
       - 'mv3/android/**'
       - '.github/workflows/android-emulator.yml'
   workflow_dispatch:
-    inputs:
-      demo_path:
-        description: 'Path to Android demo (e.g., dl3/android/DeepLabV3Demo)'
-        required: false
-        default: 'dl3/android/DeepLabV3Demo'
-        type: string
 
 permissions:
   contents: read
@@ -37,7 +31,7 @@ jobs:
     env:
       API_LEVEL: 34
       ARCH: x86_64
-      DEMO_PATH: ${{ inputs.demo_path || matrix.demo.path }}
+      DEMO_PATH: ${{ matrix.demo.path }}
 
     name: Instrumentation Test ${{ matrix.demo.name }}
     steps:
