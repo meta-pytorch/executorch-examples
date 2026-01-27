@@ -85,22 +85,17 @@ object PromptFormat {
     @JvmStatic
     fun getLlavaPresetPrompt(): String {
         return "A chat between a curious human and an artificial intelligence assistant. The assistant" +
-                " gives helpful, detailed, and polite answers to the human's questions. USER: "
+                " gives helpful, detailed, and polite answers to the human's questions."
     }
 
     @JvmStatic
-    fun getLlavaFirstTurnUserPrompt(): String {
-        return "$USER_PLACEHOLDER ASSISTANT:"
+    fun getLlavaMultimodalUserPrompt(): String {
+        return "USER: $USER_PLACEHOLDER ASSISTANT:"
     }
 
     @JvmStatic
     fun getGemmaPreImagePrompt(): String {
-        return "<start_of_turn>user\n"
-    }
-
-    @JvmStatic
-    fun getGemmaPostImagePrompt(): String {
-        return "<end_of_image>"
+        return "<start_of_turn>user\n<start_of_image>"
     }
 
     @JvmStatic

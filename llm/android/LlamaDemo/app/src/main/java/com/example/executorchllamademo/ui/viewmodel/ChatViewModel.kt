@@ -342,7 +342,6 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                             img.height,
                             ModelUtils.VISION_MODEL_IMAGE_CHANNELS
                         )
-                        module?.prefillPrompt(PromptFormat.getGemmaPostImagePrompt())
                     }
                 }
             }
@@ -377,8 +376,8 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
         val rawPrompt = inputText
         val finalPrompt: String
 
-        if (currentSettingsFields.modelType == ModelType.LLAVA_1_5 && shouldAddSystemPrompt) {
-            finalPrompt = PromptFormat.getLlavaFirstTurnUserPrompt()
+        if (currentSettingsFields.modelType == ModelType.LLAVA_1_5 && _selectedImages.isNotEmpty()) {
+            finalPrompt = PromptFormat.getLlavaMultimodalUserPrompt()
                 .replace(PromptFormat.USER_PLACEHOLDER, rawPrompt)
         } else if (currentSettingsFields.modelType == ModelType.GEMMA_3 && _selectedImages.isNotEmpty()) {
             finalPrompt = PromptFormat.getGemmaMultimodalUserPrompt()
