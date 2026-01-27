@@ -46,6 +46,46 @@ This is a sample Android application demonstrating MobileNet v3 (MV3) image clas
 - **Inference**: ExecuTorch Android API
 - **Image Processing**: `TensorImageUtils` for bitmap-to-tensor conversion
 
+## Testing
+
+The app includes an instrumentation test that validates the complete image classification workflow.
+
+### What the test does
+
+1. Launches the app
+2. Downloads the MV3 model if not already present
+3. Downloads a cat image from HuggingFace
+4. Runs inference on the image
+5. Validates that the model correctly classifies it as a cat
+
+### Running the test
+
+1. **Connect a device or start an emulator**
+
+2. **Build and install the test APKs**:
+    ```bash
+    ./gradlew installDebug installDebugAndroidTest
+    ```
+
+3. **Run the test**:
+    ```bash
+    adb shell am instrument -w -r \
+      -e class 'org.pytorch.executorchexamples.mv3.UIWorkflowTest#testCatImageClassification' \
+      org.pytorch.executorchexamples.mv3.test/androidx.test.runner.AndroidJUnitRunner
+    ```
+
+    Or run all tests via Gradle:
+    ```bash
+    ./gradlew connectedDebugAndroidTest
+    ```
+
+### Test output
+
+The test logs classification results to logcat with the tag `MV3_RESULT`:
+```bash
+adb logcat -s MV3_RESULT
+```
+
 ## License
 
 BSD-3-Clause

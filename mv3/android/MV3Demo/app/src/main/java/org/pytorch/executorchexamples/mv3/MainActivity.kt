@@ -46,6 +46,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
@@ -163,7 +166,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                                 enabled = !isProcessing && modelReady && !isLiveCameraMode && bitmap != null,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f).testTag("run_inference_button")
                             ) {
                                 Icon(
                                     imageVector = Icons.Filled.PlayArrow,
@@ -177,7 +180,7 @@ class MainActivity : ComponentActivity() {
                                     imagePickerLauncher.launch("image/*")
                                 },
                                 enabled = !isLiveCameraMode && modelReady,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f).testTag("pick_image_button")
                             ) {
                                 Icon(
                                     imageVector = Icons.Filled.PhotoLibrary,
@@ -195,7 +198,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                                 enabled = modelReady,
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.weight(1f).testTag("live_camera_button"),
                                 colors = IconButtonDefaults.iconButtonColors(
                                     containerColor = if (isLiveCameraMode) MaterialTheme.colorScheme.secondaryContainer else androidx.compose.ui.graphics.Color.Transparent
                                 )
@@ -274,12 +277,15 @@ class MainActivity : ComponentActivity() {
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(120.dp),
+                                .height(120.dp)
+                                .testTag("results_list"),
                             verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             items(classificationResults) { result ->
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .testTag("result_item_${result.first}"),
                                     horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
                                     Text(text = result.first, style = MaterialTheme.typography.bodyMedium)
@@ -308,7 +314,7 @@ class MainActivity : ComponentActivity() {
                                     }
                                 },
                                 enabled = !isDownloading,
-                                modifier = Modifier.fillMaxWidth()
+                                modifier = Modifier.fillMaxWidth().testTag("download_button")
                             ) {
                                 Text(if (isDownloading) "Downloading..." else "Download Model")
                             }
