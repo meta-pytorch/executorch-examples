@@ -110,23 +110,26 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
         val isLoadModel = updatedSettingsFields.isLoadModel
         if (isUpdated) {
             checkForClearChatHistory(updatedSettingsFields)
-            // Update media capabilities after settings are updated
-            setBackendMode(updatedSettingsFields.backendType)
 
             if (isLoadModel) {
+                // Update local copy BEFORE checking media capabilities
+                val settingsWithLoadFlagCleared = updatedSettingsFields.copy(isLoadModel = false)
+                currentSettingsFields = settingsWithLoadFlagCleared
+                demoSharedPreferences.saveModuleSettings(settingsWithLoadFlagCleared)
+
+                // Update media capabilities after settings are updated
+                setBackendMode(updatedSettingsFields.backendType)
+
                 loadLocalModelAndParameters(
                     updatedSettingsFields.modelFilePath,
                     updatedSettingsFields.tokenizerFilePath,
                     updatedSettingsFields.dataPath,
                     updatedSettingsFields.temperature.toFloat()
                 )
-                // Save with isLoadModel = false and update local copy to match,
-                // preventing duplicate "To get started..." messages on subsequent calls
-                val settingsWithLoadFlagCleared = updatedSettingsFields.copy(isLoadModel = false)
-                demoSharedPreferences.saveModuleSettings(settingsWithLoadFlagCleared)
-                currentSettingsFields = settingsWithLoadFlagCleared
             } else {
                 currentSettingsFields = updatedSettingsFields.copy()
+                // Update media capabilities after settings are updated
+                setBackendMode(updatedSettingsFields.backendType)
                 if (module == null) {
                     addSystemMessage(systemPromptMessage)
                 }
@@ -317,13 +320,13 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
             val processedImageList = getProcessedImagesForModel(_selectedImages)
             if (processedImageList.isNotEmpty()) {
                 _messages.add(
-                    Message("Llava - Starting image Prefill.", false, MessageType.SYSTEM, 0)
+                    Message("Starting image prefill.", false, MessageType.SYSTEM, 0)
                 )
                 executor.execute {
                     android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_MORE_FAVORABLE)
                     ETLogging.getInstance().log("Starting runnable prefill image")
                     val img = processedImageList[0]
-                    ETLogging.getInstance().log("Llava start prefill image")
+                    ETLogging.getInstance().log("Starting prefill image")
                     if (currentSettingsFields.modelType == ModelType.LLAVA_1_5) {
                         module?.prefillImages(
                             img.getInts(),
@@ -332,6 +335,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                             ModelUtils.VISION_MODEL_IMAGE_CHANNELS
                         )
                     } else if (currentSettingsFields.modelType == ModelType.GEMMA_3) {
+                        module?.prefillPrompt(PromptFormat.getGemmaPreImagePrompt())
                         module?.prefillImages(
                             img.getFloats(),
                             img.width,
@@ -372,8 +376,11 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
         val rawPrompt = inputText
         val finalPrompt: String
 
-        if (currentSettingsFields.modelType == ModelType.LLAVA_1_5 && shouldAddSystemPrompt) {
-            finalPrompt = PromptFormat.getLlavaFirstTurnUserPrompt()
+        if (currentSettingsFields.modelType == ModelType.LLAVA_1_5 && _selectedImages.isNotEmpty()) {
+            finalPrompt = PromptFormat.getLlavaMultimodalUserPrompt()
+                .replace(PromptFormat.USER_PLACEHOLDER, rawPrompt)
+        } else if (currentSettingsFields.modelType == ModelType.GEMMA_3 && _selectedImages.isNotEmpty()) {
+            finalPrompt = PromptFormat.getGemmaMultimodalUserPrompt()
                 .replace(PromptFormat.USER_PLACEHOLDER, rawPrompt)
         } else {
             finalPrompt = (if (shouldAddSystemPrompt) currentSettingsFields.getFormattedSystemPrompt() else "") +
