@@ -57,6 +57,8 @@ import com.example.executorchllamademo.ui.theme.LocalAppColors
 import com.example.executorchllamademo.ui.viewmodel.ConfigLoadState
 import com.example.executorchllamademo.ui.viewmodel.ModelDownloadState
 
+private const val DEFAULT_CONFIG_URL = "https://raw.githubusercontent.com/meta-pytorch/executorch-examples/889ccc6e88813cbf03775889beed29b793d0c8db/llm/android/LlamaDemo/app/src/main/assets/preset_models.json"
+
 @Composable
 fun SelectPresetModelScreen(
     availableModels: Map<String, ModelInfo>,
@@ -71,7 +73,7 @@ fun SelectPresetModelScreen(
 ) {
     val appColors = LocalAppColors.current
     val scrollState = rememberScrollState()
-    var configUrlInput by remember { mutableStateOf(configLoadState.customUrl ?: "") }
+    var configUrlInput by remember { mutableStateOf(configLoadState.customUrl ?: DEFAULT_CONFIG_URL) }
 
     Column(
         modifier = Modifier
@@ -206,7 +208,6 @@ private fun ConfigUrlSection(
                 value = configUrl,
                 onValueChange = onConfigUrlChange,
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("https://example.com/preset_models.json") },
                 singleLine = true,
                 enabled = !configLoadState.isLoading
             )
