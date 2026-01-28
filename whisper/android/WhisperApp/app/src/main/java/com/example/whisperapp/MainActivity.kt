@@ -1,6 +1,5 @@
 package com.example.whisperapp
 
-
 import android.Manifest
 import android.content.pm.PackageManager
 import android.media.AudioFormat
@@ -12,31 +11,54 @@ import android.os.Looper
 import android.system.ErrnoException
 import android.system.Os
 import android.util.Log
-import android.widget.Button
-import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.example.whisperapp.ui.theme.WhisperAppTheme
 import org.pytorch.executorch.EValue
 import org.pytorch.executorch.Module
 import org.pytorch.executorch.Tensor
 import org.pytorch.executorch.extension.audio.ASRCallback
 import org.pytorch.executorch.extension.audio.ASRModule
-import java.io.*
+import java.io.File
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.io.IOException
+import java.io.OutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-
-class MainActivity : ComponentActivity(),  ASRCallback {
+class MainActivity : ComponentActivity(), ASRCallback {
 
     companion object {
         private const val TAG = "MainActivity"
         private const val RECORDING_DURATION_MS = 5000L // 5 seconds
-        private var Output = ""
     }
 
+    private var transcriptionOutput by mutableStateOf("")
+    private var buttonText by mutableStateOf("Record")
+    private var buttonEnabled by mutableStateOf(true)
+    private var statusText by mutableStateOf("")
+
     private var isRecording = false
-    private lateinit var recordButton: Button
     private var audioRecord: AudioRecord? = null
     private var recordingThread: Thread? = null
     private val handler = Handler(Looper.getMainLooper())
@@ -52,20 +74,19 @@ class MainActivity : ComponentActivity(),  ASRCallback {
         audioFormat
     )
 
-
     @Throws(IOException::class)
     fun readWavPcmBytes(filePath: String): ByteArray {
-        val WAV_HEADER_SIZE = 44 // Standard header size for PCM WAV
+        val wavHeaderSize = 44 // Standard header size for PCM WAV
         val file = File(filePath)
         val fis = FileInputStream(file)
         try {
             val totalSize = file.length()
-            assert (totalSize > WAV_HEADER_SIZE)
-            val pcmSize = (totalSize - WAV_HEADER_SIZE).toInt()
+            assert(totalSize > wavHeaderSize)
+            val pcmSize = (totalSize - wavHeaderSize).toInt()
             val pcmBytes = ByteArray(pcmSize)
             // Skip the header
-            val skipped = fis.skip(WAV_HEADER_SIZE.toLong())
-            if (skipped != WAV_HEADER_SIZE.toLong()) throw IOException("Failed to skip WAV header")
+            val skipped = fis.skip(wavHeaderSize.toLong())
+            if (skipped != wavHeaderSize.toLong()) throw IOException("Failed to skip WAV header")
             // Read PCM data
             val read = fis.read(pcmBytes)
             if (read != pcmSize) throw IOException("Failed to read all PCM data")
@@ -74,7 +95,6 @@ class MainActivity : ComponentActivity(),  ASRCallback {
             fis.close()
         }
     }
-
 
     private fun convertPcm16ToFloat(audioBytes: ByteArray): FloatArray {
         val totalSamples = audioBytes.size / 2  // 2 bytes per 16-bit sample
@@ -91,16 +111,13 @@ class MainActivity : ComponentActivity(),  ASRCallback {
             } else {
                 sample / 32767.0f
             }
-
         }
 
         return floatSamples
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
         super.onCreate(savedInstanceState)
-        // enableEdgeToEdge()
 
         try {
             Os.setenv("ADSP_LIBRARY_PATH", applicationInfo.nativeLibraryDir, true)
@@ -109,33 +126,48 @@ class MainActivity : ComponentActivity(),  ASRCallback {
             finish()
         }
 
-        setContentView(R.layout.activity_main)
-
-        recordButton = findViewById(R.id.record_button)
-        recordButton.setOnClickListener {
-            if (isRecording) {
-                stopRecording()
-            } else {
-                startRecording()
-            }
-        }
-
         // Check if minimum buffer size is valid
         if (bufferSize == AudioRecord.ERROR_BAD_VALUE || bufferSize == AudioRecord.ERROR) {
             Log.e(TAG, "Invalid buffer size")
-            Toast.makeText(this, "Audio recording not supported on this device", Toast.LENGTH_LONG).show()
+            statusText = "Audio recording not supported on this device"
         }
 
+        setContent {
+            WhisperAppTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    WhisperScreen(
+                        buttonText = buttonText,
+                        buttonEnabled = buttonEnabled,
+                        statusText = statusText,
+                        transcriptionResult = transcriptionOutput,
+                        onRecordClick = { onRecordButtonClick() }
+                    )
+                }
+            }
+        }
+    }
+
+    private fun onRecordButtonClick() {
+        if (isRecording) {
+            stopRecording()
+        } else {
+            startRecording()
+        }
     }
 
     private fun runWhisper() {
+        transcriptionOutput = ""
         // The entire audio flow:
-        val wavFile = File(getExternalFilesDir(null), "audio_record.wav") // do this better
+        val wavFile = File(getExternalFilesDir(null), "audio_record.wav")
         val absolutePath: String = wavFile.absolutePath
-        val PCMBytes = readWavPcmBytes(absolutePath)
-        val inputFloatArray = convertPcm16ToFloat(PCMBytes)
+        val pcmBytes = readWavPcmBytes(absolutePath)
+        val inputFloatArray = convertPcm16ToFloat(pcmBytes)
 
-        val tensor1 = Tensor.fromBlob(inputFloatArray,
+        val tensor1 = Tensor.fromBlob(
+            inputFloatArray,
             longArrayOf(inputFloatArray.size.toLong())
         )
         val module = Module.load("/data/local/tmp/whisper/whisper_preprocess.pte")
@@ -147,22 +179,26 @@ class MainActivity : ComponentActivity(),  ASRCallback {
         result.forEach { byteBuffer.putFloat(it) }
         val byteArray = arrayOf(byteBuffer.array())
 
-        val whisperModule = ASRModule("/data/local/tmp/whisper/whisper_qnn_16a8w.pte",
-            "/data/local/tmp/whisper/tokenizer.json")
+        val whisperModule = ASRModule(
+            "/data/local/tmp/whisper/whisper_qnn_16a8w.pte",
+            "/data/local/tmp/whisper/tokenizer.json"
+        )
 
         Log.v(TAG, "Starting transcribe")
-        whisperModule.transcribe(128, byteArray, this@MainActivity) // this runs runner.transcribe()
+        whisperModule.transcribe(128, byteArray, this@MainActivity)
         Log.v(TAG, "Finished transcribe")
-        Toast.makeText(this, Output.substring(37, Output.length-13), Toast.LENGTH_LONG).show()
-        // hack to remove start and end tokens; ideally the runner should not do callback on these tokens
 
+        // Display result in Text view instead of Toast
+        // hack to remove start and end tokens; ideally the runner should not do callback on these tokens
+        if (transcriptionOutput.length > 50) {
+            transcriptionOutput = transcriptionOutput.substring(37, transcriptionOutput.length - 13)
+        }
     }
 
     override fun onResult(result: String) {
         Log.v(TAG, "Called callback: here's the current output")
-        Output += result
-        Log.v(TAG, Output)
-
+        transcriptionOutput += result
+        Log.v(TAG, transcriptionOutput)
     }
 
     private fun startRecording() {
@@ -183,24 +219,21 @@ class MainActivity : ComponentActivity(),  ASRCallback {
 
                     if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
                         Log.e(TAG, "AudioRecord initialization failed")
-                        Toast.makeText(this, "Failed to initialize audio recorder", Toast.LENGTH_SHORT).show()
+                        statusText = "Failed to initialize audio recorder"
                         return
                     }
 
                     audioRecord?.startRecording()
                     isRecording = true
-                    // recordButton.text = "Stop Recording"
 
-                    recordButton.text = "Recording... (5s)"
-                    recordButton.isEnabled = false // Disable button during recording
+                    buttonText = "Recording... (5s)"
+                    buttonEnabled = false
 
                     // Schedule automatic stop after 5 seconds
                     stopRecordingRunnable = Runnable {
                         stopRecording()
                     }
                     handler.postDelayed(stopRecordingRunnable!!, RECORDING_DURATION_MS)
-
-                    // recordButton.text = "Finished recording"
 
                     val pcmFile = File(getExternalFilesDir(null), "audio_record.pcm")
 
@@ -220,16 +253,14 @@ class MainActivity : ComponentActivity(),  ASRCallback {
 
                             runOnUiThread {
                                 writeWavFile(pcmFile)
-                                Toast.makeText(this@MainActivity, "Recording saved", Toast.LENGTH_SHORT).show()
+                                statusText = "Recording saved"
                                 runWhisper()
                             }
-
-
 
                         } catch (e: IOException) {
                             Log.e(TAG, "Recording failed", e)
                             runOnUiThread {
-                                Toast.makeText(this@MainActivity, "Recording failed", Toast.LENGTH_SHORT).show()
+                                statusText = "Recording failed"
                             }
                         }
                     }
@@ -238,22 +269,16 @@ class MainActivity : ComponentActivity(),  ASRCallback {
 
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to start recording", e)
-                    Toast.makeText(this, "Failed to start recording", Toast.LENGTH_SHORT).show()
+                    statusText = "Failed to start recording"
                 }
             }
 
             shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO) -> {
-                // Show rationale and request permission
-                Toast.makeText(
-                    this,
-                    "Audio recording permission is needed to record audio",
-                    Toast.LENGTH_LONG
-                ).show()
+                statusText = "Audio recording permission is needed to record audio"
                 requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
             }
 
             else -> {
-                // Request permission directly
                 requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
             }
         }
@@ -270,7 +295,8 @@ class MainActivity : ComponentActivity(),  ASRCallback {
         }
 
         audioRecord = null
-        recordButton.text = "Finished Recording"
+        buttonText = "Record"
+        buttonEnabled = true
 
         recordingThread?.join()
         recordingThread = null
@@ -385,7 +411,6 @@ class MainActivity : ComponentActivity(),  ASRCallback {
         out.write(header, 0, 44)
     }
 
-
     override fun onDestroy() {
         super.onDestroy()
         if (isRecording) {
@@ -399,8 +424,50 @@ class MainActivity : ComponentActivity(),  ASRCallback {
         if (isGranted) {
             startRecording()
         } else {
-            Toast.makeText(this, "Audio recording permission required", Toast.LENGTH_LONG).show()
+            statusText = "Audio recording permission required"
         }
     }
+}
 
+@Composable
+fun WhisperScreen(
+    buttonText: String,
+    buttonEnabled: Boolean,
+    statusText: String,
+    transcriptionResult: String,
+    onRecordClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Button(
+            onClick = onRecordClick,
+            enabled = buttonEnabled
+        ) {
+            Text(text = buttonText)
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (statusText.isNotEmpty()) {
+            Text(
+                text = statusText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        if (transcriptionResult.isNotEmpty()) {
+            Text(
+                text = transcriptionResult,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+        }
+    }
 }
