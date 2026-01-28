@@ -36,12 +36,19 @@ data class ModelDownloadState(
     val downloadError: String? = null
 )
 
+data class ConfigLoadState(
+    val isLoading: Boolean = false,
+    val error: String? = null,
+    val customUrl: String? = null
+)
+
 class SelectPresetModelViewModel : ViewModel() {
 
     private var context: Context? = null
     private var demoSharedPreferences: DemoSharedPreferences? = null
 
-    val availableModels: Map<String, ModelInfo> = ModelDownloadConfig.getAvailableModels()
+    var availableModels by mutableStateOf<Map<String, ModelInfo>>(emptyMap())
+        private set
 
     // Track download state for each model
     val modelStates = mutableStateMapOf<String, ModelDownloadState>()
@@ -49,9 +56,22 @@ class SelectPresetModelViewModel : ViewModel() {
     var selectedModelKey by mutableStateOf<String?>(null)
         private set
 
+    var configLoadState by mutableStateOf(ConfigLoadState())
+        private set
+
     fun initialize(context: Context) {
         this.context = context
         demoSharedPreferences = DemoSharedPreferences(context)
+        ModelDownloadConfig.initialize(context)
+        refreshModels()
+
+        // Load the current custom URL if any
+        val customUrl = ModelDownloadConfig.getConfigManager()?.getCustomConfigUrl()
+        configLoadState = configLoadState.copy(customUrl = customUrl)
+    }
+
+    private fun refreshModels() {
+        availableModels = ModelDownloadConfig.getAvailableModels()
         checkDownloadedFiles()
     }
 
@@ -215,5 +235,58 @@ class SelectPresetModelViewModel : ViewModel() {
             downloadProgress = 0f,
             downloadError = null
         )
+    }
+
+    /**
+     * Loads a preset configuration from a URL.
+     */
+    fun loadConfigFromUrl(url: String) {
+        val configManager = ModelDownloadConfig.getConfigManager() ?: return
+
+        configLoadState = configLoadState.copy(isLoading = true, error = null)
+
+        viewModelScope.launch {
+            val result = configManager.loadFromUrl(url)
+
+            result.fold(
+                onSuccess = { models ->
+                    ModelDownloadConfig.updateModels(models)
+                    configLoadState = ConfigLoadState(
+                        isLoading = false,
+                        error = null,
+                        customUrl = url
+                    )
+                    // Clear old model states and refresh
+                    modelStates.clear()
+                    refreshModels()
+                },
+                onFailure = { error ->
+                    configLoadState = configLoadState.copy(
+                        isLoading = false,
+                        error = error.message ?: "Failed to load config"
+                    )
+                }
+            )
+        }
+    }
+
+    /**
+     * Resets to the default bundled configuration.
+     */
+    fun resetToDefaultConfig() {
+        val configManager = ModelDownloadConfig.getConfigManager() ?: return
+
+        val models = configManager.resetToDefault()
+        ModelDownloadConfig.updateModels(models)
+
+        configLoadState = ConfigLoadState(
+            isLoading = false,
+            error = null,
+            customUrl = null
+        )
+
+        // Clear old model states and refresh
+        modelStates.clear()
+        refreshModels()
     }
 }

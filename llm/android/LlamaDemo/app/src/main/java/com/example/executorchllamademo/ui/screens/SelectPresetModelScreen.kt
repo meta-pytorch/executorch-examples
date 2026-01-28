@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -36,8 +37,15 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -46,19 +54,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.executorchllamademo.ModelInfo
 import com.example.executorchllamademo.ui.theme.LocalAppColors
+import com.example.executorchllamademo.ui.viewmodel.ConfigLoadState
 import com.example.executorchllamademo.ui.viewmodel.ModelDownloadState
 
 @Composable
 fun SelectPresetModelScreen(
     availableModels: Map<String, ModelInfo>,
     modelStates: Map<String, ModelDownloadState>,
+    configLoadState: ConfigLoadState,
     onBackPressed: () -> Unit,
     onDownloadClick: (String) -> Unit,
     onDeleteClick: (String) -> Unit,
-    onModelClick: (String) -> Unit
+    onModelClick: (String) -> Unit,
+    onLoadConfigFromUrl: (String) -> Unit,
+    onResetConfig: () -> Unit
 ) {
     val appColors = LocalAppColors.current
     val scrollState = rememberScrollState()
+    var configUrlInput by remember { mutableStateOf(configLoadState.customUrl ?: "") }
 
     Column(
         modifier = Modifier
@@ -97,6 +110,20 @@ fun SelectPresetModelScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
+            // Config URL section
+            ConfigUrlSection(
+                configUrl = configUrlInput,
+                onConfigUrlChange = { configUrlInput = it },
+                configLoadState = configLoadState,
+                onLoadClick = { onLoadConfigFromUrl(configUrlInput) },
+                onResetClick = {
+                    configUrlInput = ""
+                    onResetConfig()
+                }
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
             if (availableModels.isEmpty()) {
                 Text(
                     text = "No preset models available. Stay tuned!",
@@ -128,6 +155,136 @@ fun SelectPresetModelScreen(
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+private fun ConfigUrlSection(
+    configUrl: String,
+    onConfigUrlChange: (String) -> Unit,
+    configLoadState: ConfigLoadState,
+    onLoadClick: () -> Unit,
+    onResetClick: () -> Unit
+) {
+    val appColors = LocalAppColors.current
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = appColors.settingsRowBackground
+        ),
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "Custom Config URL",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Bold,
+                color = appColors.settingsText
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = "Load a custom preset configuration from a URL",
+                fontSize = 12.sp,
+                color = appColors.settingsSecondaryText
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedTextField(
+                value = configUrl,
+                onValueChange = onConfigUrlChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("https://example.com/preset_models.json") },
+                singleLine = true,
+                enabled = !configLoadState.isLoading,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = appColors.settingsText,
+                    unfocusedTextColor = appColors.settingsText,
+                    focusedBorderColor = appColors.navBar,
+                    unfocusedBorderColor = appColors.settingsSecondaryText,
+                    focusedPlaceholderColor = appColors.settingsSecondaryText,
+                    unfocusedPlaceholderColor = appColors.settingsSecondaryText
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = onLoadClick,
+                    enabled = configUrl.isNotBlank() && !configLoadState.isLoading,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = appColors.navBar
+                    )
+                ) {
+                    if (configLoadState.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Loading...")
+                    } else {
+                        Icon(
+                            imageVector = Icons.Filled.Download,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Load")
+                    }
+                }
+
+                OutlinedButton(
+                    onClick = onResetClick,
+                    enabled = !configLoadState.isLoading,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Refresh,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("Reset")
+                }
+            }
+
+            // Show current custom URL if loaded
+            configLoadState.customUrl?.let { url ->
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Using custom config: $url",
+                    fontSize = 11.sp,
+                    color = Color(0xFF4CAF50)
+                )
+            }
+
+            // Show error if any
+            configLoadState.error?.let { error ->
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = error,
+                    fontSize = 12.sp,
+                    color = Color.Red
+                )
+            }
         }
     }
 }
