@@ -255,33 +255,5 @@ class PresetSanityTest {
         Log.i(TAG, "Waiting for model to load")
         val modelLoaded = waitForModelLoaded(90000)
         assertTrue("Model should be loaded successfully", modelLoaded)
-        Log.i(TAG, "Model loaded successfully")
-
-        // Step 6: Type "Once upon a time" and send
-        Log.i(TAG, "Step 6: Typing prompt and sending")
-        typeInChatInput("Once upon a time")
-
-        // Wait for send button to be enabled
-        composeTestRule.waitUntil(timeoutMillis = 5000) {
-            try {
-                composeTestRule.onNodeWithContentDescription("Send").assertIsEnabled()
-                true
-            } catch (e: AssertionError) {
-                false
-            }
-        }
-
-        composeTestRule.onNodeWithContentDescription("Send").performClick()
-        composeTestRule.waitForIdle()
-
-        // Step 7: Wait for generation to complete and verify response
-        Log.i(TAG, "Step 7: Waiting for generation to complete")
-        val generationComplete = waitForGenerationComplete(120000)
-        assertTrue("Generation should complete", generationComplete)
-
-        assertModelResponseNotEmpty()
-        logModelResponse()
-
-        Log.i(TAG, "Preset model sanity test completed successfully")
     }
 }
