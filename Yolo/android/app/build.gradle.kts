@@ -60,7 +60,11 @@ dependencies {
   implementation("androidx.constraintlayout:constraintlayout:2.2.0-alpha12")
   implementation("com.facebook.fbjni:fbjni:0.5.1")
   implementation("com.google.code.gson:gson:2.8.6")
-  implementation(files("libs/executorch.aar"))
+  if (useLocalAar == true) {
+    implementation(files("libs/executorch.aar"))
+  } else {
+    implementation("org.pytorch:executorch-android:1.0.1")
+  }
 
   implementation("com.google.android.material:material:1.12.0")
   implementation("androidx.activity:activity:1.9.0")
