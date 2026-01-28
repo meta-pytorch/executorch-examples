@@ -22,7 +22,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Article
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -59,7 +58,6 @@ import androidx.lifecycle.LifecycleEventObserver
 fun ChatScreen(
     viewModel: ChatViewModel,
     onBackClick: () -> Unit,
-    onSettingsClick: () -> Unit,
     onLogsClick: () -> Unit,
     onGalleryClick: () -> Unit,
     onCameraClick: () -> Unit,
@@ -136,13 +134,6 @@ fun ChatScreen(
                         Icon(
                             imageVector = Icons.Filled.Article,
                             contentDescription = "Logs",
-                            tint = appColors.textOnNavBar
-                        )
-                    }
-                    IconButton(onClick = onSettingsClick) {
-                        Icon(
-                            imageVector = Icons.Filled.Settings,
-                            contentDescription = "Settings",
                             tint = appColors.textOnNavBar
                         )
                     }

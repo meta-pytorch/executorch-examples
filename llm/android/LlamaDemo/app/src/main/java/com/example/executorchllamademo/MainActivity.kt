@@ -84,9 +84,6 @@ class MainActivity : ComponentActivity() {
                             startActivity(Intent(this@MainActivity, WelcomeActivity::class.java))
                             finish()
                         },
-                        onSettingsClick = {
-                            startActivity(Intent(this@MainActivity, ModelSettingsActivity::class.java))
-                        },
                         onLogsClick = {
                             startActivity(Intent(this@MainActivity, LogsActivity::class.java))
                         },
