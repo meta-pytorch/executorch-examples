@@ -51,6 +51,9 @@ class MainActivity : ComponentActivity(), ASRCallback {
     companion object {
         private const val TAG = "MainActivity"
         private const val RECORDING_DURATION_MS = 5000L // 5 seconds
+        // Token lengths to remove from transcription output
+        private const val START_TOKEN_LENGTH = 37
+        private const val END_TOKEN_LENGTH = 13
     }
 
     private var transcriptionOutput by mutableStateOf("")
@@ -190,11 +193,11 @@ class MainActivity : ComponentActivity(), ASRCallback {
 
         // Display result in Text view instead of Toast
         // hack to remove start and end tokens; ideally the runner should not do callback on these tokens
-        if (transcriptionOutput.length > 50) {
-            val startIndex = 37
-            val endIndex = transcriptionOutput.length - 13
-            if (endIndex > startIndex) {
-                transcriptionOutput = transcriptionOutput.substring(startIndex, endIndex)
+        val minLength = START_TOKEN_LENGTH + END_TOKEN_LENGTH
+        if (transcriptionOutput.length > minLength) {
+            val endIndex = transcriptionOutput.length - END_TOKEN_LENGTH
+            if (endIndex > START_TOKEN_LENGTH) {
+                transcriptionOutput = transcriptionOutput.substring(START_TOKEN_LENGTH, endIndex)
             }
         }
     }
