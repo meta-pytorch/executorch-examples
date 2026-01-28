@@ -49,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -73,7 +74,8 @@ fun SelectPresetModelScreen(
 ) {
     val appColors = LocalAppColors.current
     val scrollState = rememberScrollState()
-    var configUrlInput by remember { mutableStateOf(configLoadState.customUrl ?: DEFAULT_CONFIG_URL) }
+    var configUrlInput by remember { mutableStateOf(configLoadState.customUrl ?: "") }
+    var resetClickCount by remember { mutableStateOf(0) }
 
     Column(
         modifier = Modifier
@@ -119,9 +121,17 @@ fun SelectPresetModelScreen(
                 configLoadState = configLoadState,
                 onLoadClick = { onLoadConfigFromUrl(configUrlInput) },
                 onResetClick = {
-                    configUrlInput = ""
-                    onResetConfig()
-                }
+                    resetClickCount++
+                    if (resetClickCount >= 7) {
+                        // Easter egg: fill in the secret URL after 7 clicks
+                        configUrlInput = DEFAULT_CONFIG_URL
+                        resetClickCount = 0
+                    } else {
+                        configUrlInput = ""
+                        onResetConfig()
+                    }
+                },
+                placeholderUrl = DEFAULT_CONFIG_URL
             )
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -168,7 +178,8 @@ private fun ConfigUrlSection(
     onConfigUrlChange: (String) -> Unit,
     configLoadState: ConfigLoadState,
     onLoadClick: () -> Unit,
-    onResetClick: () -> Unit
+    onResetClick: () -> Unit,
+    placeholderUrl: String
 ) {
     val appColors = LocalAppColors.current
 
@@ -207,9 +218,19 @@ private fun ConfigUrlSection(
             OutlinedTextField(
                 value = configUrl,
                 onValueChange = onConfigUrlChange,
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("config_url_field"),
                 singleLine = true,
-                enabled = !configLoadState.isLoading
+                enabled = !configLoadState.isLoading,
+                placeholder = {
+                    Text(
+                        text = placeholderUrl,
+                        fontSize = 12.sp,
+                        color = appColors.settingsSecondaryText,
+                        maxLines = 1
+                    )
+                }
             )
 
             Spacer(modifier = Modifier.height(12.dp))
