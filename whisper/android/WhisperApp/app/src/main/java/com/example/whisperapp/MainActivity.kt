@@ -191,13 +191,19 @@ class MainActivity : ComponentActivity(), ASRCallback {
         // Display result in Text view instead of Toast
         // hack to remove start and end tokens; ideally the runner should not do callback on these tokens
         if (transcriptionOutput.length > 50) {
-            transcriptionOutput = transcriptionOutput.substring(37, transcriptionOutput.length - 13)
+            val startIndex = 37
+            val endIndex = transcriptionOutput.length - 13
+            if (endIndex > startIndex) {
+                transcriptionOutput = transcriptionOutput.substring(startIndex, endIndex)
+            }
         }
     }
 
     override fun onResult(result: String) {
         Log.v(TAG, "Called callback: here's the current output")
-        transcriptionOutput += result
+        runOnUiThread {
+            transcriptionOutput += result
+        }
         Log.v(TAG, transcriptionOutput)
     }
 
