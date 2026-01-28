@@ -183,13 +183,16 @@ class PresetSanityTest {
         composeTestRule.onNodeWithTag("config_url_field").performClick()
         composeTestRule.waitForIdle()
         composeTestRule.onNodeWithTag("config_url_field").performTextInput(DEFAULT_CONFIG_URL)
-        composeTestRule.waitForIdle()
+
+        // Small delay to ensure text is entered
+        Thread.sleep(500)
 
         // Click the Load button
         composeTestRule.onNodeWithText("Load").performClick()
 
         // Wait for config to load (models should appear)
-        composeTestRule.waitUntil(timeoutMillis = 30000) {
+        // Don't use waitForIdle here as the loading spinner animation keeps Compose busy
+        composeTestRule.waitUntil(timeoutMillis = 60000) {
             composeTestRule.onAllNodesWithText("Stories 110M").fetchSemanticsNodes().isNotEmpty()
         }
         Log.i(TAG, "Preset config loaded successfully")
