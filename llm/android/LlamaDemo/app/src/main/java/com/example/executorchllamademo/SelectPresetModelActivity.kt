@@ -59,6 +59,7 @@ class SelectPresetModelActivity : ComponentActivity() {
                     SelectPresetModelScreen(
                         availableModels = viewModel.availableModels,
                         modelStates = viewModel.modelStates,
+                        configLoadState = viewModel.configLoadState,
                         onBackPressed = { finish() },
                         onDownloadClick = { key ->
                             viewModel.downloadModel(key)
@@ -72,6 +73,12 @@ class SelectPresetModelActivity : ComponentActivity() {
                                 startActivity(Intent(this@SelectPresetModelActivity, MainActivity::class.java))
                                 finish()
                             }
+                        },
+                        onLoadConfigFromUrl = { url ->
+                            viewModel.loadConfigFromUrl(url)
+                        },
+                        onResetConfig = {
+                            viewModel.resetToDefaultConfig()
                         }
                     )
                 }
