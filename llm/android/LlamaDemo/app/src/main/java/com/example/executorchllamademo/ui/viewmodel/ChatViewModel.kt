@@ -128,10 +128,16 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
 
         if (isUpdated) {
             checkForClearChatHistory(updatedSettingsFields)
-            // Update media capabilities after settings are updated
-            setBackendMode(updatedSettingsFields.backendType)
 
             if (isLoadModel) {
+                // Update local copy BEFORE checking media capabilities
+                val settingsWithLoadFlagCleared = updatedSettingsFields.copy(isLoadModel = false)
+                currentSettingsFields = settingsWithLoadFlagCleared
+                demoSharedPreferences.saveModuleSettings(settingsWithLoadFlagCleared)
+
+                // Update media capabilities after settings are updated
+                setBackendMode(updatedSettingsFields.backendType)
+
                 if (isLoraMode && updatedSettingsFields.hasModels()) {
                     // LoRA mode: Load all configured models
                     loadLoraModels(updatedSettingsFields)
@@ -144,13 +150,10 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                         updatedSettingsFields.temperature.toFloat()
                     )
                 }
-                // Save with isLoadModel = false and update local copy to match,
-                // preventing duplicate "To get started..." messages on subsequent calls
-                val settingsWithLoadFlagCleared = updatedSettingsFields.copy(isLoadModel = false)
-                demoSharedPreferences.saveModuleSettings(settingsWithLoadFlagCleared)
-                currentSettingsFields = settingsWithLoadFlagCleared
             } else {
                 currentSettingsFields = updatedSettingsFields.copy()
+                // Update media capabilities after settings are updated
+                setBackendMode(updatedSettingsFields.backendType)
                 if (module == null && loadedModules.isEmpty()) {
                     addSystemMessage(systemPromptMessage)
                 }
@@ -432,8 +435,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
             modelInfo = "Successfully loaded model. $pteName and tokenizer $tokenizerName in ${loadDuration.toFloat() / 1000} sec. $capabilityText"
 
             if (currentSettingsFields.modelType == ModelType.LLAVA_1_5) {
-                ETLogging.getInstance().log("Llava start prefill prompt")
-                module?.prefillPrompt(PromptFormat.getLlavaPresetPrompt())
+                val llavaPresetPrompt = PromptFormat.getLlavaPresetPrompt()
+                ETLogging.getInstance().log("Llava start prefill prompt: $llavaPresetPrompt")
+                module?.prefillPrompt(llavaPresetPrompt)
                 ETLogging.getInstance().log("Llava completes prefill prompt")
             }
             loadSuccess = true
@@ -507,13 +511,13 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
             val processedImageList = getProcessedImagesForModel(_selectedImages)
             if (processedImageList.isNotEmpty()) {
                 _messages.add(
-                    Message("Llava - Starting image Prefill.", false, MessageType.SYSTEM, 0)
+                    Message("Starting image prefill.", false, MessageType.SYSTEM, 0)
                 )
                 executor.execute {
                     android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_MORE_FAVORABLE)
                     ETLogging.getInstance().log("Starting runnable prefill image")
                     val img = processedImageList[0]
-                    ETLogging.getInstance().log("Llava start prefill image")
+                    ETLogging.getInstance().log("Starting prefill image")
                     if (currentSettingsFields.modelType == ModelType.LLAVA_1_5) {
                         module?.prefillImages(
                             img.getInts(),
@@ -522,6 +526,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                             ModelUtils.VISION_MODEL_IMAGE_CHANNELS
                         )
                     } else if (currentSettingsFields.modelType == ModelType.GEMMA_3) {
+                        val gemmaPreImagePrompt = PromptFormat.getGemmaPreImagePrompt()
+                        ETLogging.getInstance().log("Gemma prefill pre-image prompt: $gemmaPreImagePrompt")
+                        module?.prefillPrompt(gemmaPreImagePrompt)
                         module?.prefillImages(
                             img.getFloats(),
                             img.width,
@@ -562,8 +569,11 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
         val rawPrompt = inputText
         val finalPrompt: String
 
-        if (currentSettingsFields.modelType == ModelType.LLAVA_1_5 && shouldAddSystemPrompt) {
-            finalPrompt = PromptFormat.getLlavaFirstTurnUserPrompt()
+        if (currentSettingsFields.modelType == ModelType.LLAVA_1_5 && _selectedImages.isNotEmpty()) {
+            finalPrompt = PromptFormat.getLlavaMultimodalUserPrompt()
+                .replace(PromptFormat.USER_PLACEHOLDER, rawPrompt)
+        } else if (currentSettingsFields.modelType == ModelType.GEMMA_3 && _selectedImages.isNotEmpty()) {
+            finalPrompt = PromptFormat.getGemmaMultimodalUserPrompt()
                 .replace(PromptFormat.USER_PLACEHOLDER, rawPrompt)
         } else {
             finalPrompt = (if (shouldAddSystemPrompt) currentSettingsFields.getFormattedSystemPrompt() else "") +
@@ -599,8 +609,10 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                 if (currentSettingsFields.modelType == ModelType.VOXTRAL && audioFileToPrefill != null) {
                     prefillVoxtralAudio(audioFileToPrefill!!, finalPrompt)
                     audioFileToPrefill = null
+                    ETLogging.getInstance().log("Running vision model inference.. prompt=(empty after audio prefill)")
                     module?.generate("", ModelUtils.VISION_MODEL_SEQ_LEN, this, false)
                 } else {
+                    ETLogging.getInstance().log("Running vision model inference.. prompt=$finalPrompt")
                     module?.generate(finalPrompt, ModelUtils.VISION_MODEL_SEQ_LEN, this, false)
                 }
             } else if (currentSettingsFields.modelType == ModelType.LLAMA_GUARD_3) {
@@ -643,9 +655,13 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
             val bins = 128
             val frames = 3000
             val batchSize = floatCount / (bins * frames)
-            module?.prefillPrompt("<s>[INST][BEGIN_AUDIO]")
+            val preAudioPrompt = "<s>[INST][BEGIN_AUDIO]"
+            val postAudioPrompt = "$textPrompt[/INST]"
+            ETLogging.getInstance().log("Voxtral prefill pre-audio prompt: $preAudioPrompt")
+            module?.prefillPrompt(preAudioPrompt)
             module?.prefillAudio(floats, batchSize, bins, frames)
-            module?.prefillPrompt("$textPrompt[/INST]")
+            ETLogging.getInstance().log("Voxtral prefill post-audio prompt: $postAudioPrompt")
+            module?.prefillPrompt(postAudioPrompt)
         } catch (e: IOException) {
             Log.e("AudioPrefill", "Audio file error")
         }

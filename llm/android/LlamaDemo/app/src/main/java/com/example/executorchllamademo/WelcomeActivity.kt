@@ -51,6 +51,9 @@ class WelcomeActivity : ComponentActivity() {
                         onLoadModelClick = {
                             startActivity(Intent(this@WelcomeActivity, ModelSettingsActivity::class.java))
                         },
+                        onDownloadModelClick = {
+                            startActivity(Intent(this@WelcomeActivity, SelectPresetModelActivity::class.java))
+                        },
                         onAppSettingsClick = {
                             startActivity(Intent(this@WelcomeActivity, AppSettingsActivity::class.java))
                         },
