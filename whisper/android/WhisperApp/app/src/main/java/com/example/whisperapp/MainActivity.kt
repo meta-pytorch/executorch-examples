@@ -90,7 +90,6 @@ class MainActivity : ComponentActivity(), AsrCallback {
         audioFormat
     )
 
-    private lateinit var settingsManager: SettingsManager
     private lateinit var viewModel: ModelSettingsViewModel
 
     enum class Screen {
@@ -150,10 +149,9 @@ class MainActivity : ComponentActivity(), AsrCallback {
             finish()
         }
 
-        // Initialize settings manager and view model
-        settingsManager = SettingsManager(this)
+        // Initialize view model
         viewModel = ViewModelProvider(this)[ModelSettingsViewModel::class.java]
-        viewModel.initialize(settingsManager)
+        viewModel.initialize()
 
         // Check if minimum buffer size is valid
         if (bufferSize == AudioRecord.ERROR_BAD_VALUE || bufferSize == AudioRecord.ERROR) {

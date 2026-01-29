@@ -8,6 +8,7 @@ import java.io.File
 
 /**
  * ViewModel for managing model file selection and settings.
+ * Settings are kept in memory only (not persisted).
  */
 class ModelSettingsViewModel : ViewModel() {
 
@@ -32,14 +33,10 @@ class ModelSettingsViewModel : ViewModel() {
     var errorMessage by mutableStateOf<String?>(null)
         private set
 
-    private var settingsManager: SettingsManager? = null
-
     /**
-     * Initialize the ViewModel with context-dependent components.
+     * Initialize the ViewModel by scanning for available files.
      */
-    fun initialize(settingsManager: SettingsManager) {
-        this.settingsManager = settingsManager
-        modelSettings = settingsManager.loadSettings()
+    fun initialize() {
         refreshFileLists()
     }
 
@@ -66,7 +63,6 @@ class ModelSettingsViewModel : ViewModel() {
      */
     fun selectModel(path: String) {
         modelSettings = modelSettings.copy(modelPath = path)
-        saveSettings()
     }
 
     /**
@@ -74,7 +70,6 @@ class ModelSettingsViewModel : ViewModel() {
      */
     fun selectTokenizer(path: String) {
         modelSettings = modelSettings.copy(tokenizerPath = path)
-        saveSettings()
     }
 
     /**
@@ -82,7 +77,6 @@ class ModelSettingsViewModel : ViewModel() {
      */
     fun selectPreprocessor(path: String) {
         modelSettings = modelSettings.copy(preprocessorPath = path)
-        saveSettings()
     }
 
     /**
@@ -90,7 +84,6 @@ class ModelSettingsViewModel : ViewModel() {
      */
     fun selectDataFile(path: String) {
         modelSettings = modelSettings.copy(dataPath = path)
-        saveSettings()
     }
 
     /**
@@ -105,10 +98,6 @@ class ModelSettingsViewModel : ViewModel() {
      */
     fun clearDataFile() {
         selectDataFile("")
-    }
-
-    private fun saveSettings() {
-        settingsManager?.saveSettings(modelSettings)
     }
 
     /**
