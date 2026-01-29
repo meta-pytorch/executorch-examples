@@ -16,22 +16,33 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModelProvider
 import com.example.whisperapp.ui.theme.WhisperAppTheme
 import org.pytorch.executorch.EValue
 import org.pytorch.executorch.Module
@@ -60,6 +71,8 @@ class MainActivity : ComponentActivity(), AsrCallback {
     private var buttonText by mutableStateOf("Record")
     private var buttonEnabled by mutableStateOf(true)
     private var statusText by mutableStateOf("")
+    private var currentScreen by mutableStateOf(Screen.MAIN)
+    private var showWavFileDialog by mutableStateOf(false)
 
     private var isRecording = false
     private var audioRecord: AudioRecord? = null
@@ -76,6 +89,14 @@ class MainActivity : ComponentActivity(), AsrCallback {
         channelConfig,
         audioFormat
     )
+
+    private lateinit var settingsManager: SettingsManager
+    private lateinit var viewModel: ModelSettingsViewModel
+
+    enum class Screen {
+        MAIN,
+        SETTINGS
+    }
 
     @Throws(IOException::class)
     fun readWavPcmBytes(filePath: String): ByteArray {
@@ -129,6 +150,11 @@ class MainActivity : ComponentActivity(), AsrCallback {
             finish()
         }
 
+        // Initialize settings manager and view model
+        settingsManager = SettingsManager(this)
+        viewModel = ViewModelProvider(this)[ModelSettingsViewModel::class.java]
+        viewModel.initialize(settingsManager)
+
         // Check if minimum buffer size is valid
         if (bufferSize == AudioRecord.ERROR_BAD_VALUE || bufferSize == AudioRecord.ERROR) {
             Log.e(TAG, "Invalid buffer size")
@@ -141,13 +167,36 @@ class MainActivity : ComponentActivity(), AsrCallback {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    WhisperScreen(
-                        buttonText = buttonText,
-                        buttonEnabled = buttonEnabled,
-                        statusText = statusText,
-                        transcriptionResult = transcriptionOutput,
-                        onRecordClick = { onRecordButtonClick() }
-                    )
+                    when (currentScreen) {
+                        Screen.MAIN -> {
+                            WhisperScreen(
+                                buttonText = buttonText,
+                                buttonEnabled = buttonEnabled && viewModel.isReadyForInference(),
+                                statusText = statusText,
+                                transcriptionResult = transcriptionOutput,
+                                modelSettings = viewModel.modelSettings,
+                                availableWavFiles = viewModel.availableWavFiles,
+                                showWavFileDialog = showWavFileDialog,
+                                onRecordClick = { onRecordButtonClick() },
+                                onUseWavFileClick = {
+                                    viewModel.refreshFileLists()
+                                    showWavFileDialog = true
+                                },
+                                onWavFileSelected = { wavPath ->
+                                    showWavFileDialog = false
+                                    runWhisperFromFile(wavPath)
+                                },
+                                onWavDialogDismiss = { showWavFileDialog = false },
+                                onSettingsClick = { currentScreen = Screen.SETTINGS }
+                            )
+                        }
+                        Screen.SETTINGS -> {
+                            ModelSettingsScreen(
+                                viewModel = viewModel,
+                                onBackClick = { currentScreen = Screen.MAIN }
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -161,44 +210,120 @@ class MainActivity : ComponentActivity(), AsrCallback {
         }
     }
 
+    /**
+     * Run Whisper inference on the recorded audio file.
+     */
     private fun runWhisper() {
-        transcriptionOutput = ""
-        // The entire audio flow:
         val wavFile = File(getExternalFilesDir(null), "audio_record.wav")
-        val absolutePath: String = wavFile.absolutePath
-        val pcmBytes = readWavPcmBytes(absolutePath)
-        val inputFloatArray = convertPcm16ToFloat(pcmBytes)
+        runWhisperOnWavFile(wavFile.absolutePath)
+    }
 
-        val tensor1 = Tensor.fromBlob(
-            inputFloatArray,
-            longArrayOf(inputFloatArray.size.toLong())
-        )
-        val module = Module.load("/data/local/tmp/whisper/whisper_preprocess.pte")
-        val eValue1 = EValue.from(tensor1)
-        val result = module.forward(eValue1)[0].toTensor().dataAsFloatArray
+    /**
+     * Run Whisper inference on a WAV file from /data/local/tmp/whisper.
+     */
+    private fun runWhisperFromFile(wavFilePath: String) {
+        buttonEnabled = false
+        statusText = "Loading WAV file..."
+
+        Thread {
+            try {
+                runWhisperOnWavFile(wavFilePath)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error processing WAV file", e)
+                runOnUiThread {
+                    statusText = "Error: ${e.message}"
+                    buttonEnabled = true
+                }
+            }
+        }.start()
+    }
+
+    /**
+     * Common method to run Whisper on a WAV file path.
+     */
+    private fun runWhisperOnWavFile(wavFilePath: String) {
+        val settings = viewModel.modelSettings
+
+        if (!settings.isValid()) {
+            runOnUiThread {
+                statusText = "Please select model and tokenizer in Settings"
+                buttonEnabled = true
+            }
+            return
+        }
+
+        runOnUiThread {
+            transcriptionOutput = ""
+        }
+
+        val audioData: FloatArray
+        val batchSize: Int
+        val featureDim: Int
+        val timeSteps: Int
+
+        if (settings.hasPreprocessor()) {
+            // Use preprocessor to convert WAV to mel-spectrogram
+            Log.v(TAG, "Using preprocessor: ${settings.preprocessorPath}")
+            runOnUiThread {
+                statusText = "Processing audio with mel-spectrogram..."
+            }
+
+            val pcmBytes = readWavPcmBytes(wavFilePath)
+            val inputFloatArray = convertPcm16ToFloat(pcmBytes)
+
+            val tensor1 = Tensor.fromBlob(
+                inputFloatArray,
+                longArrayOf(inputFloatArray.size.toLong())
+            )
+            val module = Module.load(settings.preprocessorPath)
+            val eValue1 = EValue.from(tensor1)
+            audioData = module.forward(eValue1)[0].toTensor().dataAsFloatArray
+
+            // result shape is [batchSize, timeSteps, featureDim]
+            batchSize = 1
+            featureDim = 128  // Whisper uses 128 mel bins
+            timeSteps = audioData.size / (batchSize * featureDim)
+        } else {
+            // No preprocessor: use raw WAV audio directly
+            Log.v(TAG, "No preprocessor, using raw WAV audio")
+            runOnUiThread {
+                statusText = "Processing raw audio..."
+            }
+
+            val pcmBytes = readWavPcmBytes(wavFilePath)
+            audioData = convertPcm16ToFloat(pcmBytes)
+
+            // For raw audio: batchSize=1, timeSteps=numSamples, featureDim=1
+            batchSize = 1
+            featureDim = 1  // Raw audio has 1 feature dimension
+            timeSteps = audioData.size
+        }
 
         val whisperModule = AsrModule(
-            "/data/local/tmp/whisper/whisper_qnn_16a8w.pte",
-            "/data/local/tmp/whisper/tokenizer.json"
+            settings.modelPath,
+            settings.tokenizerPath,
+            settings.dataPath
         )
 
-        // result shape is [batchSize, timeSteps, featureDim]
-        val batchSize = 1
-        val featureDim = 128  // Whisper uses 128 mel bins
-        val timeSteps = result.size / (batchSize * featureDim)
-
-        Log.v(TAG, "Starting transcribe")
-        whisperModule.transcribe(result, batchSize, timeSteps, featureDim, this@MainActivity)
+        Log.v(TAG, "Starting transcribe with batchSize=$batchSize, timeSteps=$timeSteps, featureDim=$featureDim")
+        runOnUiThread {
+            statusText = "Transcribing..."
+        }
+        whisperModule.transcribe(audioData, batchSize, timeSteps, featureDim, this@MainActivity)
         Log.v(TAG, "Finished transcribe")
 
         // Display result in Text view instead of Toast
         // hack to remove start and end tokens; ideally the runner should not do callback on these tokens
-        val minLength = START_TOKEN_LENGTH + END_TOKEN_LENGTH
-        if (transcriptionOutput.length > minLength) {
-            val endIndex = transcriptionOutput.length - END_TOKEN_LENGTH
-            if (endIndex > START_TOKEN_LENGTH) {
-                transcriptionOutput = transcriptionOutput.substring(START_TOKEN_LENGTH, endIndex)
+        runOnUiThread {
+            val minLength = START_TOKEN_LENGTH + END_TOKEN_LENGTH
+            if (transcriptionOutput.length > minLength) {
+                val endIndex = transcriptionOutput.length - END_TOKEN_LENGTH
+                if (endIndex > START_TOKEN_LENGTH) {
+                    transcriptionOutput = transcriptionOutput.substring(START_TOKEN_LENGTH, endIndex)
+                }
             }
+            statusText = "Transcription complete"
+            buttonEnabled = true
         }
     }
 
@@ -444,20 +569,120 @@ fun WhisperScreen(
     buttonEnabled: Boolean,
     statusText: String,
     transcriptionResult: String,
-    onRecordClick: () -> Unit
+    modelSettings: ModelSettings,
+    availableWavFiles: List<String>,
+    showWavFileDialog: Boolean,
+    onRecordClick: () -> Unit,
+    onUseWavFileClick: () -> Unit,
+    onWavFileSelected: (String) -> Unit,
+    onWavDialogDismiss: () -> Unit,
+    onSettingsClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(16.dp),
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Top
     ) {
-        Button(
-            onClick = onRecordClick,
-            enabled = buttonEnabled
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Text(
+            text = "Whisper Demo",
+            style = MaterialTheme.typography.headlineMedium
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Model info card
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            shape = MaterialTheme.shapes.medium
         ) {
-            Text(text = buttonText)
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Model Configuration",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                if (modelSettings.isValid()) {
+                    Text(
+                        text = "Model: ${modelSettings.modelPath.substringAfterLast('/')}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = "Tokenizer: ${modelSettings.tokenizerPath.substringAfterLast('/')}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    if (modelSettings.hasPreprocessor()) {
+                        Text(
+                            text = "Preprocessor: ${modelSettings.preprocessorPath.substringAfterLast('/')}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    } else {
+                        Text(
+                            text = "Preprocessor: None (raw WAV mode)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (modelSettings.dataPath.isNotBlank()) {
+                        Text(
+                            text = "Data: ${modelSettings.dataPath.substringAfterLast('/')}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "No model configured",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        text = "Please configure models in Settings",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Audio input buttons
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(
+                onClick = onRecordClick,
+                enabled = buttonEnabled,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(text = buttonText)
+            }
+
+            OutlinedButton(
+                onClick = onUseWavFileClick,
+                enabled = buttonEnabled,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(text = "Use WAV File")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Settings button
+        OutlinedButton(
+            onClick = onSettingsClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "Settings")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -472,11 +697,103 @@ fun WhisperScreen(
         }
 
         if (transcriptionResult.isNotEmpty()) {
-            Text(
-                text = transcriptionResult,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.padding(horizontal = 16.dp)
-            )
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Transcription",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = transcriptionResult,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
         }
     }
+
+    // WAV file selection dialog
+    if (showWavFileDialog) {
+        WavFileSelectionDialog(
+            files = availableWavFiles,
+            onDismiss = onWavDialogDismiss,
+            onSelect = onWavFileSelected
+        )
+    }
+}
+
+@Composable
+fun WavFileSelectionDialog(
+    files: List<String>,
+    onDismiss: () -> Unit,
+    onSelect: (String) -> Unit
+) {
+    var selectedFile by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select WAV File") },
+        text = {
+            if (files.isEmpty()) {
+                Column {
+                    Text("No WAV files found in ${ModelSettings.DEFAULT_DIRECTORY}")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Use adb to push WAV files:\nadb push audio.wav ${ModelSettings.DEFAULT_DIRECTORY}/",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    files.forEach { filePath ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = filePath == selectedFile,
+                                onClick = { selectedFile = filePath }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = filePath.substringAfterLast('/'),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Text(
+                                    text = filePath,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            if (files.isNotEmpty()) {
+                TextButton(
+                    onClick = { selectedFile?.let { onSelect(it) } },
+                    enabled = selectedFile != null
+                ) {
+                    Text("Transcribe")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
