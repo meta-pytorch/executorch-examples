@@ -1,26 +1,22 @@
 # Whisper Demo App
 
-This app runs the Whisper model in ExecuTorch.
+This app demonstrates running the Whisper speech recognition model on Android using ExecuTorch.
 
-## Build the ExecuTorch Android library
+> **Note:** The ExecuTorch `AsrModule` API is not yet released. We will give a snapshot AAR soon™
 
-Build the [ExecuTorch Android library with QNN backend](https://github.com/pytorch/executorch/blob/main/examples/demo-apps/android/LlamaDemo/docs/delegates/qualcomm_README.md).
+## Export Model Files
 
-## Export the audio processing and model .pte files
+Export the audio preprocessor and model `.pte` files following the instructions at:
+https://github.com/pytorch/executorch/tree/main/examples/models/whisper
 
-There are two steps, audio processing and the Whisper model (encoder+decoder), which are both done via ExecuTorch.
+This app requires both a model `.pte` and a preprocessor `.pte` file.
 
-1. Run `extension/audio/mel_spectrogram.py` to export `whisper_preprocess.pte`
-2. Run `examples/qualcomm/oss_scripts/whisper/whisper.py` to export `whisper_qnn_16a8w.pte`
-
-Move these two `.pte` files along with `tokenizer.json` to `/data/local/tmp/whisper` on device.
-
-## Run the app
+## Run the App
 
 1. Open WhisperApp in Android Studio
-2. Copy the Android library `executorch.aar` (with audio JNI bindings) into `app/libs`
+2. Copy the `executorch.aar` library (with audio JNI bindings) into `app/libs`
 3. Build and run on device
 
 ## Demo
 
-https://github.com/user-attachments/assets/ff8c71c5-b734-4ed4-8382-70a429830665
+https://github.com/user-attachments/assets/eb4c4ae6-b89f-4eb4-a291-549a42c95f54
