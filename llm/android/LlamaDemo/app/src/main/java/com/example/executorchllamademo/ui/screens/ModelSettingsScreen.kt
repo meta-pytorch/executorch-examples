@@ -64,6 +64,8 @@ import com.example.executorchllamademo.AppearanceMode
 import com.example.executorchllamademo.BackendType
 import com.example.executorchllamademo.ModelType
 import com.example.executorchllamademo.PromptFormat
+import com.example.executorchllamademo.ModelConfiguration
+import com.example.executorchllamademo.ui.components.ModelListItem
 import com.example.executorchllamademo.ui.components.SettingsRow
 import com.example.executorchllamademo.ui.theme.BtnDisabled
 import com.example.executorchllamademo.ui.theme.BtnEnabled
@@ -129,71 +131,177 @@ fun ModelSettingsScreen(
                 onClick = { viewModel.showBackendDialog = true }
             )
 
-            // Only show these for non-MediaTek backends
-            if (!viewModel.isMediaTekMode()) {
-                Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-                // Model selector
-                SettingsRow(
-                    label = "Model",
-                    value = viewModel.getFilenameFromPath(viewModel.moduleSettings.modelFilePath)
-                        .ifEmpty { "no model selected" },
-                    onClick = {
-                        viewModel.refreshFileLists()
-                        viewModel.showModelDialog = true
-                    }
+            // ========== LoRA Mode Toggle ==========
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "LoRA Mode",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = appColors.settingsText
+                    )
+                    Text(
+                        text = "Enable for multiple model selection",
+                        fontSize = 12.sp,
+                        color = appColors.settingsSecondaryText
+                    )
+                }
+                androidx.compose.material3.Switch(
+                    checked = viewModel.moduleSettings.isLoraMode,
+                    onCheckedChange = { viewModel.toggleLoraMode(it) }
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // ========== Conditional UI based on LoRA mode ==========
+            if (viewModel.moduleSettings.isLoraMode) {
+                // LoRA Mode: Multi-model selection
+                Text(
+                    text = "Models",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = appColors.settingsText
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Tokenizer selector
-                SettingsRow(
-                    label = "Tokenizer",
-                    value = viewModel.getFilenameFromPath(viewModel.moduleSettings.tokenizerFilePath)
-                        .ifEmpty { "no tokenizer selected" },
-                    onClick = {
-                        viewModel.refreshFileLists()
-                        viewModel.showTokenizerDialog = true
+                // Model list
+                if (viewModel.moduleSettings.hasModels()) {
+                    viewModel.moduleSettings.models.forEach { model ->
+                        ModelListItem(
+                            model = model,
+                            isActive = model.id == viewModel.moduleSettings.activeModelId,
+                            onSelect = { viewModel.selectActiveModel(model.id) },
+                            onRemove = { viewModel.initiateRemoveModel(model.id) }
+                        )
                     }
-                )
+                } else {
+                    Text(
+                        text = "No models configured",
+                        fontSize = 14.sp,
+                        color = appColors.settingsSecondaryText,
+                        modifier = Modifier.padding(vertical = 8.dp)
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Data path selector
+                // Add Model button
+                Button(
+                    onClick = { viewModel.startAddModel() },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = BtnEnabled
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("+ Add Model", color = Color.White)
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Shared Data Path (LoRA) selector
                 SettingsRow(
-                    label = "Data Path",
-                    value = viewModel.getFilenameFromPath(viewModel.moduleSettings.dataPath)
+                    label = "Shared Data Path (LoRA)",
+                    value = viewModel.getFilenameFromPath(viewModel.moduleSettings.getEffectiveDataPath())
                         .ifEmpty { "no data path selected" },
                     onClick = {
                         viewModel.refreshFileLists()
                         viewModel.showDataPathDialog = true
                     }
                 )
-            }
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // Model type selector
-            SettingsRow(
-                label = "Model Type",
-                value = viewModel.moduleSettings.modelType.toString(),
-                onClick = { viewModel.showModelTypeDialog = true }
-            )
+                // Load All Models button
+                Button(
+                    onClick = { viewModel.initiateLoadModels() },
+                    enabled = viewModel.isLoadModelEnabled(),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = BtnEnabled,
+                        disabledContainerColor = BtnDisabled
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = if (viewModel.moduleSettings.hasMultipleModels()) "Load All Models" else "Load Model",
+                        color = Color.White
+                    )
+                }
+            } else {
+                // Normal Mode: Single-model selection (original UI)
+                if (!viewModel.isMediaTekMode()) {
+                    // Model selector
+                    SettingsRow(
+                        label = "Model",
+                        value = viewModel.getFilenameFromPath(viewModel.moduleSettings.modelFilePath)
+                            .ifEmpty { "no model selected" },
+                        onClick = {
+                            viewModel.refreshFileLists()
+                            viewModel.showModelDialog = true
+                        }
+                    )
 
-            Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
 
-            // Load Model button
-            Button(
-                onClick = { viewModel.showLoadModelDialog = true },
-                enabled = viewModel.isLoadModelEnabled(),
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = BtnEnabled,
-                    disabledContainerColor = BtnDisabled
-                ),
-                shape = RoundedCornerShape(8.dp)
-            ) {
-                Text("Load Model", color = Color.White)
+                    // Tokenizer selector
+                    SettingsRow(
+                        label = "Tokenizer",
+                        value = viewModel.getFilenameFromPath(viewModel.moduleSettings.tokenizerFilePath)
+                            .ifEmpty { "no tokenizer selected" },
+                        onClick = {
+                            viewModel.refreshFileLists()
+                            viewModel.showTokenizerDialog = true
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Data path selector
+                    SettingsRow(
+                        label = "Data Path",
+                        value = viewModel.getFilenameFromPath(viewModel.moduleSettings.dataPath)
+                            .ifEmpty { "no data path selected" },
+                        onClick = {
+                            viewModel.refreshFileLists()
+                            viewModel.showDataPathDialog = true
+                        }
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Model type selector
+                SettingsRow(
+                    label = "Model Type",
+                    value = viewModel.moduleSettings.modelType.toString(),
+                    onClick = { viewModel.showModelTypeDialog = true }
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Load Model button
+                Button(
+                    onClick = { viewModel.showLoadModelDialog = true },
+                    enabled = viewModel.isLoadModelEnabled(),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = BtnEnabled,
+                        disabledContainerColor = BtnDisabled
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text("Load Model", color = Color.White)
+                }
             }
 
             if (!viewModel.isMediaTekMode()) {
@@ -337,6 +445,9 @@ fun ModelSettingsScreen(
     ResetSystemPromptDialog(viewModel)
     ResetUserPromptDialog(viewModel)
     InvalidPromptDialog(viewModel)
+    AddModelDialog(viewModel)
+    RemoveModelDialog(viewModel)
+    MemoryWarningDialog(viewModel)
 }
 
 @Composable
@@ -701,6 +812,229 @@ private fun SingleChoiceDialog(
         confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+private fun AddModelDialog(viewModel: ModelSettingsViewModel) {
+    if (!viewModel.showAddModelDialog) return
+
+    when (viewModel.addModelStep) {
+        1 -> {
+            // Step 1: Select model file
+            if (viewModel.modelFiles.isEmpty()) {
+                AlertDialog(
+                    onDismissRequest = { viewModel.cancelAddModel() },
+                    title = { Text("Step 1: Select Model (.pte)") },
+                    text = {
+                        Text("No .pte files found in /data/local/tmp/llama/\n\nPlease push model files using:\nadb push <model>.pte /data/local/tmp/llama/")
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { viewModel.cancelAddModel() }) {
+                            Text("OK")
+                        }
+                    }
+                )
+            } else {
+                SingleChoiceDialogWithPreselection(
+                    title = "Step 1: Select Model (.pte)",
+                    options = viewModel.modelFiles.toList(),
+                    selectedOption = null,
+                    onSelect = { selected ->
+                        viewModel.selectTempModel(selected)
+                    },
+                    onDismiss = { viewModel.cancelAddModel() },
+                    dismissButtonText = "Cancel"
+                )
+            }
+        }
+        2 -> {
+            // Step 2: Select tokenizer file
+            if (viewModel.tokenizerFiles.isEmpty()) {
+                AlertDialog(
+                    onDismissRequest = { viewModel.previousAddModelStep() },
+                    title = { Text("Step 2: Select Tokenizer") },
+                    text = {
+                        Text("No tokenizer files found in /data/local/tmp/llama/\n\nPlease push tokenizer files using:\nadb push <tokenizer> /data/local/tmp/llama/")
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { viewModel.previousAddModelStep() }) {
+                            Text("Back")
+                        }
+                    }
+                )
+            } else {
+                SingleChoiceDialogWithPreselection(
+                    title = "Step 2: Select Tokenizer",
+                    options = viewModel.tokenizerFiles.toList(),
+                    selectedOption = null,
+                    onSelect = { selected ->
+                        viewModel.selectTempTokenizer(selected)
+                    },
+                    onDismiss = { viewModel.previousAddModelStep() },
+                    dismissButtonText = "Back"
+                )
+            }
+        }
+        3 -> {
+            // Step 3: Confirm model type
+            val modelTypes = ModelType.values().map { it.toString() }
+            val preSelectedIndex = ModelType.values().indexOfFirst { it == viewModel.tempModelType }
+
+            AlertDialog(
+                onDismissRequest = { viewModel.previousAddModelStep() },
+                title = { Text("Step 3: Confirm Model Type") },
+                text = {
+                    Column {
+                        modelTypes.forEachIndexed { index, option ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        viewModel.selectTempModelType(ModelType.valueOf(option))
+                                    }
+                                    .padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = index == preSelectedIndex || viewModel.tempModelType.toString() == option,
+                                    onClick = {
+                                        viewModel.selectTempModelType(ModelType.valueOf(option))
+                                    }
+                                )
+                                Text(
+                                    text = option,
+                                    modifier = Modifier.padding(start = 8.dp),
+                                    fontSize = 14.sp
+                                )
+                            }
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.confirmAddModel() }) {
+                        Text("Add Model")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { viewModel.previousAddModelStep() }) {
+                        Text("Back")
+                    }
+                }
+            )
+        }
+    }
+}
+
+@Composable
+private fun SingleChoiceDialogWithPreselection(
+    title: String,
+    options: List<String>,
+    selectedOption: String?,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit,
+    dismissButtonText: String = "Cancel"
+) {
+    var currentSelection by remember { mutableStateOf(selectedOption) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column {
+                options.forEach { option ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable {
+                                currentSelection = option
+                                onSelect(option)
+                            }
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = currentSelection == option,
+                            onClick = null
+                        )
+                        Text(
+                            text = option.substringAfterLast('/'),
+                            modifier = Modifier
+                                .padding(start = 8.dp)
+                                .weight(1f),
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(dismissButtonText)
+            }
+        }
+    )
+}
+
+@Composable
+private fun RemoveModelDialog(viewModel: ModelSettingsViewModel) {
+    if (!viewModel.showRemoveModelDialog) return
+
+    val modelToRemove = viewModel.modelToRemove?.let { viewModel.moduleSettings.getModelById(it) }
+    val modelName = modelToRemove?.displayName ?: "this model"
+
+    AlertDialog(
+        onDismissRequest = { viewModel.cancelRemoveModel() },
+        icon = {
+            Icon(
+                imageVector = Icons.Filled.Warning,
+                contentDescription = null
+            )
+        },
+        title = { Text("Remove Model") },
+        text = { Text("Remove $modelName? Chat history will be preserved.") },
+        confirmButton = {
+            TextButton(onClick = { viewModel.confirmRemoveModel() }) {
+                Text("Yes")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { viewModel.cancelRemoveModel() }) {
+                Text("No")
+            }
+        }
+    )
+}
+
+@Composable
+private fun MemoryWarningDialog(viewModel: ModelSettingsViewModel) {
+    if (!viewModel.showMemoryWarningDialog) return
+
+    val modelCount = viewModel.moduleSettings.models.size
+
+    AlertDialog(
+        onDismissRequest = { viewModel.showMemoryWarningDialog = false },
+        icon = {
+            Icon(
+                imageVector = Icons.Filled.Warning,
+                contentDescription = null
+            )
+        },
+        title = { Text("Memory Warning") },
+        text = {
+            Text("Loading $modelCount models simultaneously will use significant RAM. Continue?")
+        },
+        confirmButton = {
+            TextButton(onClick = { viewModel.proceedAfterMemoryWarning() }) {
+                Text("Continue")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { viewModel.showMemoryWarningDialog = false }) {
                 Text("Cancel")
             }
         }
