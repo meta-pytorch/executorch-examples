@@ -2,7 +2,7 @@
 
 This app demonstrates running the Whisper speech recognition model on Android using ExecuTorch.
 
-> **Note:** The ExecuTorch `AsrModule` API is not yet released. Use the [snapshot AAR](https://ossci-android.s3.amazonaws.com/executorch/release/snapshot-20260129-xnnpack-no-sme2/executorch.aar) for now.
+> **Note:** The ExecuTorch `AsrModule` API is not yet released. We will give a snapshot AAR soon™
 
 ## Export Model Files
 
