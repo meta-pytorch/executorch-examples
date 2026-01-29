@@ -36,8 +36,8 @@ import com.example.whisperapp.ui.theme.WhisperAppTheme
 import org.pytorch.executorch.EValue
 import org.pytorch.executorch.Module
 import org.pytorch.executorch.Tensor
-import org.pytorch.executorch.extension.audio.ASRCallback
-import org.pytorch.executorch.extension.audio.ASRModule
+import org.pytorch.executorch.extension.asr.AsrCallback
+import org.pytorch.executorch.extension.asr.AsrModule
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -46,7 +46,7 @@ import java.io.OutputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-class MainActivity : ComponentActivity(), ASRCallback {
+class MainActivity : ComponentActivity(), AsrCallback {
 
     companion object {
         private const val TAG = "MainActivity"
@@ -177,18 +177,18 @@ class MainActivity : ComponentActivity(), ASRCallback {
         val eValue1 = EValue.from(tensor1)
         val result = module.forward(eValue1)[0].toTensor().dataAsFloatArray
 
-        // Convert result (FloatArray) to raw ByteArray to feed into runner transcribe function
-        val byteBuffer = ByteBuffer.allocate(result.size * 4).order(ByteOrder.LITTLE_ENDIAN)
-        result.forEach { byteBuffer.putFloat(it) }
-        val byteArray = arrayOf(byteBuffer.array())
-
-        val whisperModule = ASRModule(
+        val whisperModule = AsrModule(
             "/data/local/tmp/whisper/whisper_qnn_16a8w.pte",
             "/data/local/tmp/whisper/tokenizer.json"
         )
 
+        // result shape is [batchSize, timeSteps, featureDim]
+        val batchSize = 1
+        val featureDim = 128  // Whisper uses 128 mel bins
+        val timeSteps = result.size / (batchSize * featureDim)
+
         Log.v(TAG, "Starting transcribe")
-        whisperModule.transcribe(128, byteArray, this@MainActivity)
+        whisperModule.transcribe(result, batchSize, timeSteps, featureDim, this@MainActivity)
         Log.v(TAG, "Finished transcribe")
 
         // Display result in Text view instead of Toast
@@ -202,7 +202,7 @@ class MainActivity : ComponentActivity(), ASRCallback {
         }
     }
 
-    override fun onResult(result: String) {
+    override fun onToken(result: String) {
         Log.v(TAG, "Called callback: here's the current output")
         runOnUiThread {
             transcriptionOutput += result
