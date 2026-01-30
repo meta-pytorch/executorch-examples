@@ -55,13 +55,14 @@ class MainActivity : ComponentActivity(), AsrCallback {
 
     companion object {
         private const val TAG = "MainActivity"
-        private const val RECORDING_DURATION_MS = 5000L // 5 seconds
+        private const val RECORDING_DURATION_MS = 30000L // 30 seconds
         // Token lengths to remove from transcription output
         private const val START_TOKEN_LENGTH = 37
         private const val END_TOKEN_LENGTH = 13
     }
 
     private var transcriptionOutput by mutableStateOf("")
+    private var rawTranscriptionOutput = ""
     private var buttonText by mutableStateOf("Record")
     private var buttonEnabled by mutableStateOf(true)
     private var statusText by mutableStateOf("")
@@ -202,9 +203,12 @@ class MainActivity : ComponentActivity(), AsrCallback {
             return
         }
 
+        rawTranscriptionOutput = ""
         runOnUiThread {
             transcriptionOutput = ""
             statusText = "Loading model..."
+            buttonText = "Transcribing..."
+            buttonEnabled = false
         }
 
         val whisperModule = AsrModule(
@@ -218,30 +222,38 @@ class MainActivity : ComponentActivity(), AsrCallback {
         runOnUiThread {
             statusText = "Transcribing..."
         }
-        whisperModule.transcribe(wavFilePath, this@MainActivity)
-        Log.v(TAG, "Finished transcribe")
+        val startTime = System.currentTimeMillis()
+        whisperModule.transcribe(wavFilePath, callback = this@MainActivity)
+        val elapsedTime = System.currentTimeMillis() - startTime
+        val elapsedSeconds = elapsedTime / 1000.0
+        Log.v(TAG, "Finished transcribe in ${elapsedSeconds}s")
 
         // Display result in Text view instead of Toast
         // hack to remove start and end tokens; ideally the runner should not do callback on these tokens
         runOnUiThread {
             val minLength = START_TOKEN_LENGTH + END_TOKEN_LENGTH
-            if (transcriptionOutput.length > minLength) {
-                val endIndex = transcriptionOutput.length - END_TOKEN_LENGTH
+            if (rawTranscriptionOutput.length > minLength) {
+                val endIndex = rawTranscriptionOutput.length - END_TOKEN_LENGTH
                 if (endIndex > START_TOKEN_LENGTH) {
-                    transcriptionOutput = transcriptionOutput.substring(START_TOKEN_LENGTH, endIndex)
+                    transcriptionOutput = rawTranscriptionOutput.substring(START_TOKEN_LENGTH, endIndex)
                 }
             }
-            statusText = "Transcription complete"
+            statusText = "Transcription complete (%.2fs)".format(elapsedSeconds)
+            buttonText = "Record"
             buttonEnabled = true
         }
     }
 
     override fun onToken(result: String) {
         Log.v(TAG, "Called callback: here's the current output")
+        rawTranscriptionOutput += result
         runOnUiThread {
-            transcriptionOutput += result
+            // Strip start token prefix for display while transcribing
+            if (rawTranscriptionOutput.length > START_TOKEN_LENGTH) {
+                transcriptionOutput = rawTranscriptionOutput.substring(START_TOKEN_LENGTH)
+            }
         }
-        Log.v(TAG, transcriptionOutput)
+        Log.v(TAG, rawTranscriptionOutput)
     }
 
     private fun startRecording() {
@@ -269,10 +281,10 @@ class MainActivity : ComponentActivity(), AsrCallback {
                     audioRecord?.startRecording()
                     isRecording = true
 
-                    buttonText = "Recording... (5s)"
+                    buttonText = "Recording... (30s)"
                     buttonEnabled = false
 
-                    // Schedule automatic stop after 5 seconds
+                    // Schedule automatic stop after 30 seconds
                     stopRecordingRunnable = Runnable {
                         stopRecording()
                     }
