@@ -99,40 +99,23 @@ jobs:
           working-directory: ${{ env.DEMO_PATH }}
           script: |
             set -ex
-
             DEMO_NAME=$(basename "$PWD")
             LOGCAT_FILE="/tmp/logcat-${DEMO_NAME}.txt"
-
             echo "=== Emulator Memory Info ==="
             adb shell cat /proc/meminfo | head -5
-
             echo "=== Emulator Disk Space ==="
             adb shell df -h /data
-
-            # Start logcat capture
             adb logcat -c
             adb logcat > "$LOGCAT_FILE" &
             LOGCAT_PID=$!
-
             echo "=== Starting Gradle ==="
             ./gradlew connectedCheck
             TEST_EXIT_CODE=$?
-
-            # Stop logcat
-            if [ -n "$LOGCAT_PID" ]; then
-              kill $LOGCAT_PID 2>/dev/null || true
-            fi
-
+            if [ -n "$LOGCAT_PID" ]; then kill $LOGCAT_PID 2>/dev/null || true; fi
             echo "=== Test completion status ==="
-            if [ $TEST_EXIT_CODE -eq 0 ]; then
-              echo "Tests passed successfully"
-            else
-              echo "Tests failed with exit code $TEST_EXIT_CODE"
-            fi
-
+            if [ $TEST_EXIT_CODE -eq 0 ]; then echo "✅ Tests passed successfully"; else echo "❌ Tests failed with exit code $TEST_EXIT_CODE"; fi
             echo "=== Checking for test results in logcat ==="
             grep -E "SanityCheck|UIWorkflowTest" "$LOGCAT_FILE" || echo "No test logs found"
-
             exit $TEST_EXIT_CODE
 
       - name: Upload logcat

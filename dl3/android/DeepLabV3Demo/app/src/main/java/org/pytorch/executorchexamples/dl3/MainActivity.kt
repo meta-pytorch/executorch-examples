@@ -109,7 +109,6 @@ class MainActivity : ComponentActivity() {
         var isDownloading by remember { mutableStateOf(false) }
         var canReset by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
-        val context = LocalContext.current
 
         // Load initial sample image
         LaunchedEffect(Unit) {
