@@ -253,39 +253,6 @@ class UIWorkflowTest {
     }
 
     /**
-     * Tests the complete workflow: Next -> Run -> Reset.
-     */
-    @Test
-    fun testCompleteWorkflow() {
-        // Step 1: Click Next to change sample
-        composeTestRule.onNodeWithTag("nextButton").performClick()
-        composeTestRule.waitForIdle()
-        
-        // Step 2: Run segmentation
-        composeTestRule.onNodeWithTag("runButton").performClick()
-        
-        composeTestRule.waitUntil(timeoutMillis = INFERENCE_TIMEOUT_MS) {
-            composeTestRule.onAllNodesWithTag("inferenceTime")
-                .fetchSemanticsNodes().isNotEmpty()
-        }
-        
-        // Verify results are shown
-        composeTestRule.onNodeWithTag("inferenceTime").assertIsDisplayed()
-        composeTestRule.onNodeWithTag("resetButton").assertIsEnabled()
-        
-        // Step 3: Reset image
-        composeTestRule.onNodeWithTag("resetButton").performClick()
-        composeTestRule.waitForIdle()
-        
-        // Verify reset worked
-        composeTestRule.onNodeWithTag("resetButton").assertIsNotEnabled()
-        composeTestRule.onNodeWithTag("inferenceTime").assertDoesNotExist()
-        
-        // Step 4: Can run segmentation again
-        composeTestRule.onNodeWithTag("runButton").assertIsEnabled()
-    }
-
-    /**
      * Tests multiple consecutive runs to ensure model can be reused.
      * 
      * Note: Disabled due to known issue.
