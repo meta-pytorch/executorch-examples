@@ -1,5 +1,6 @@
 package com.example.whisperapp
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -286,7 +287,9 @@ fun FileSelectionDialog(
                 Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                     if (allowNone) {
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onSelect("") },
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
@@ -301,7 +304,9 @@ fun FileSelectionDialog(
 
                     files.forEach { filePath ->
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { onSelect(filePath) },
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
