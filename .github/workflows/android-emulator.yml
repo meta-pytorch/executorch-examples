@@ -22,6 +22,7 @@ jobs:
   instrumentation-test:
     runs-on: 8-core-ubuntu
     strategy:
+      fail-fast: false
       matrix:
         demo:
           - path: 'dl3/android/DeepLabV3Demo'
