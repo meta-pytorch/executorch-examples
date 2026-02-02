@@ -46,6 +46,20 @@ final class ResourceMonitor: ObservableObject {
   }
 
   private func availableMemoryInMB() -> Int {
+    #if os(iOS)
     return Int(os_proc_available_memory() / 0x100000)
+    #elseif os(macOS)
+    var stats = vm_statistics64()
+    var count = mach_msg_type_number_t(MemoryLayout<vm_statistics64>.size / MemoryLayout<integer_t>.size)
+    let result = withUnsafeMutablePointer(to: &stats) {
+      $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+        host_statistics64(mach_host_self(), HOST_VM_INFO64, $0, &count)
+      }
+    }
+    guard result == KERN_SUCCESS else { return 0 }
+    let pageSize = vm_kernel_page_size
+    let freeMemory = UInt64(stats.free_count) * UInt64(pageSize)
+    return Int(freeMemory / 0x100000)
+    #endif
   }
 }

@@ -8,11 +8,19 @@
 
 import SwiftUI
 
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
+
 struct MessageListView: View {
   @Binding var messages: [Message]
   @State private var showScrollToBottomButton = false
   @State private var userHasScrolled = false
+  #if os(iOS)
   @State private var keyboardHeight: CGFloat = 0
+  #endif
 
   var body: some View {
     ScrollViewReader { value in
@@ -25,7 +33,11 @@ struct MessageListView: View {
           GeometryReader { geometry -> Color in
             DispatchQueue.main.async {
               let maxY = geometry.frame(in: .global).maxY
+              #if os(iOS)
               let screenHeight = UIScreen.main.bounds.height - keyboardHeight
+              #elseif os(macOS)
+              let screenHeight = NSScreen.main?.frame.height ?? 800
+              #endif
               let isBeyondBounds = maxY > screenHeight - 50
               if showScrollToBottomButton != isBeyondBounds {
                 showScrollToBottomButton = isBeyondBounds
@@ -57,7 +69,11 @@ struct MessageListView: View {
             }) {
               ZStack {
                 Circle()
+                  #if os(iOS)
                   .fill(Color(UIColor.secondarySystemBackground).opacity(0.9))
+                  #elseif os(macOS)
+                  .fill(Color(NSColor.controlBackgroundColor).opacity(0.9))
+                  #endif
                   .frame(height: 28)
                 Image(systemName: "arrow.down.circle")
                   .resizable()
@@ -65,12 +81,14 @@ struct MessageListView: View {
                   .frame(height: 28)
               }
             }
+            .buttonStyle(.plain)
             .transition(AnyTransition.opacity.animation(.easeInOut(duration: 0.2)))
           }
         },
         alignment: .bottom
       )
     }
+    #if os(iOS)
     .onAppear {
       NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { notification in
         let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect ?? .zero
@@ -84,5 +102,6 @@ struct MessageListView: View {
       NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillShowNotification, object: nil)
       NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillHideNotification, object: nil)
     }
+    #endif
   }
 }
