@@ -8,6 +8,12 @@
 
 import SwiftUI
 
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
+
 struct MessageView: View {
   let message: Message
 
@@ -50,6 +56,7 @@ struct MessageView: View {
             if !isAssistant { Spacer() }
             if message.text.isEmpty {
               if let img = message.image {
+                #if os(iOS)
                 Image(uiImage: img)
                   .resizable()
                   .scaledToFit()
@@ -58,6 +65,16 @@ struct MessageView: View {
                   .background(Color.gray.opacity(0.2))
                   .cornerRadius(8)
                   .padding(.vertical, 2)
+                #elseif os(macOS)
+                Image(nsImage: img)
+                  .resizable()
+                  .scaledToFit()
+                  .frame(maxWidth: 200, maxHeight: 200)
+                  .padding()
+                  .background(Color.gray.opacity(0.2))
+                  .cornerRadius(8)
+                  .padding(.vertical, 2)
+                #endif
               } else {
                 ProgressView()
                   .progressViewStyle(CircularProgressViewStyle())
@@ -66,11 +83,20 @@ struct MessageView: View {
               Text(message.text)
                 .padding(10)
                 .foregroundColor(isAssistant ? .primary : .white)
+                #if os(iOS)
                 .background(isAssistant ? Color(UIColor.secondarySystemBackground) : Color.blue)
+                #elseif os(macOS)
+                .background(isAssistant ? Color(NSColor.controlBackgroundColor) : Color.blue)
+                #endif
                 .cornerRadius(20)
                 .contextMenu {
                   Button(action: {
+                    #if os(iOS)
                     UIPasteboard.general.string = message.text
+                    #elseif os(macOS)
+                    NSPasteboard.general.clearContents()
+                    NSPasteboard.general.setString(message.text, forType: .string)
+                    #endif
                   }) {
                     Text("Copy")
                     Image(systemName: "doc.on.doc")
