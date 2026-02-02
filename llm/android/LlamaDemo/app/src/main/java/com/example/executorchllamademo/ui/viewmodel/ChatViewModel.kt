@@ -102,7 +102,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
             demoSharedPreferences.removeExistingMessages()
             return
         }
-        
+
         val existingMsgJSON = demoSharedPreferences.getSavedMessages()
         if (existingMsgJSON.isNotEmpty()) {
             val gson = Gson()
