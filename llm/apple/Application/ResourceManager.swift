@@ -9,8 +9,8 @@
 import SwiftUI
 
 final class ResourceManager: ObservableObject {
-  @Published var modelPath = ""
-  @Published var tokenizerPath = ""
+  @AppStorage("modelPath") var modelPath = ""
+  @AppStorage("tokenizerPath") var tokenizerPath = ""
   private let fileManager = FileManager.default
 
   var isModelValid: Bool {
