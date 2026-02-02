@@ -307,8 +307,10 @@ struct ContentView: View {
             Button(action: {
               #if os(iOS)
               imagePickerSourceType = .photoLibrary
-              #endif
               isImagePickerPresented = true
+              #elseif os(macOS)
+              selectImageOnMac()
+              #endif
             }) {
               Image(systemName: "photo.on.rectangle")
                 .resizable()
@@ -398,10 +400,6 @@ struct ContentView: View {
         .sheet(isPresented: $isImagePickerPresented, onDismiss: addSelectedImageMessage) {
           ImagePicker(selectedImage: $selectedImage, sourceType: imagePickerSourceType)
             .id(imagePickerSourceType.rawValue)
-        }
-        #elseif os(macOS)
-        .sheet(isPresented: $isImagePickerPresented, onDismiss: addSelectedImageMessage) {
-          ImagePicker(selectedImage: $selectedImage)
         }
         #endif
 
@@ -516,6 +514,25 @@ struct ContentView: View {
       messages.append(Message(image: selectedImage))
     }
   }
+
+  #if os(macOS)
+  private func selectImageOnMac() {
+    let panel = NSOpenPanel()
+    panel.allowsMultipleSelection = false
+    panel.canChooseDirectories = false
+    panel.canChooseFiles = true
+    panel.allowedContentTypes = [.image, .png, .jpeg, .gif, .heic]
+    panel.message = "Select an image"
+    panel.prompt = "Select"
+
+    if panel.runModal() == .OK {
+      if let url = panel.url, let image = NSImage(contentsOf: url) {
+        selectedImage = image
+        addSelectedImageMessage()
+      }
+    }
+  }
+  #endif
 
   private func generate() {
     guard !prompt.isEmpty else { return }
