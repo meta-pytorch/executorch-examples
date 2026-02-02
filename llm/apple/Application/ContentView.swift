@@ -258,6 +258,217 @@ struct ContentView: View {
   private var isInputEnabled: Bool { resourceManager.isModelValid && resourceManager.isTokenizerValid }
 
   var body: some View {
+    #if os(macOS)
+    macOSBody
+    #else
+    iOSBody
+    #endif
+  }
+  
+  #if os(macOS)
+  @ViewBuilder
+  private var macOSBody: some View {
+    NavigationSplitView {
+      // Left sidebar with configuration
+      VStack(alignment: .leading, spacing: 12) {
+        Text("Model")
+          .font(.headline)
+          .foregroundColor(.secondary)
+          .padding(.top, 8)
+        
+        Button(action: { pickerType = .model }) {
+          HStack {
+            Image(systemName: "cpu")
+            Text(modelTitle)
+              .lineLimit(1)
+              .truncationMode(.middle)
+            Spacer()
+          }
+          .padding(8)
+          .background(Color.gray.opacity(0.1))
+          .cornerRadius(8)
+        }
+        .buttonStyle(.plain)
+        
+        Button(action: { pickerType = .tokenizer }) {
+          HStack {
+            Image(systemName: "doc.text")
+            Text(tokenizerTitle)
+              .lineLimit(1)
+              .truncationMode(.middle)
+            Spacer()
+          }
+          .padding(8)
+          .background(Color.gray.opacity(0.1))
+          .cornerRadius(8)
+        }
+        .buttonStyle(.plain)
+        
+        Divider()
+          .padding(.vertical, 8)
+        
+        Text("Memory")
+          .font(.headline)
+          .foregroundColor(.secondary)
+        
+        VStack(alignment: .leading, spacing: 4) {
+          HStack {
+            Text("Used:")
+            Spacer()
+            Text("\(resourceMonitor.usedMemory) MB")
+              .monospacedDigit()
+          }
+          HStack {
+            Text("Available:")
+            Spacer()
+            Text("\(resourceMonitor.availableMemory) MB")
+              .monospacedDigit()
+          }
+        }
+        .font(.caption)
+        .onAppear { resourceMonitor.start() }
+        .onDisappear { resourceMonitor.stop() }
+        
+        Divider()
+          .padding(.vertical, 8)
+        
+        Button(action: { showingLogs = true }) {
+          HStack {
+            Image(systemName: "list.bullet.rectangle")
+            Text("Logs")
+            Spacer()
+          }
+          .padding(8)
+          .background(Color.gray.opacity(0.1))
+          .cornerRadius(8)
+        }
+        .buttonStyle(.plain)
+        
+        Spacer()
+      }
+      .padding(.horizontal)
+      .frame(minWidth: 200, maxWidth: 250)
+      .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 280)
+    } detail: {
+      // Main chat area
+      VStack(spacing: 0) {
+        MessageListView(messages: $messages)
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+        
+        // Input bar
+        HStack {
+          Button(action: { selectImageOnMac() }) {
+            Image(systemName: "photo.on.rectangle")
+              .resizable()
+              .scaledToFit()
+              .frame(width: 24, height: 24)
+          }
+          .buttonStyle(.plain)
+          
+          if resourceManager.isModelValid && ModelType.fromPath(resourceManager.modelPath) == .qwen3 {
+            Button(action: {
+              thinkingMode.toggle()
+              showThinkingModeNotification = true
+              DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                showThinkingModeNotification = false
+              }
+            }) {
+              Image(systemName: "brain")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 24, height: 24)
+                .foregroundColor(thinkingMode ? .blue : .gray)
+            }
+            .buttonStyle(.plain)
+          }
+          
+          TextField(placeholder, text: $prompt, axis: .vertical)
+            .padding(8)
+            .background(Color.gray.opacity(0.1))
+            .cornerRadius(20)
+            .lineLimit(1...10)
+            .overlay(
+              RoundedRectangle(cornerRadius: 20)
+                .stroke(isInputEnabled ? Color.blue : Color.gray, lineWidth: 1)
+            )
+            .disabled(!isInputEnabled)
+            .focused($textFieldFocused)
+            .onSubmit {
+              if !prompt.isEmpty && isInputEnabled && !isGenerating {
+                generate()
+              }
+            }
+          
+          Button(action: isGenerating ? stop : generate) {
+            Image(systemName: isGenerating ? "stop.circle" : "arrowshape.up.circle.fill")
+              .resizable()
+              .aspectRatio(contentMode: .fit)
+              .frame(height: 28)
+          }
+          .buttonStyle(.plain)
+          .disabled(isGenerating ? shouldStopGenerating : (!isInputEnabled || prompt.isEmpty))
+        }
+        .padding(10)
+      }
+      .overlay {
+        if showThinkingModeNotification {
+          Text(thinkingMode ? "Thinking mode enabled" : "Thinking mode disabled")
+            .padding(8)
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+            .transition(.opacity)
+            .animation(.easeInOut(duration: 0.2), value: showThinkingModeNotification)
+        }
+      }
+    }
+    .sheet(isPresented: $showingLogs) {
+      VStack(spacing: 0) {
+        HStack {
+          Text("Logs")
+            .font(.headline)
+          Spacer()
+          Button(action: { logManager.clear() }) {
+            Image(systemName: "trash")
+          }
+          .help("Clear logs")
+          Button("Done") {
+            showingLogs = false
+          }
+        }
+        .padding()
+        .background(Color(NSColor.controlBackgroundColor))
+        
+        Divider()
+        
+        LogView(logManager: logManager)
+      }
+      .frame(minWidth: 600, minHeight: 400)
+    }
+    .fileImporter(
+      isPresented: Binding<Bool>(
+        get: { pickerType != nil },
+        set: { if !$0 { pickerType = nil } }
+      ),
+      allowedContentTypes: allowedContentTypes(),
+      allowsMultipleSelection: false
+    ) { [pickerType] result in
+      handleFileImportResult(pickerType, result)
+    }
+    .onAppear {
+      do {
+        try resourceManager.createDirectoriesIfNeeded()
+      } catch {
+        withAnimation {
+          messages.append(Message(type: .info, text: "Error creating content directories: \(error.localizedDescription)"))
+        }
+      }
+    }
+  }
+  #endif
+  
+  #if os(iOS)
+  @ViewBuilder
+  private var iOSBody: some View {
     NavigationView {
       ZStack {
         VStack {
@@ -305,12 +516,8 @@ struct ContentView: View {
 
           HStack {
             Button(action: {
-              #if os(iOS)
               imagePickerSourceType = .photoLibrary
               isImagePickerPresented = true
-              #elseif os(macOS)
-              selectImageOnMac()
-              #endif
             }) {
               Image(systemName: "photo.on.rectangle")
                 .resizable()
@@ -320,7 +527,6 @@ struct ContentView: View {
             .background(Color.clear)
             .cornerRadius(8)
 
-            #if os(iOS)
             Button(action: {
               if UIImagePickerController.isSourceTypeAvailable(.camera) {
                 imagePickerSourceType = .camera
@@ -336,7 +542,6 @@ struct ContentView: View {
             }
             .background(Color.clear)
             .cornerRadius(8)
-            #endif
 
             if resourceManager.isModelValid && ModelType.fromPath(resourceManager.modelPath) == .qwen3 {
               Button(action: {
@@ -378,13 +583,6 @@ struct ContentView: View {
                   loadModelIfNeededAsync(reportToUI: false)
                 }
               }
-              #if os(macOS)
-              .onSubmit {
-                if !prompt.isEmpty && isInputEnabled && !isGenerating {
-                  generate()
-                }
-              }
-              #endif
 
             Button(action: isGenerating ? stop : generate) {
               Image(systemName: isGenerating ? "stop.circle" : "arrowshape.up.circle.fill")
@@ -396,27 +594,20 @@ struct ContentView: View {
           }
           .padding([.leading, .trailing, .bottom], 10)
         }
-        #if os(iOS)
         .sheet(isPresented: $isImagePickerPresented, onDismiss: addSelectedImageMessage) {
           ImagePicker(selectedImage: $selectedImage, sourceType: imagePickerSourceType)
             .id(imagePickerSourceType.rawValue)
         }
-        #endif
 
         if showThinkingModeNotification {
           Text(thinkingMode ? "Thinking mode enabled" : "Thinking mode disabled")
             .padding(8)
-            #if os(iOS)
             .background(Color(UIColor.secondarySystemBackground))
-            #elseif os(macOS)
-            .background(Color(NSColor.controlBackgroundColor))
-            #endif
             .cornerRadius(8)
             .transition(.opacity)
             .animation(.easeInOut(duration: 0.2), value: showThinkingModeNotification)
         }
       }
-      #if os(iOS)
       .navigationBarTitle(title, displayMode: .inline)
       .navigationBarItems(
         leading:
@@ -447,38 +638,6 @@ struct ContentView: View {
             }
           }
       )
-      #elseif os(macOS)
-      .navigationTitle(title)
-      .toolbar {
-        ToolbarItem(placement: .navigation) {
-          Button(action: {
-            showingSettings.toggle()
-          }) {
-            Image(systemName: "folder")
-              .imageScale(.large)
-          }
-        }
-        ToolbarItemGroup(placement: .automatic) {
-          Menu {
-            Section(header: Text("Memory")) {
-              Text("Used: \(resourceMonitor.usedMemory) Mb")
-              Text("Available: \(resourceMonitor.availableMemory) Mb")
-            }
-          } label: {
-            Text("\(resourceMonitor.usedMemory) Mb")
-          }
-          .onAppear {
-            resourceMonitor.start()
-          }
-          .onDisappear {
-            resourceMonitor.stop()
-          }
-          Button(action: { showingLogs = true }) {
-            Image(systemName: "list.bullet.rectangle")
-          }
-        }
-      }
-      #endif
       .sheet(isPresented: $showingLogs) {
         NavigationView {
           LogView(logManager: logManager)
@@ -504,10 +663,9 @@ struct ContentView: View {
         }
       }
     }
-    #if os(iOS)
     .navigationViewStyle(StackNavigationViewStyle())
-    #endif
   }
+  #endif
 
   private func addSelectedImageMessage() {
     if let selectedImage {
