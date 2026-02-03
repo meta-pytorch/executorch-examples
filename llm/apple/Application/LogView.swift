@@ -30,12 +30,23 @@ struct LogView: View {
     }
     .padding()
     .defaultScrollAnchor(.bottom)
+    #if os(iOS)
     .navigationBarTitle("Logs", displayMode: .inline)
     .navigationBarItems(trailing:
                           Button(action: { logManager.clear() }) {
                             Image(systemName: "trash")
                           }
     )
+    #elseif os(macOS)
+    .navigationTitle("Logs")
+    .toolbar {
+      ToolbarItem(placement: .automatic) {
+        Button(action: { logManager.clear() }) {
+          Image(systemName: "trash")
+        }
+      }
+    }
+    #endif
   }
 
   private func format(timestamp: TimeInterval) -> String {

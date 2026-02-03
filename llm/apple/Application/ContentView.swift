@@ -10,11 +10,18 @@ import ExecuTorchLLM
 import SwiftUI
 import UniformTypeIdentifiers
 
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
+
 class RunnerHolder: ObservableObject {
   var textRunner: TextRunner?
   var multimodalRunner: MultimodalRunner?
 }
 
+#if os(iOS)
 extension UIImage {
   func centerCropped(to sideSize: CGFloat) -> UIImage {
     precondition(sideSize > 0)
@@ -91,6 +98,86 @@ extension UIImage {
     )
   }
 }
+#elseif os(macOS)
+extension NSImage {
+  func centerCropped(to sideSize: CGFloat) -> NSImage {
+    precondition(sideSize > 0)
+    let newImage = NSImage(size: NSSize(width: sideSize, height: sideSize))
+    newImage.lockFocus()
+    let scaleFactor = max(sideSize / size.width, sideSize / size.height)
+    let scaledWidth = size.width * scaleFactor
+    let scaledHeight = size.height * scaleFactor
+    let originX = (sideSize - scaledWidth) / 2
+    let originY = (sideSize - scaledHeight) / 2
+    draw(in: NSRect(x: originX, y: originY, width: scaledWidth, height: scaledHeight),
+         from: NSRect(origin: .zero, size: size),
+         operation: .copy,
+         fraction: 1.0)
+    newImage.unlockFocus()
+    return newImage
+  }
+
+  func rgbBytes() -> [UInt8]? {
+    guard let cgImage = cgImage(forProposedRect: nil, context: nil, hints: nil) else { return nil }
+    let pixelWidth = Int(cgImage.width)
+    let pixelHeight = Int(cgImage.height)
+    let pixelCount = pixelWidth * pixelHeight
+    let bytesPerPixel = 4
+    let bytesPerRow = pixelWidth * bytesPerPixel
+    var rgbaBuffer = [UInt8](repeating: 0, count: pixelCount * bytesPerPixel)
+    guard let context = CGContext(
+      data: &rgbaBuffer,
+      width: pixelWidth,
+      height: pixelHeight,
+      bitsPerComponent: 8,
+      bytesPerRow: bytesPerRow,
+      space: CGColorSpaceCreateDeviceRGB(),
+      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue
+    ) else { return nil }
+    context.draw(cgImage, in: CGRect(x: 0, y: 0, width: pixelWidth, height: pixelHeight))
+    var rgbBytes = [UInt8](repeating: 0, count: pixelCount * 3)
+    for pixelIndex in 0..<pixelCount {
+      let sourceIndex = pixelIndex * bytesPerPixel
+      rgbBytes[pixelIndex] = rgbaBuffer[sourceIndex + 0]
+      rgbBytes[pixelIndex + pixelCount] = rgbaBuffer[sourceIndex + 1]
+      rgbBytes[pixelIndex + 2 * pixelCount] = rgbaBuffer[sourceIndex + 2]
+    }
+    return rgbBytes
+  }
+
+  func rgbBytesNormalized(mean: [Float] = [0, 0, 0], std: [Float] = [1, 1, 1]) -> [Float]? {
+    precondition(mean.count == 3 && std.count == 3)
+    precondition(std[0] != 0 && std[1] != 0 && std[2] != 0)
+    guard let rgbBytes = rgbBytes() else { return nil }
+    let pixelCount = rgbBytes.count / 3
+    var rgbBytesNormalized = [Float](repeating: 0, count: pixelCount * 3)
+    for pixelIndex in 0..<pixelCount {
+      rgbBytesNormalized[pixelIndex] = (Float(rgbBytes[pixelIndex]) / 255.0 - mean[0]) / std[0]
+      rgbBytesNormalized[pixelIndex + pixelCount] = (Float(rgbBytes[pixelIndex + pixelCount]) / 255.0 - mean[1]) / std[1]
+      rgbBytesNormalized[pixelIndex + 2 * pixelCount] = (Float(rgbBytes[pixelIndex + 2 * pixelCount]) / 255.0 - mean[2]) / std[2]
+    }
+    return rgbBytesNormalized
+  }
+
+  func asImage(_ sideSize: CGFloat) -> ExecuTorchLLM.Image {
+    return Image(
+      data: Data(centerCropped(to: sideSize).rgbBytes() ?? []),
+      width: Int(sideSize),
+      height: Int(sideSize),
+      channels: 3
+    )
+  }
+
+  func asNormalizedImage(_ sideSize: CGFloat, mean: [Float] = [0.485, 0.456, 0.406], std: [Float] = [0.229, 0.224, 0.225]) -> ExecuTorchLLM.Image {
+    return Image(
+      float: (centerCropped(to: sideSize).rgbBytesNormalized(mean: mean, std: std) ?? []).withUnsafeBufferPointer { Data(buffer: $0) },
+      width: Int(sideSize),
+      height: Int(sideSize),
+      channels: 3
+    )
+  }
+}
+#endif
 
 struct ContentView: View {
   @State private var prompt = ""
@@ -108,8 +195,10 @@ struct ContentView: View {
   @StateObject private var resourceMonitor = ResourceMonitor()
   @StateObject private var logManager = LogManager()
   @State private var isImagePickerPresented = false
-  @State private var selectedImage: UIImage?
+  @State private var selectedImage: PlatformImage?
+  #if os(iOS)
   @State private var imagePickerSourceType: UIImagePickerController.SourceType = .photoLibrary
+  #endif
   @State private var showingSettings = false
   @FocusState private var textFieldFocused: Bool
   @State private var lastPreloadedKey: String?
@@ -169,6 +258,217 @@ struct ContentView: View {
   private var isInputEnabled: Bool { resourceManager.isModelValid && resourceManager.isTokenizerValid }
 
   var body: some View {
+    #if os(macOS)
+    macOSBody
+    #else
+    iOSBody
+    #endif
+  }
+  
+  #if os(macOS)
+  @ViewBuilder
+  private var macOSBody: some View {
+    NavigationSplitView {
+      // Left sidebar with configuration
+      VStack(alignment: .leading, spacing: 12) {
+        Text("Model")
+          .font(.headline)
+          .foregroundColor(.secondary)
+          .padding(.top, 8)
+        
+        Button(action: { pickerType = .model }) {
+          HStack {
+            Image(systemName: "cpu")
+            Text(modelTitle)
+              .lineLimit(1)
+              .truncationMode(.middle)
+            Spacer()
+          }
+          .padding(8)
+          .background(Color.gray.opacity(0.1))
+          .cornerRadius(8)
+        }
+        .buttonStyle(.plain)
+        
+        Button(action: { pickerType = .tokenizer }) {
+          HStack {
+            Image(systemName: "doc.text")
+            Text(tokenizerTitle)
+              .lineLimit(1)
+              .truncationMode(.middle)
+            Spacer()
+          }
+          .padding(8)
+          .background(Color.gray.opacity(0.1))
+          .cornerRadius(8)
+        }
+        .buttonStyle(.plain)
+        
+        Divider()
+          .padding(.vertical, 8)
+        
+        Text("Memory")
+          .font(.headline)
+          .foregroundColor(.secondary)
+        
+        VStack(alignment: .leading, spacing: 4) {
+          HStack {
+            Text("Used:")
+            Spacer()
+            Text("\(resourceMonitor.usedMemory) MB")
+              .monospacedDigit()
+          }
+          HStack {
+            Text("Available:")
+            Spacer()
+            Text("\(resourceMonitor.availableMemory) MB")
+              .monospacedDigit()
+          }
+        }
+        .font(.caption)
+        .onAppear { resourceMonitor.start() }
+        .onDisappear { resourceMonitor.stop() }
+        
+        Divider()
+          .padding(.vertical, 8)
+        
+        Button(action: { showingLogs = true }) {
+          HStack {
+            Image(systemName: "list.bullet.rectangle")
+            Text("Logs")
+            Spacer()
+          }
+          .padding(8)
+          .background(Color.gray.opacity(0.1))
+          .cornerRadius(8)
+        }
+        .buttonStyle(.plain)
+        
+        Spacer()
+      }
+      .padding(.horizontal)
+      .frame(minWidth: 200, maxWidth: 250)
+      .navigationSplitViewColumnWidth(min: 200, ideal: 220, max: 280)
+    } detail: {
+      // Main chat area
+      VStack(spacing: 0) {
+        MessageListView(messages: $messages)
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+        
+        // Input bar
+        HStack {
+          Button(action: { selectImageOnMac() }) {
+            Image(systemName: "photo.on.rectangle")
+              .resizable()
+              .scaledToFit()
+              .frame(width: 24, height: 24)
+          }
+          .buttonStyle(.plain)
+          
+          if resourceManager.isModelValid && ModelType.fromPath(resourceManager.modelPath) == .qwen3 {
+            Button(action: {
+              thinkingMode.toggle()
+              showThinkingModeNotification = true
+              DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                showThinkingModeNotification = false
+              }
+            }) {
+              Image(systemName: "brain")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 24, height: 24)
+                .foregroundColor(thinkingMode ? .blue : .gray)
+            }
+            .buttonStyle(.plain)
+          }
+          
+          TextField(placeholder, text: $prompt, axis: .vertical)
+            .padding(8)
+            .background(Color.gray.opacity(0.1))
+            .cornerRadius(20)
+            .lineLimit(1...10)
+            .overlay(
+              RoundedRectangle(cornerRadius: 20)
+                .stroke(isInputEnabled ? Color.blue : Color.gray, lineWidth: 1)
+            )
+            .disabled(!isInputEnabled)
+            .focused($textFieldFocused)
+            .onSubmit {
+              if !prompt.isEmpty && isInputEnabled && !isGenerating {
+                generate()
+              }
+            }
+          
+          Button(action: isGenerating ? stop : generate) {
+            Image(systemName: isGenerating ? "stop.circle" : "arrowshape.up.circle.fill")
+              .resizable()
+              .aspectRatio(contentMode: .fit)
+              .frame(height: 28)
+          }
+          .buttonStyle(.plain)
+          .disabled(isGenerating ? shouldStopGenerating : (!isInputEnabled || prompt.isEmpty))
+        }
+        .padding(10)
+      }
+      .overlay {
+        if showThinkingModeNotification {
+          Text(thinkingMode ? "Thinking mode enabled" : "Thinking mode disabled")
+            .padding(8)
+            .background(Color(NSColor.controlBackgroundColor))
+            .cornerRadius(8)
+            .transition(.opacity)
+            .animation(.easeInOut(duration: 0.2), value: showThinkingModeNotification)
+        }
+      }
+    }
+    .sheet(isPresented: $showingLogs) {
+      VStack(spacing: 0) {
+        HStack {
+          Text("Logs")
+            .font(.headline)
+          Spacer()
+          Button(action: { logManager.clear() }) {
+            Image(systemName: "trash")
+          }
+          .help("Clear logs")
+          Button("Done") {
+            showingLogs = false
+          }
+        }
+        .padding()
+        .background(Color(NSColor.controlBackgroundColor))
+        
+        Divider()
+        
+        LogView(logManager: logManager)
+      }
+      .frame(minWidth: 600, minHeight: 400)
+    }
+    .fileImporter(
+      isPresented: Binding<Bool>(
+        get: { pickerType != nil },
+        set: { if !$0 { pickerType = nil } }
+      ),
+      allowedContentTypes: allowedContentTypes(),
+      allowsMultipleSelection: false
+    ) { [pickerType] result in
+      handleFileImportResult(pickerType, result)
+    }
+    .onAppear {
+      do {
+        try resourceManager.createDirectoriesIfNeeded()
+      } catch {
+        withAnimation {
+          messages.append(Message(type: .info, text: "Error creating content directories: \(error.localizedDescription)"))
+        }
+      }
+    }
+  }
+  #endif
+  
+  #if os(iOS)
+  @ViewBuilder
+  private var iOSBody: some View {
     NavigationView {
       ZStack {
         VStack {
@@ -365,12 +665,32 @@ struct ContentView: View {
     }
     .navigationViewStyle(StackNavigationViewStyle())
   }
+  #endif
 
   private func addSelectedImageMessage() {
     if let selectedImage {
       messages.append(Message(image: selectedImage))
     }
   }
+
+  #if os(macOS)
+  private func selectImageOnMac() {
+    let panel = NSOpenPanel()
+    panel.allowsMultipleSelection = false
+    panel.canChooseDirectories = false
+    panel.canChooseFiles = true
+    panel.allowedContentTypes = [.image, .png, .jpeg, .gif, .heic]
+    panel.message = "Select an image"
+    panel.prompt = "Select"
+
+    if panel.runModal() == .OK {
+      if let url = panel.url, let image = NSImage(contentsOf: url) {
+        selectedImage = image
+        addSelectedImageMessage()
+      }
+    }
+  }
+  #endif
 
   private func generate() {
     guard !prompt.isEmpty else { return }
@@ -901,6 +1221,10 @@ extension ContentView {
 
 extension View {
   func hideKeyboard() {
+    #if os(iOS)
     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+    #elseif os(macOS)
+    NSApp.keyWindow?.makeFirstResponder(nil)
+    #endif
   }
 }
