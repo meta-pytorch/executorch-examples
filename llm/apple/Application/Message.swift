@@ -6,7 +6,15 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+import SwiftUI
+
+#if os(iOS)
 import UIKit
+typealias PlatformImage = UIImage
+#elseif os(macOS)
+import AppKit
+typealias PlatformImage = NSImage
+#endif
 
 enum MessageType {
   case prompted
@@ -27,7 +35,7 @@ struct Message: Identifiable, Equatable {
   var type: MessageType = .prompted
   var text = ""
   var tokenCount = 0
-  var image: UIImage?
+  var image: PlatformImage?
   var tokensPerSecond: Double = 0
   var lastSpeedMeasurementAt: Date?
 }

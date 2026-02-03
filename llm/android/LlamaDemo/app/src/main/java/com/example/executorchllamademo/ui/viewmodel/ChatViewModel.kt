@@ -94,10 +94,29 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     private val contentResolver = application.contentResolver
 
     init {
-        loadSavedMessages()
+        // Check for clear chat history flag BEFORE loading saved messages
+        val moduleSettings = demoSharedPreferences.getModuleSettings()
+        if (moduleSettings.isClearChatHistory) {
+            // Clear the flag and don't load messages
+            // Keep isLoadModel flag so model still loads in checkAndLoadSettings()
+            demoSharedPreferences.removeExistingMessages()
+            demoSharedPreferences.saveModuleSettings(moduleSettings.copy(isClearChatHistory = false))
+            // Don't update currentSettingsFields here - let checkAndLoadSettings() handle it
+            // so it detects the change and loads the model if needed
+        } else {
+            loadSavedMessages()
+        }
     }
 
     private fun loadSavedMessages() {
+        val appSettings = demoSharedPreferences.getAppSettings()
+        // Only load saved messages if saveChatHistory is enabled
+        if (!appSettings.saveChatHistory) {
+            // Clear any existing saved messages since saving is disabled
+            demoSharedPreferences.removeExistingMessages()
+            return
+        }
+
         val existingMsgJSON = demoSharedPreferences.getSavedMessages()
         if (existingMsgJSON.isNotEmpty()) {
             val gson = Gson()
@@ -111,7 +130,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     }
 
     fun saveMessages() {
-        demoSharedPreferences.addMessages(_messages.toList())
+        val appSettings = demoSharedPreferences.getAppSettings()
+        // Only save messages if saveChatHistory is enabled
+        if (appSettings.saveChatHistory) {
+            demoSharedPreferences.addMessages(_messages.toList())
+        } else {
+            // Make sure no messages are persisted
+            demoSharedPreferences.removeExistingMessages()
+        }
     }
 
     private val systemPromptMessage = "To get started, select your desired model and tokenizer from the top right corner"
@@ -127,33 +153,33 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
         activeModelId = updatedSettingsFields.activeModelId
 
         if (isUpdated) {
-            checkForClearChatHistory(updatedSettingsFields)
+            val settingsAfterClear = checkForClearChatHistory(updatedSettingsFields)
 
             if (isLoadModel) {
                 // Update local copy BEFORE checking media capabilities
-                val settingsWithLoadFlagCleared = updatedSettingsFields.copy(isLoadModel = false)
+                val settingsWithLoadFlagCleared = settingsAfterClear.copy(isLoadModel = false)
                 currentSettingsFields = settingsWithLoadFlagCleared
                 demoSharedPreferences.saveModuleSettings(settingsWithLoadFlagCleared)
 
                 // Update media capabilities after settings are updated
-                setBackendMode(updatedSettingsFields.backendType)
+                setBackendMode(settingsAfterClear.backendType)
 
-                if (isLoraMode && updatedSettingsFields.hasModels()) {
+                if (isLoraMode && settingsAfterClear.hasModels()) {
                     // LoRA mode: Load all configured models
-                    loadLoraModels(updatedSettingsFields)
+                    loadLoraModels(settingsAfterClear)
                 } else {
                     // Legacy single-model mode
                     loadLocalModelAndParameters(
-                        updatedSettingsFields.modelFilePath,
-                        updatedSettingsFields.tokenizerFilePath,
-                        updatedSettingsFields.dataPath,
-                        updatedSettingsFields.temperature.toFloat()
+                        settingsAfterClear.modelFilePath,
+                        settingsAfterClear.tokenizerFilePath,
+                        settingsAfterClear.dataPath,
+                        settingsAfterClear.temperature.toFloat()
                     )
                 }
             } else {
-                currentSettingsFields = updatedSettingsFields.copy()
+                currentSettingsFields = settingsAfterClear.copy()
                 // Update media capabilities after settings are updated
-                setBackendMode(updatedSettingsFields.backendType)
+                setBackendMode(settingsAfterClear.backendType)
                 if (module == null && loadedModules.isEmpty()) {
                     addSystemMessage(systemPromptMessage)
                 }
@@ -365,13 +391,18 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
         }
     }
 
-    private fun checkForClearChatHistory(updatedSettingsFields: ModuleSettings) {
+    private fun checkForClearChatHistory(updatedSettingsFields: ModuleSettings): ModuleSettings {
         if (updatedSettingsFields.isClearChatHistory) {
             _messages.clear()
             demoSharedPreferences.removeExistingMessages()
-            demoSharedPreferences.saveModuleSettings(updatedSettingsFields.copy(isClearChatHistory = false))
+            val clearedSettings = updatedSettingsFields.copy(isClearChatHistory = false)
+            demoSharedPreferences.saveModuleSettings(clearedSettings)
             module?.resetContext()
+            shouldAddSystemPrompt = true
+            promptID = 0
+            return clearedSettings
         }
+        return updatedSettingsFields
     }
 
     private fun loadLocalModelAndParameters(
