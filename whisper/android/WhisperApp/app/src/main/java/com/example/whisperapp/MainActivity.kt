@@ -44,30 +44,25 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import com.example.whisperapp.ui.theme.WhisperAppTheme
-import org.pytorch.executorch.EValue
-import org.pytorch.executorch.Module
-import org.pytorch.executorch.Tensor
 import org.pytorch.executorch.extension.asr.AsrCallback
 import org.pytorch.executorch.extension.asr.AsrModule
 import java.io.File
-import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.OutputStream
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 
 class MainActivity : ComponentActivity(), AsrCallback {
 
     companion object {
         private const val TAG = "MainActivity"
-        private const val RECORDING_DURATION_MS = 5000L // 5 seconds
+        private const val RECORDING_DURATION_MS = 30000L // 30 seconds
         // Token lengths to remove from transcription output
         private const val START_TOKEN_LENGTH = 37
         private const val END_TOKEN_LENGTH = 13
     }
 
     private var transcriptionOutput by mutableStateOf("")
+    private var rawTranscriptionOutput = ""
     private var buttonText by mutableStateOf("Record")
     private var buttonEnabled by mutableStateOf(true)
     private var statusText by mutableStateOf("")
@@ -95,48 +90,6 @@ class MainActivity : ComponentActivity(), AsrCallback {
     enum class Screen {
         MAIN,
         SETTINGS
-    }
-
-    @Throws(IOException::class)
-    fun readWavPcmBytes(filePath: String): ByteArray {
-        val wavHeaderSize = 44 // Standard header size for PCM WAV
-        val file = File(filePath)
-        val fis = FileInputStream(file)
-        try {
-            val totalSize = file.length()
-            assert(totalSize > wavHeaderSize)
-            val pcmSize = (totalSize - wavHeaderSize).toInt()
-            val pcmBytes = ByteArray(pcmSize)
-            // Skip the header
-            val skipped = fis.skip(wavHeaderSize.toLong())
-            if (skipped != wavHeaderSize.toLong()) throw IOException("Failed to skip WAV header")
-            // Read PCM data
-            val read = fis.read(pcmBytes)
-            if (read != pcmSize) throw IOException("Failed to read all PCM data")
-            return pcmBytes
-        } finally {
-            fis.close()
-        }
-    }
-
-    private fun convertPcm16ToFloat(audioBytes: ByteArray): FloatArray {
-        val totalSamples = audioBytes.size / 2  // 2 bytes per 16-bit sample
-        val floatSamples = FloatArray(totalSamples)
-
-        // Create ByteBuffer with little-endian byte order (standard for WAV)
-        val byteBuffer = ByteBuffer.wrap(audioBytes).order(ByteOrder.LITTLE_ENDIAN)
-
-        for (i in 0 until totalSamples) {
-            val sample = byteBuffer.short.toInt()
-            // Normalize 16-bit PCM to [-1.0, 1.0]
-            floatSamples[i] = if (sample < 0) {
-                sample / 32768.0f
-            } else {
-                sample / 32767.0f
-            }
-        }
-
-        return floatSamples
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -250,87 +203,57 @@ class MainActivity : ComponentActivity(), AsrCallback {
             return
         }
 
+        rawTranscriptionOutput = ""
         runOnUiThread {
             transcriptionOutput = ""
-        }
-
-        val audioData: FloatArray
-        val batchSize: Int
-        val featureDim: Int
-        val timeSteps: Int
-
-        if (settings.hasPreprocessor()) {
-            // Use preprocessor to convert WAV to mel-spectrogram
-            Log.v(TAG, "Using preprocessor: ${settings.preprocessorPath}")
-            runOnUiThread {
-                statusText = "Processing audio with mel-spectrogram..."
-            }
-
-            val pcmBytes = readWavPcmBytes(wavFilePath)
-            val inputFloatArray = convertPcm16ToFloat(pcmBytes)
-
-            val tensor1 = Tensor.fromBlob(
-                inputFloatArray,
-                longArrayOf(inputFloatArray.size.toLong())
-            )
-            val module = Module.load(settings.preprocessorPath)
-            val eValue1 = EValue.from(tensor1)
-            audioData = module.forward(eValue1)[0].toTensor().dataAsFloatArray
-
-            // result shape is [batchSize, timeSteps, featureDim]
-            batchSize = 1
-            featureDim = 128  // Whisper uses 128 mel bins
-            timeSteps = audioData.size / (batchSize * featureDim)
-        } else {
-            // No preprocessor: use raw WAV audio directly
-            Log.v(TAG, "No preprocessor, using raw WAV audio")
-            runOnUiThread {
-                statusText = "Processing raw audio..."
-            }
-
-            val pcmBytes = readWavPcmBytes(wavFilePath)
-            audioData = convertPcm16ToFloat(pcmBytes)
-
-            // For raw audio: batchSize=1, timeSteps=numSamples, featureDim=1
-            batchSize = 1
-            featureDim = 1  // Raw audio has 1 feature dimension
-            timeSteps = audioData.size
+            statusText = "Loading model..."
+            buttonText = "Transcribing..."
+            buttonEnabled = false
         }
 
         val whisperModule = AsrModule(
-            settings.modelPath,
-            settings.tokenizerPath,
-            settings.dataPath
+            modelPath = settings.modelPath,
+            tokenizerPath = settings.tokenizerPath,
+            dataPath = settings.dataPath.ifBlank { null },
+            preprocessorPath = settings.preprocessorPath.ifBlank { null }
         )
 
-        Log.v(TAG, "Starting transcribe with batchSize=$batchSize, timeSteps=$timeSteps, featureDim=$featureDim")
+        Log.v(TAG, "Starting transcribe for: $wavFilePath")
         runOnUiThread {
             statusText = "Transcribing..."
         }
-        whisperModule.transcribe(audioData, batchSize, timeSteps, featureDim, this@MainActivity)
-        Log.v(TAG, "Finished transcribe")
+        val startTime = System.currentTimeMillis()
+        whisperModule.transcribe(wavFilePath, callback = this@MainActivity)
+        val elapsedTime = System.currentTimeMillis() - startTime
+        val elapsedSeconds = elapsedTime / 1000.0
+        Log.v(TAG, "Finished transcribe in ${elapsedSeconds}s")
 
         // Display result in Text view instead of Toast
         // hack to remove start and end tokens; ideally the runner should not do callback on these tokens
         runOnUiThread {
             val minLength = START_TOKEN_LENGTH + END_TOKEN_LENGTH
-            if (transcriptionOutput.length > minLength) {
-                val endIndex = transcriptionOutput.length - END_TOKEN_LENGTH
+            if (rawTranscriptionOutput.length > minLength) {
+                val endIndex = rawTranscriptionOutput.length - END_TOKEN_LENGTH
                 if (endIndex > START_TOKEN_LENGTH) {
-                    transcriptionOutput = transcriptionOutput.substring(START_TOKEN_LENGTH, endIndex)
+                    transcriptionOutput = rawTranscriptionOutput.substring(START_TOKEN_LENGTH, endIndex)
                 }
             }
-            statusText = "Transcription complete"
+            statusText = "Transcription complete (%.2fs)".format(elapsedSeconds)
+            buttonText = "Record"
             buttonEnabled = true
         }
     }
 
     override fun onToken(result: String) {
         Log.v(TAG, "Called callback: here's the current output")
+        rawTranscriptionOutput += result
         runOnUiThread {
-            transcriptionOutput += result
+            // Strip start token prefix for display while transcribing
+            if (rawTranscriptionOutput.length > START_TOKEN_LENGTH) {
+                transcriptionOutput = rawTranscriptionOutput.substring(START_TOKEN_LENGTH)
+            }
         }
-        Log.v(TAG, transcriptionOutput)
+        Log.v(TAG, rawTranscriptionOutput)
     }
 
     private fun startRecording() {
@@ -358,10 +281,10 @@ class MainActivity : ComponentActivity(), AsrCallback {
                     audioRecord?.startRecording()
                     isRecording = true
 
-                    buttonText = "Recording... (5s)"
+                    buttonText = "Recording... (30s)"
                     buttonEnabled = false
 
-                    // Schedule automatic stop after 5 seconds
+                    // Schedule automatic stop after 30 seconds
                     stopRecordingRunnable = Runnable {
                         stopRecording()
                     }
