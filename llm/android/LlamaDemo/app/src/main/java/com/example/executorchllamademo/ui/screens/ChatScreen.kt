@@ -12,6 +12,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
@@ -22,10 +23,12 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Article
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -65,6 +68,7 @@ fun ChatScreen(
     onAudioFileSelected: (String) -> Unit
 ) {
     var showAudioDialog by remember { mutableStateOf(false) }
+    var showModelSwitcherDialog by remember { mutableStateOf(false) }
     val listState = rememberLazyListState()
     val appColors = LocalAppColors.current
     val focusManager = LocalFocusManager.current
@@ -130,6 +134,16 @@ fun ChatScreen(
                         color = appColors.textOnNavBar,
                         fontSize = 14.sp
                     )
+                    // Model switcher button - only visible in LoRA mode
+                    if (viewModel.isLoraMode) {
+                        IconButton(onClick = { showModelSwitcherDialog = true }) {
+                            Icon(
+                                imageVector = Icons.Filled.SwapHoriz,
+                                contentDescription = "Switch Model",
+                                tint = appColors.textOnNavBar
+                            )
+                        }
+                    }
                     IconButton(onClick = onLogsClick) {
                         Icon(
                             imageVector = Icons.Filled.Article,
@@ -238,6 +252,59 @@ fun ChatScreen(
             confirmButton = {},
             dismissButton = {
                 TextButton(onClick = { showAudioDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
+    // Model switcher dialog (LoRA mode)
+    if (showModelSwitcherDialog && viewModel.isLoraMode) {
+        AlertDialog(
+            onDismissRequest = { showModelSwitcherDialog = false },
+            title = { Text("Switch Model") },
+            text = {
+                Column {
+                    if (viewModel.availableModels.isEmpty()) {
+                        Text("No models configured. Add models in Settings.")
+                    } else {
+                        viewModel.availableModels.forEach { model ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        viewModel.switchToModel(model.id)
+                                        showModelSwitcherDialog = false
+                                    }
+                                    .padding(vertical = 8.dp),
+                                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+                            ) {
+                                RadioButton(
+                                    selected = model.id == viewModel.activeModelId,
+                                    onClick = {
+                                        viewModel.switchToModel(model.id)
+                                        showModelSwitcherDialog = false
+                                    }
+                                )
+                                Column(modifier = Modifier.padding(start = 8.dp)) {
+                                    Text(
+                                        text = model.displayName.ifEmpty { "Unknown" },
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = "${model.modelType}",
+                                        fontSize = 12.sp,
+                                        color = appColors.settingsSecondaryText
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { showModelSwitcherDialog = false }) {
                     Text("Cancel")
                 }
             }
