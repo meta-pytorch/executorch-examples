@@ -35,7 +35,7 @@ data class ModuleSettings(
     val models: List<ModelConfiguration> = emptyList(),
     val activeModelId: String = "",
     val sharedDataPath: String = "",
-    val foundationModelType: ModelType = ModelType.LLAMA_3_2
+    val foundationModelType: ModelType = ModelType.LLAMA_3
 ) {
     /**
      * Gets the effective model type, considering multi-model configuration.

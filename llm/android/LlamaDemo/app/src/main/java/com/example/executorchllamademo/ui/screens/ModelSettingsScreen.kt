@@ -452,6 +452,7 @@ fun ModelSettingsScreen(
     TokenizerDialog(viewModel)
     DataPathDialog(viewModel)
     FoundationDataPathDialog(viewModel)
+    FoundationModelTypeDialog(viewModel)
     ModelTypeDialog(viewModel)
     LoadModelDialog(viewModel, onLoadModel, onBackPressed)
     ResetSystemPromptDialog(viewModel)
@@ -657,6 +658,20 @@ private fun FoundationDataPathDialog(viewModel: ModelSettingsViewModel) {
                 onDismiss = { viewModel.showFoundationDataPathDialog = false }
             )
         }
+    }
+}
+
+@Composable
+private fun FoundationModelTypeDialog(viewModel: ModelSettingsViewModel) {
+    if (viewModel.showFoundationModelTypeDialog) {
+        SingleChoiceDialog(
+            title = "Select Foundation Model Type",
+            options = ModelType.values().map { it.toString() },
+            onSelect = { selected ->
+                viewModel.selectFoundationModelType(ModelType.valueOf(selected))
+            },
+            onDismiss = { viewModel.showFoundationModelTypeDialog = false }
+        )
     }
 }
 

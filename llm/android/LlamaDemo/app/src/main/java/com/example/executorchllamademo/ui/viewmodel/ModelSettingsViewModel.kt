@@ -290,12 +290,9 @@ class ModelSettingsViewModel : ViewModel() {
      */
     fun selectTempTokenizer(tokenizerPath: String) {
         tempTokenizerPath = tokenizerPath
-        // Auto-detect model type from PTE filename
-        val detectedType = ModelType.fromFilePath(tempModelPath)
-        if (detectedType != null) {
-            tempModelType = detectedType
-        }
-        addModelStep = 3  // Skip model type, go to adapters
+        // Use foundation model type for LoRA mode
+        tempModelType = moduleSettings.foundationModelType
+        addModelStep = 3  // Go to adapters
     }
 
     /**
