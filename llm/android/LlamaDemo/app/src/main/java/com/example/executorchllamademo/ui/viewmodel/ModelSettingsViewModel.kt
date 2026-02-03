@@ -283,7 +283,12 @@ class ModelSettingsViewModel : ViewModel() {
      */
     fun selectTempTokenizer(tokenizerPath: String) {
         tempTokenizerPath = tokenizerPath
-        addModelStep = 3
+        // Auto-detect model type from PTE filename
+        val detectedType = ModelType.fromFilePath(tempModelPath)
+        if (detectedType != null) {
+            tempModelType = detectedType
+        }
+        addModelStep = 3  // Skip model type, go to adapters
     }
 
     /**
@@ -341,9 +346,6 @@ class ModelSettingsViewModel : ViewModel() {
             }
             3 -> {
                 addModelStep = 2
-            }
-            4 -> {
-                addModelStep = 3
             }
             else -> cancelAddModel()
         }

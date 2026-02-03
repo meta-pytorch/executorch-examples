@@ -924,59 +924,12 @@ private fun AddModelDialog(viewModel: ModelSettingsViewModel) {
             }
         }
         3 -> {
-            // Step 3: Confirm model type
-            val modelTypes = ModelType.values().map { it.toString() }
-            val preSelectedIndex = ModelType.values().indexOfFirst { it == viewModel.tempModelType }
-
-            AlertDialog(
-                onDismissRequest = { viewModel.previousAddModelStep() },
-                title = { Text("Step 3: Confirm Model Type") },
-                text = {
-                    Column {
-                        modelTypes.forEachIndexed { index, option ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        viewModel.selectTempModelType(ModelType.valueOf(option))
-                                    }
-                                    .padding(vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = index == preSelectedIndex || viewModel.tempModelType.toString() == option,
-                                    onClick = {
-                                        viewModel.selectTempModelType(ModelType.valueOf(option))
-                                    }
-                                )
-                                Text(
-                                    text = option,
-                                    modifier = Modifier.padding(start = 8.dp),
-                                    fontSize = 14.sp
-                                )
-                            }
-                        }
-                    }
-                },
-                confirmButton = {
-                    TextButton(onClick = { viewModel.goToAddModelStep(4) }) {
-                        Text("Next")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { viewModel.previousAddModelStep() }) {
-                        Text("Back")
-                    }
-                }
-            )
-        }
-        4 -> {
-            // Step 4: Select adapter PTDs (optional, multi-select)
+            // Step 3: Select adapter PTDs (0 or more, optional)
             val appColors = LocalAppColors.current
             
             AlertDialog(
                 onDismissRequest = { viewModel.previousAddModelStep() },
-                title = { Text("Step 4: Select Adapter PTDs (Optional)") },
+                title = { Text("Step 3: Select Adapter PTDs") },
                 text = {
                     Column(
                         modifier = Modifier
@@ -984,7 +937,7 @@ private fun AddModelDialog(viewModel: ModelSettingsViewModel) {
                             .height(400.dp)
                     ) {
                         Text(
-                            text = "Select one or more adapter PTD files for this model:",
+                            text = "Select 0 or more adapter PTD files for this model (optional):",
                             fontSize = 14.sp,
                             modifier = Modifier.padding(bottom = 8.dp)
                         )
