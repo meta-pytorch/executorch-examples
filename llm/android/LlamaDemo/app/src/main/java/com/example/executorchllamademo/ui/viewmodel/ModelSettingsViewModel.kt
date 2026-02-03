@@ -37,6 +37,7 @@ class ModelSettingsViewModel : ViewModel() {
     var showTokenizerDialog by mutableStateOf(false)
     var showDataPathDialog by mutableStateOf(false)
     var showFoundationDataPathDialog by mutableStateOf(false)
+    var showFoundationModelTypeDialog by mutableStateOf(false)
     var showAdapterDialog by mutableStateOf(false)
     var showModelTypeDialog by mutableStateOf(false)
     var showLoadModelDialog by mutableStateOf(false)
@@ -156,6 +157,12 @@ class ModelSettingsViewModel : ViewModel() {
     // Foundation PTD selection (for LoRA mode)
     fun selectFoundationDataPath(dataPath: String) {
         moduleSettings = moduleSettings.copy(foundationDataPath = dataPath)
+    }
+
+    // Foundation Model Type selection (for LoRA mode)
+    fun selectFoundationModelType(modelType: ModelType) {
+        moduleSettings = moduleSettings.copy(foundationModelType = modelType)
+        showFoundationModelTypeDialog = false
     }
 
     // Model type selection

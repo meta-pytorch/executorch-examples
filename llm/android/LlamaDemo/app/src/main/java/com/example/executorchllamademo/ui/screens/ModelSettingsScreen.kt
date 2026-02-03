@@ -174,6 +174,17 @@ fun ModelSettingsScreen(
                     }
                 )
 
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Foundation Model Type selector (for LoRA)
+                SettingsRow(
+                    label = "Foundation Model Type",
+                    value = viewModel.moduleSettings.foundationModelType.toString(),
+                    onClick = {
+                        viewModel.showFoundationModelTypeDialog = true
+                    }
+                )
+
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // LoRA Mode: Multi-model selection

@@ -34,7 +34,8 @@ data class ModuleSettings(
     // Multi-model support fields (used when isLoraMode is true)
     val models: List<ModelConfiguration> = emptyList(),
     val activeModelId: String = "",
-    val sharedDataPath: String = ""
+    val sharedDataPath: String = "",
+    val foundationModelType: ModelType = ModelType.LLAMA_3_2
 ) {
     /**
      * Gets the effective model type, considering multi-model configuration.
