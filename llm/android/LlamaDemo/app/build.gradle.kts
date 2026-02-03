@@ -268,14 +268,14 @@ dependencies {
   if (useLocalAar == true) {
     implementation(files("libs/executorch.aar"))
   } else {
-    implementation("org.pytorch:executorch-android:1.0.1")
+    implementation("org.pytorch:executorch-android:1.1.0")
     // https://mvnrepository.com/artifact/org.pytorch/executorch-android-qnn
     // Uncomment this to enable QNN
-    // implementation("org.pytorch:executorch-android-qnn:1.0.1")
+    // implementation("org.pytorch:executorch-android-qnn:1.1.0")
 
     // https://mvnrepository.com/artifact/org.pytorch/executorch-android-vulkan
     // uncomment to enable vulkan
-    // implementation("org.pytorch:executorch-android-vulkan:1.0.1")
+    // implementation("org.pytorch:executorch-android-vulkan:1.1.0")
   }
   implementation("com.google.android.material:material:1.12.0")
   implementation("androidx.activity:activity:1.9.0")
