@@ -43,8 +43,7 @@ import com.example.executorchllamademo.ui.theme.LocalAppColors
 fun WelcomeScreen(
     onLoadModelClick: () -> Unit = {},
     onDownloadModelClick: () -> Unit = {},
-    onAppSettingsClick: () -> Unit = {},
-    onStartChatClick: () -> Unit = {}
+    onAppSettingsClick: () -> Unit = {}
 ) {
     val appColors = LocalAppColors.current
     val scrollState = rememberScrollState()
