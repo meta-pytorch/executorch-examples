@@ -214,27 +214,26 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                 if (!modelConfig.isValid()) continue
 
                 try {
+                    // Build dataFiles list: foundation PTD + adapter PTDs
+                    val dataFiles = mutableListOf<String>()
+                    if (sharedDataPath.isNotEmpty()) {
+                        dataFiles.add(sharedDataPath)
+                    }
+                    dataFiles.addAll(modelConfig.adapterFilePaths)
+
+                    val dataFilesLog = if (dataFiles.isEmpty()) "no data files" else dataFiles.joinToString(", ")
                     ETLogging.getInstance().log(
-                        "LoRA: Loading model ${modelConfig.displayName} with tokenizer ${modelConfig.tokenizerFilePath} data path $sharedDataPath"
+                        "LoRA: Loading model ${modelConfig.displayName} with tokenizer ${modelConfig.tokenizerFilePath}, data files: $dataFilesLog"
                     )
 
                     val runStartTime = System.currentTimeMillis()
-                    val llmModule = if (sharedDataPath.isEmpty()) {
-                        LlmModule(
-                            ModelUtils.getModelCategory(modelConfig.modelType, modelConfig.backendType),
-                            modelConfig.modelFilePath,
-                            modelConfig.tokenizerFilePath,
-                            modelConfig.temperature.toFloat()
-                        )
-                    } else {
-                        LlmModule(
-                            ModelUtils.getModelCategory(modelConfig.modelType, modelConfig.backendType),
-                            modelConfig.modelFilePath,
-                            modelConfig.tokenizerFilePath,
-                            modelConfig.temperature.toFloat(),
-                            sharedDataPath
-                        )
-                    }
+                    val llmModule = LlmModule(
+                        ModelUtils.getModelCategory(modelConfig.modelType, modelConfig.backendType),
+                        modelConfig.modelFilePath,
+                        modelConfig.tokenizerFilePath,
+                        modelConfig.temperature.toFloat(),
+                        dataFiles
+                    )
 
                     llmModule.load()
                     val loadDuration = System.currentTimeMillis() - runStartTime
@@ -319,23 +318,21 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                 isModelReady = false
 
                 try {
-                    val runStartTime = System.currentTimeMillis()
-                    val llmModule = if (sharedDataPath.isEmpty()) {
-                        LlmModule(
-                            ModelUtils.getModelCategory(modelConfig.modelType, modelConfig.backendType),
-                            modelConfig.modelFilePath,
-                            modelConfig.tokenizerFilePath,
-                            modelConfig.temperature.toFloat()
-                        )
-                    } else {
-                        LlmModule(
-                            ModelUtils.getModelCategory(modelConfig.modelType, modelConfig.backendType),
-                            modelConfig.modelFilePath,
-                            modelConfig.tokenizerFilePath,
-                            modelConfig.temperature.toFloat(),
-                            sharedDataPath
-                        )
+                    // Build dataFiles list: foundation PTD + adapter PTDs
+                    val dataFiles = mutableListOf<String>()
+                    if (sharedDataPath.isNotEmpty()) {
+                        dataFiles.add(sharedDataPath)
                     }
+                    dataFiles.addAll(modelConfig.adapterFilePaths)
+
+                    val runStartTime = System.currentTimeMillis()
+                    val llmModule = LlmModule(
+                        ModelUtils.getModelCategory(modelConfig.modelType, modelConfig.backendType),
+                        modelConfig.modelFilePath,
+                        modelConfig.tokenizerFilePath,
+                        modelConfig.temperature.toFloat(),
+                        dataFiles
+                    )
 
                     llmModule.load()
                     val loadDuration = System.currentTimeMillis() - runStartTime

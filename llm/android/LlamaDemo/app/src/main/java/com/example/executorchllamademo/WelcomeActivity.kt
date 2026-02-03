@@ -56,9 +56,6 @@ class WelcomeActivity : ComponentActivity() {
                         },
                         onAppSettingsClick = {
                             startActivity(Intent(this@WelcomeActivity, AppSettingsActivity::class.java))
-                        },
-                        onStartChatClick = {
-                            startActivity(Intent(this@WelcomeActivity, MainActivity::class.java))
                         }
                     )
                 }

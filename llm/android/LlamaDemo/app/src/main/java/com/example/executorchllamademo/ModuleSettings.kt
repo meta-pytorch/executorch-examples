@@ -28,6 +28,9 @@ data class ModuleSettings(
     // LoRA mode toggle - when enabled, allows multiple model selection
     val isLoraMode: Boolean = false,
 
+    // Foundation PTD path - shared base weights for all LoRA models
+    val foundationDataPath: String = "",
+
     // Multi-model support fields (used when isLoraMode is true)
     val models: List<ModelConfiguration> = emptyList(),
     val activeModelId: String = "",
@@ -72,10 +75,11 @@ data class ModuleSettings(
     }
 
     /**
-     * Gets the effective shared data path (falls back to legacy dataPath).
+     * Gets the effective foundation data path for LoRA mode.
+     * Priority: foundationDataPath > sharedDataPath > dataPath
      */
     fun getEffectiveDataPath(): String {
-        return sharedDataPath.ifEmpty { dataPath }
+        return foundationDataPath.ifEmpty { sharedDataPath.ifEmpty { dataPath } }
     }
 
     /**

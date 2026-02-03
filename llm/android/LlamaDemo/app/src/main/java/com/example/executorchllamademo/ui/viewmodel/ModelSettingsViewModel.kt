@@ -36,6 +36,8 @@ class ModelSettingsViewModel : ViewModel() {
     var showModelDialog by mutableStateOf(false)
     var showTokenizerDialog by mutableStateOf(false)
     var showDataPathDialog by mutableStateOf(false)
+    var showFoundationDataPathDialog by mutableStateOf(false)
+    var showAdapterDialog by mutableStateOf(false)
     var showModelTypeDialog by mutableStateOf(false)
     var showLoadModelDialog by mutableStateOf(false)
     var showResetSystemPromptDialog by mutableStateOf(false)
@@ -54,6 +56,8 @@ class ModelSettingsViewModel : ViewModel() {
     var tempTokenizerPath by mutableStateOf("")
         private set
     var tempModelType by mutableStateOf(ModelType.LLAMA_3)
+        private set
+    var tempAdapterPaths by mutableStateOf<List<String>>(emptyList())
         private set
 
     // Model to be removed (for confirmation dialog)
@@ -147,6 +151,11 @@ class ModelSettingsViewModel : ViewModel() {
             dataPath = dataPath,
             sharedDataPath = dataPath
         )
+    }
+
+    // Foundation PTD selection (for LoRA mode)
+    fun selectFoundationDataPath(dataPath: String) {
+        moduleSettings = moduleSettings.copy(foundationDataPath = dataPath)
     }
 
     // Model type selection
@@ -250,6 +259,7 @@ class ModelSettingsViewModel : ViewModel() {
         tempModelPath = ""
         tempTokenizerPath = ""
         tempModelType = ModelType.LLAMA_3
+        tempAdapterPaths = emptyList()
         addModelStep = 1
         showAddModelDialog = true
         refreshFileLists()
@@ -284,6 +294,13 @@ class ModelSettingsViewModel : ViewModel() {
     }
 
     /**
+     * Sets the add model step (for navigation).
+     */
+    fun goToAddModelStep(step: Int) {
+        addModelStep = step
+    }
+
+    /**
      * Confirms and adds the new model.
      */
     fun confirmAddModel() {
@@ -295,7 +312,7 @@ class ModelSettingsViewModel : ViewModel() {
             modelType = tempModelType,
             backendType = moduleSettings.backendType,
             temperature = ModuleSettings.DEFAULT_TEMPERATURE
-        )
+        ).copy(adapterFilePaths = tempAdapterPaths)
 
         moduleSettings = moduleSettings.addModel(newModel)
         cancelAddModel()
@@ -310,6 +327,7 @@ class ModelSettingsViewModel : ViewModel() {
         tempModelPath = ""
         tempTokenizerPath = ""
         tempModelType = ModelType.LLAMA_3
+        tempAdapterPaths = emptyList()
     }
 
     /**
@@ -323,6 +341,9 @@ class ModelSettingsViewModel : ViewModel() {
             }
             3 -> {
                 addModelStep = 2
+            }
+            4 -> {
+                addModelStep = 3
             }
             else -> cancelAddModel()
         }
@@ -385,5 +406,21 @@ class ModelSettingsViewModel : ViewModel() {
     fun proceedAfterMemoryWarning() {
         showMemoryWarningDialog = false
         showLoadModelDialog = true
+    }
+
+    /**
+     * Adds an adapter PTD to the temp adapter list.
+     */
+    fun addTempAdapter(adapterPath: String) {
+        if (adapterPath.isNotEmpty() && !tempAdapterPaths.contains(adapterPath)) {
+            tempAdapterPaths = tempAdapterPaths + adapterPath
+        }
+    }
+
+    /**
+     * Removes an adapter PTD from the temp adapter list.
+     */
+    fun removeTempAdapter(adapterPath: String) {
+        tempAdapterPaths = tempAdapterPaths.filter { it != adapterPath }
     }
 }

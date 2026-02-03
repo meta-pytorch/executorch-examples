@@ -19,7 +19,8 @@ data class ModelConfiguration(
     val modelType: ModelType = ModelType.LLAMA_3,
     val backendType: BackendType = BackendType.XNNPACK,
     val temperature: Double = ModuleSettings.DEFAULT_TEMPERATURE,
-    val displayName: String = ""
+    val displayName: String = "",
+    val adapterFilePaths: List<String> = emptyList()
 ) {
     companion object {
         fun create(
