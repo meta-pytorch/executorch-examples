@@ -163,6 +163,19 @@ fun ModelSettingsScreen(
 
             // ========== Conditional UI based on LoRA mode ==========
             if (viewModel.moduleSettings.isLoraMode) {
+                // Foundation PTD selector (required for LoRA)
+                SettingsRow(
+                    label = "Foundation PTD",
+                    value = viewModel.getFilenameFromPath(viewModel.moduleSettings.foundationDataPath)
+                        .ifEmpty { "no foundation PTD selected" },
+                    onClick = {
+                        viewModel.refreshFileLists()
+                        viewModel.showFoundationDataPathDialog = true
+                    }
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
                 // LoRA Mode: Multi-model selection
                 Text(
                     text = "Models",
@@ -440,6 +453,7 @@ fun ModelSettingsScreen(
     ModelDialog(viewModel)
     TokenizerDialog(viewModel)
     DataPathDialog(viewModel)
+    FoundationDataPathDialog(viewModel)
     ModelTypeDialog(viewModel)
     LoadModelDialog(viewModel, onLoadModel, onBackPressed)
     ResetSystemPromptDialog(viewModel)
@@ -615,6 +629,36 @@ private fun DataPathDialog(viewModel: ModelSettingsViewModel) {
             },
             onDismiss = { viewModel.showDataPathDialog = false }
         )
+    }
+}
+
+@Composable
+private fun FoundationDataPathDialog(viewModel: ModelSettingsViewModel) {
+    if (viewModel.showFoundationDataPathDialog) {
+        if (viewModel.dataPathFiles.isEmpty()) {
+            AlertDialog(
+                onDismissRequest = { viewModel.showFoundationDataPathDialog = false },
+                title = { Text("Select Foundation PTD") },
+                text = {
+                    Text("No PTD files (.ptd) found in /data/local/tmp/llama/\n\nPlease push foundation PTD file using:\nadb push <foundation>.ptd /data/local/tmp/llama/")
+                },
+                confirmButton = {
+                    TextButton(onClick = { viewModel.showFoundationDataPathDialog = false }) {
+                        Text("OK")
+                    }
+                }
+            )
+        } else {
+            SingleChoiceDialog(
+                title = "Select Foundation PTD",
+                options = viewModel.dataPathFiles.toList(),
+                onSelect = { selected ->
+                    viewModel.selectFoundationDataPath(selected)
+                    viewModel.showFoundationDataPathDialog = false
+                },
+                onDismiss = { viewModel.showFoundationDataPathDialog = false }
+            )
+        }
     }
 }
 
@@ -880,38 +924,72 @@ private fun AddModelDialog(viewModel: ModelSettingsViewModel) {
             }
         }
         3 -> {
-            // Step 3: Confirm model type
-            val modelTypes = ModelType.values().map { it.toString() }
-            val preSelectedIndex = ModelType.values().indexOfFirst { it == viewModel.tempModelType }
-
+            // Step 3: Select adapter PTDs (0 or more, optional)
+            val appColors = LocalAppColors.current
+            
             AlertDialog(
                 onDismissRequest = { viewModel.previousAddModelStep() },
-                title = { Text("Step 3: Confirm Model Type") },
+                title = { Text("Step 3: Select Adapter PTDs") },
                 text = {
-                    Column {
-                        modelTypes.forEachIndexed { index, option ->
-                            Row(
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(400.dp)
+                    ) {
+                        Text(
+                            text = "Select 0 or more adapter PTD files for this model (optional):",
+                            fontSize = 14.sp,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                        
+                        if (viewModel.dataPathFiles.isEmpty()) {
+                            Text(
+                                text = "No .ptd files found in /data/local/tmp/llama/",
+                                fontSize = 12.sp,
+                                color = appColors.settingsSecondaryText
+                            )
+                        } else {
+                            Column(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        viewModel.selectTempModelType(ModelType.valueOf(option))
-                                    }
-                                    .padding(vertical = 8.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                                    .weight(1f)
+                                    .verticalScroll(rememberScrollState())
                             ) {
-                                RadioButton(
-                                    selected = index == preSelectedIndex || viewModel.tempModelType.toString() == option,
-                                    onClick = {
-                                        viewModel.selectTempModelType(ModelType.valueOf(option))
+                                viewModel.dataPathFiles.forEach { adapterPath ->
+                                    val isSelected = viewModel.tempAdapterPaths.contains(adapterPath)
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable {
+                                                if (isSelected) {
+                                                    viewModel.removeTempAdapter(adapterPath)
+                                                } else {
+                                                    viewModel.addTempAdapter(adapterPath)
+                                                }
+                                            }
+                                            .padding(vertical = 4.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        androidx.compose.material3.Checkbox(
+                                            checked = isSelected,
+                                            onCheckedChange = null
+                                        )
+                                        Text(
+                                            text = adapterPath.substringAfterLast('/'),
+                                            modifier = Modifier.padding(start = 8.dp),
+                                            fontSize = 14.sp
+                                        )
                                     }
-                                )
-                                Text(
-                                    text = option,
-                                    modifier = Modifier.padding(start = 8.dp),
-                                    fontSize = 14.sp
-                                )
+                                }
                             }
                         }
+                        
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        Text(
+                            text = "Selected: ${viewModel.tempAdapterPaths.size} adapter(s)",
+                            fontSize = 12.sp,
+                            color = appColors.settingsSecondaryText
+                        )
                     }
                 },
                 confirmButton = {
