@@ -221,19 +221,6 @@ fun ModelSettingsScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Shared Data Path (LoRA) selector
-                SettingsRow(
-                    label = "Shared Data Path (LoRA)",
-                    value = viewModel.getFilenameFromPath(viewModel.moduleSettings.getEffectiveDataPath())
-                        .ifEmpty { "no data path selected" },
-                    onClick = {
-                        viewModel.refreshFileLists()
-                        viewModel.showDataPathDialog = true
-                    }
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
                 // Load All Models button
                 Button(
                     onClick = { viewModel.initiateLoadModels() },

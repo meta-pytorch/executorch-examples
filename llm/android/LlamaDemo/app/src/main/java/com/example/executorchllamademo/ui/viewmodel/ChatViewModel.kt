@@ -203,7 +203,25 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     private fun loadLoraModels(settings: ModuleSettings) {
         Thread {
             val sharedDataPath = settings.getEffectiveDataPath()
-            val modelLoadingMessage = Message("Loading ${settings.models.size} model(s) for LoRA...", false, MessageType.SYSTEM, 0)
+            
+            // Build detailed loading message with args for each model
+            val loadingDetails = StringBuilder("Loading ${settings.models.size} LoRA model(s):\n")
+            settings.models.forEachIndexed { index, modelConfig ->
+                if (modelConfig.isValid()) {
+                    val dataFiles = mutableListOf<String>()
+                    if (sharedDataPath.isNotEmpty()) {
+                        dataFiles.add(sharedDataPath)
+                    }
+                    dataFiles.addAll(modelConfig.adapterFilePaths)
+                    
+                    loadingDetails.append("\n${index + 1}. ${modelConfig.displayName}\n")
+                    loadingDetails.append("   PTE: ${modelConfig.modelFilePath.substringAfterLast('/')}\n")
+                    loadingDetails.append("   Tokenizer: ${modelConfig.tokenizerFilePath.substringAfterLast('/')}\n")
+                    loadingDetails.append("   Data files: ${if (dataFiles.isEmpty()) "none" else dataFiles.joinToString(", ") { it.substringAfterLast('/') }}\n")
+                }
+            }
+            
+            val modelLoadingMessage = Message(loadingDetails.toString(), false, MessageType.SYSTEM, 0)
             _messages.add(modelLoadingMessage)
             isModelReady = false
 
