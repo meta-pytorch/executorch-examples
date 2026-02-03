@@ -80,15 +80,6 @@ fun ModelListItem(
                 overflow = TextOverflow.Ellipsis
             )
 
-            // Model type and backend
-            Text(
-                text = "${model.modelType} | ${model.backendType}",
-                color = appColors.settingsSecondaryText,
-                fontSize = 12.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
             // Tokenizer name
             val tokenizerName = model.tokenizerFilePath.substringAfterLast('/').ifEmpty { "No tokenizer" }
             Text(
