@@ -86,9 +86,11 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
         val moduleSettings = demoSharedPreferences.getModuleSettings()
         if (moduleSettings.isClearChatHistory) {
             // Clear the flag and don't load messages
+            // Keep isLoadModel flag so model still loads in checkAndLoadSettings()
             demoSharedPreferences.removeExistingMessages()
             demoSharedPreferences.saveModuleSettings(moduleSettings.copy(isClearChatHistory = false))
-            currentSettingsFields = moduleSettings.copy(isClearChatHistory = false)
+            // Don't update currentSettingsFields here - let checkAndLoadSettings() handle it
+            // so it detects the change and loads the model if needed
         } else {
             loadSavedMessages()
         }
@@ -102,7 +104,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
             demoSharedPreferences.removeExistingMessages()
             return
         }
-
+        
         val existingMsgJSON = demoSharedPreferences.getSavedMessages()
         if (existingMsgJSON.isNotEmpty()) {
             val gson = Gson()
