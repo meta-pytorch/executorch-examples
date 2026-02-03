@@ -386,7 +386,13 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     }
 
     private fun updateMediaCapabilities(backendSupportsMedia: Boolean) {
-        val modelType = currentSettingsFields.modelType
+        // In LoRA mode, use foundation model type; otherwise use regular model type
+        val modelType = if (currentSettingsFields.isLoraMode) {
+            currentSettingsFields.foundationModelType
+        } else {
+            currentSettingsFields.modelType
+        }
+        
         supportsImageInput = backendSupportsMedia && modelType.supportsImage()
         supportsAudioInput = backendSupportsMedia && modelType.supportsAudio()
         showMediaButtons = supportsImageInput || supportsAudioInput
