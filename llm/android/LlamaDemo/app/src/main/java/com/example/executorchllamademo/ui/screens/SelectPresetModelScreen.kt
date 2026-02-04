@@ -58,7 +58,7 @@ import com.example.executorchllamademo.ui.theme.LocalAppColors
 import com.example.executorchllamademo.ui.viewmodel.ConfigLoadState
 import com.example.executorchllamademo.ui.viewmodel.ModelDownloadState
 
-private const val DEFAULT_CONFIG_URL = "https://raw.githubusercontent.com/meta-pytorch/executorch-examples/889ccc6e88813cbf03775889beed29b793d0c8db/llm/android/LlamaDemo/app/src/main/assets/preset_models.json"
+private const val DEFAULT_CONFIG_URL = "https://raw.githubusercontent.com/meta-pytorch/executorch-examples/615fa601fd75493ab0e1828c14bbd24f83cd5133/llm/android/LlamaDemo/app/src/main/assets/preset_models.json"
 
 @Composable
 fun SelectPresetModelScreen(

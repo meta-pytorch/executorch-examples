@@ -50,6 +50,7 @@ for file in /tmp/llama_models/*; do
   while [ $retry -lt $max_retries ] && [ "$success" = "false" ]; do
     # Run push (ignore exit code, verify by checking file on device)
     timeout $timeout_secs adb push "$file" /data/local/tmp/llama/ || true
+    adb shell sync
 
     # Verify file was pushed by checking it exists and has correct size
     device_size=$(adb shell "stat -c%s /data/local/tmp/llama/$filename 2>/dev/null || echo 0" | tr -d '\r')
