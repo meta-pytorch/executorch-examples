@@ -1,4 +1,28 @@
 {
   "models": {
+    "stories": {
+      "displayName": "Stories 110M",
+      "modelUrl": "https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114/stories110M.pte",
+      "modelFilename": "stories110M.pte",
+      "tokenizerUrl": "https://ossci-android.s3.amazonaws.com/executorch/stories/snapshot-20260114/tokenizer.model",
+      "tokenizerFilename": "tokenizer.model",
+      "modelType": "LLAMA_3"
+    },
+    "llama": {
+      "displayName": "Llama 3.2 1B",
+      "modelUrl": "https://huggingface.co/executorch-community/Llama-3.2-1B-Instruct-ET/resolve/main/Llama-3.2-1B-Instruct.pte",
+      "modelFilename": "llama3_2-1B.pte",
+      "tokenizerUrl": "https://huggingface.co/executorch-community/Llama-3.2-1B-Instruct-ET/resolve/main/tokenizer.model",
+      "tokenizerFilename": "tokenizer.model",
+      "modelType": "LLAMA_3"
+    },
+    "gemma": {
+      "displayName": "Gemma 3 4B",
+      "modelUrl": "https://huggingface.co/pytorch/gemma-3-4b-it-HQQ-INT8-INT4/resolve/main/model.pte",
+      "modelFilename": "model.pte",
+      "tokenizerUrl": "https://huggingface.co/pytorch/gemma-3-4b-it-HQQ-INT8-INT4/resolve/main/tokenizer.json",
+      "tokenizerFilename": "tokenizer.json",
+      "modelType": "GEMMA_3"
+    }
   }
 }
