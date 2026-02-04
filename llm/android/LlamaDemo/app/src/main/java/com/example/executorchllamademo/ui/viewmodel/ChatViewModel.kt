@@ -482,13 +482,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
         var processedResult = result
 
         if (processedResult == PromptFormat.getStopToken(currentSettingsFields.modelType)) {
-            if (currentSettingsFields.modelType == ModelType.GEMMA_3 ||
-                currentSettingsFields.modelType == ModelType.LLAVA_1_5
-            ) {
                 module?.stop()
+                return
             }
-            return
-        }
 
         processedResult = PromptFormat.replaceSpecialToken(currentSettingsFields.modelType, processedResult)
 
