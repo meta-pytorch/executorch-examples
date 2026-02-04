@@ -70,6 +70,8 @@
             android:name="libcmdl_ndk.mtk.so"
             android:required="false" />
 
+        <profileable android:shell="true" />
+
         <activity
             android:name=".MainActivity"
             android:exported="false"
