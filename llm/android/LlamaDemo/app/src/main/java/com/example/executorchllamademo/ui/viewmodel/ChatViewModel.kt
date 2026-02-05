@@ -19,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import com.example.executorchllamademo.BackendType
+import com.example.executorchllamademo.AppSettings
 import com.example.executorchllamademo.DemoSharedPreferences
 import com.example.executorchllamademo.ETImage
 import com.example.executorchllamademo.ETLogging
@@ -85,6 +86,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     private var resultMessage: Message? = null
     private val demoSharedPreferences = DemoSharedPreferences(application)
     private var currentSettingsFields = ModuleSettings()
+    private var appSettings = AppSettings()
     private var promptID = 0
     private var sawStartHeaderId = false
     private var audioFileToPrefill: String? = null
@@ -96,6 +98,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     init {
         // Check for clear chat history flag BEFORE loading saved messages
         val moduleSettings = demoSharedPreferences.getModuleSettings()
+        appSettings = demoSharedPreferences.getAppSettings()
         if (moduleSettings.isClearChatHistory) {
             // Clear the flag and don't load messages
             // Keep isLoadModel flag so model still loads in checkAndLoadSettings()
@@ -144,6 +147,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
 
     fun checkAndLoadSettings() {
         val updatedSettingsFields = demoSharedPreferences.getModuleSettings()
+        appSettings = demoSharedPreferences.getAppSettings()
         val isUpdated = currentSettingsFields != updatedSettingsFields
         val isLoadModel = updatedSettingsFields.isLoadModel
 
@@ -662,10 +666,10 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                     prefillVoxtralAudio(audioFileToPrefill!!, finalPrompt)
                     audioFileToPrefill = null
                     ETLogging.getInstance().log("Running vision model inference.. prompt=(empty after audio prefill)")
-                    module?.generate("", ModelUtils.VISION_MODEL_SEQ_LEN, this, false)
+                    module?.generate("", appSettings.maxSeqLen, this, false)
                 } else {
                     ETLogging.getInstance().log("Running vision model inference.. prompt=$finalPrompt")
-                    module?.generate(finalPrompt, ModelUtils.VISION_MODEL_SEQ_LEN, this, false)
+                    module?.generate(finalPrompt, appSettings.maxSeqLen, this, false)
                 }
             } else if (currentSettingsFields.modelType == ModelType.LLAMA_GUARD_3) {
                 val llamaGuardPromptForClassification =
@@ -679,7 +683,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                 )
             } else {
                 ETLogging.getInstance().log("Running inference.. prompt=$finalPrompt")
-                module?.generate(finalPrompt, ModelUtils.TEXT_MODEL_SEQ_LEN, this, false)
+                module?.generate(finalPrompt, appSettings.maxSeqLen, this, false)
             }
 
             val generateDuration = System.currentTimeMillis() - generateStartTime

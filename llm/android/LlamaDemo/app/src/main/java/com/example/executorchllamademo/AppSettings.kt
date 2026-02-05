@@ -13,5 +13,10 @@ package com.example.executorchllamademo
  */
 data class AppSettings(
     val appearanceMode: AppearanceMode = AppearanceMode.SYSTEM,
-    val saveChatHistory: Boolean = false
-)
+    val saveChatHistory: Boolean = false,
+    val maxSeqLen: Int = DEFAULT_MAX_SEQ_LEN
+) {
+    companion object {
+        const val DEFAULT_MAX_SEQ_LEN = 768
+    }
+}
