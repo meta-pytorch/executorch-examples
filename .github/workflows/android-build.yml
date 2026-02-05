@@ -33,6 +33,8 @@ jobs:
             path: dl3/android/DeepLabV3Demo
           - name: MV3Demo
             path: mv3/android/MV3Demo
+          - name: YoloDemo
+            path: Yolo/android
 
 
     name: Build ${{ matrix.name }}
@@ -50,7 +52,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Download local AAR
-        if: ${{ inputs.local_aar && matrix.name == 'LlamaDemo' }}
+        if: ${{ inputs.local_aar && (matrix.name == 'LlamaDemo' || matrix.name == 'YoloDemo') }}
         run: |
           mkdir -p ${{ matrix.path }}/app/libs
           curl -fL -o ${{ matrix.path }}/app/libs/executorch.aar "${{ inputs.local_aar }}"
@@ -58,7 +60,7 @@ jobs:
       - name: Build with Gradle
         working-directory: ${{ matrix.path }}
         run: |
-          if [ -n "${{ inputs.local_aar }}" ] && [ "${{ matrix.name }}" == "LlamaDemo" ]; then
+          if [ -n "${{ inputs.local_aar }}" ] && ([ "${{ matrix.name }}" == "LlamaDemo" ] || [ "${{ matrix.name }}" == "YoloDemo" ]); then
             ./gradlew build --no-daemon -PuseLocalAar=true
           else
             ./gradlew build --no-daemon
@@ -112,6 +114,7 @@ jobs:
             - LlamaDemo APKs (`app-debug-LlamaDemo.apk`, `app-release-unsigned-LlamaDemo.apk`)
             - DeepLabV3Demo APKs (`app-debug-DeepLabV3Demo.apk`, `app-release-unsigned-DeepLabV3Demo.apk`)
             - MV3Demo APKs (`app-debug-MV3Demo.apk`, `app-release-unsigned-MV3Demo.apk`)
+            - YoloDemo APKs (`app-debug-YoloDemo.apk`, `app-release-unsigned-YoloDemo.apk`)
 
             **Build Date:** ${{ steps.tag.outputs.build_date }}
             **Commit:** ${{ github.sha }}
