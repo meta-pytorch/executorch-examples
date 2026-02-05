@@ -12,5 +12,6 @@ package com.example.executorchllamademo
  * Holds app-wide settings that are independent of the current module/model.
  */
 data class AppSettings(
-    val appearanceMode: AppearanceMode = AppearanceMode.SYSTEM
+    val appearanceMode: AppearanceMode = AppearanceMode.SYSTEM,
+    val saveChatHistory: Boolean = false
 )

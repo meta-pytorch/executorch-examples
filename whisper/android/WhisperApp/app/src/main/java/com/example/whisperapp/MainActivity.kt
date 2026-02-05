@@ -1,6 +1,5 @@
 package com.example.whisperapp
 
-
 import android.Manifest
 import android.content.pm.PackageManager
 import android.media.AudioFormat
@@ -12,31 +11,65 @@ import android.os.Looper
 import android.system.ErrnoException
 import android.system.Os
 import android.util.Log
-import android.widget.Button
-import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import org.pytorch.executorch.EValue
-import org.pytorch.executorch.Module
-import org.pytorch.executorch.Tensor
-import org.pytorch.executorch.extension.audio.ASRCallback
-import org.pytorch.executorch.extension.audio.ASRModule
-import java.io.*
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
+import androidx.lifecycle.ViewModelProvider
+import com.example.whisperapp.ui.theme.WhisperAppTheme
+import org.pytorch.executorch.extension.asr.AsrCallback
+import org.pytorch.executorch.extension.asr.AsrModule
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
+import java.io.OutputStream
 
-
-class MainActivity : ComponentActivity(),  ASRCallback {
+class MainActivity : ComponentActivity(), AsrCallback {
 
     companion object {
         private const val TAG = "MainActivity"
-        private const val RECORDING_DURATION_MS = 5000L // 5 seconds
-        private var Output = ""
+        private const val RECORDING_DURATION_MS = 30000L // 30 seconds
+        // Token lengths to remove from transcription output
+        private const val START_TOKEN_LENGTH = 37
+        private const val END_TOKEN_LENGTH = 13
     }
 
+    private var transcriptionOutput by mutableStateOf("")
+    private var rawTranscriptionOutput = ""
+    private var buttonText by mutableStateOf("Record")
+    private var buttonEnabled by mutableStateOf(true)
+    private var statusText by mutableStateOf("")
+    private var currentScreen by mutableStateOf(Screen.MAIN)
+    private var showWavFileDialog by mutableStateOf(false)
+
     private var isRecording = false
-    private lateinit var recordButton: Button
     private var audioRecord: AudioRecord? = null
     private var recordingThread: Thread? = null
     private val handler = Handler(Looper.getMainLooper())
@@ -52,55 +85,15 @@ class MainActivity : ComponentActivity(),  ASRCallback {
         audioFormat
     )
 
+    private lateinit var viewModel: ModelSettingsViewModel
 
-    @Throws(IOException::class)
-    fun readWavPcmBytes(filePath: String): ByteArray {
-        val WAV_HEADER_SIZE = 44 // Standard header size for PCM WAV
-        val file = File(filePath)
-        val fis = FileInputStream(file)
-        try {
-            val totalSize = file.length()
-            assert (totalSize > WAV_HEADER_SIZE)
-            val pcmSize = (totalSize - WAV_HEADER_SIZE).toInt()
-            val pcmBytes = ByteArray(pcmSize)
-            // Skip the header
-            val skipped = fis.skip(WAV_HEADER_SIZE.toLong())
-            if (skipped != WAV_HEADER_SIZE.toLong()) throw IOException("Failed to skip WAV header")
-            // Read PCM data
-            val read = fis.read(pcmBytes)
-            if (read != pcmSize) throw IOException("Failed to read all PCM data")
-            return pcmBytes
-        } finally {
-            fis.close()
-        }
-    }
-
-
-    private fun convertPcm16ToFloat(audioBytes: ByteArray): FloatArray {
-        val totalSamples = audioBytes.size / 2  // 2 bytes per 16-bit sample
-        val floatSamples = FloatArray(totalSamples)
-
-        // Create ByteBuffer with little-endian byte order (standard for WAV)
-        val byteBuffer = ByteBuffer.wrap(audioBytes).order(ByteOrder.LITTLE_ENDIAN)
-
-        for (i in 0 until totalSamples) {
-            val sample = byteBuffer.short.toInt()
-            // Normalize 16-bit PCM to [-1.0, 1.0]
-            floatSamples[i] = if (sample < 0) {
-                sample / 32768.0f
-            } else {
-                sample / 32767.0f
-            }
-
-        }
-
-        return floatSamples
+    enum class Screen {
+        MAIN,
+        SETTINGS
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
         super.onCreate(savedInstanceState)
-        // enableEdgeToEdge()
 
         try {
             Os.setenv("ADSP_LIBRARY_PATH", applicationInfo.nativeLibraryDir, true)
@@ -109,60 +102,158 @@ class MainActivity : ComponentActivity(),  ASRCallback {
             finish()
         }
 
-        setContentView(R.layout.activity_main)
-
-        recordButton = findViewById(R.id.record_button)
-        recordButton.setOnClickListener {
-            if (isRecording) {
-                stopRecording()
-            } else {
-                startRecording()
-            }
-        }
+        // Initialize view model
+        viewModel = ViewModelProvider(this)[ModelSettingsViewModel::class.java]
+        viewModel.initialize()
 
         // Check if minimum buffer size is valid
         if (bufferSize == AudioRecord.ERROR_BAD_VALUE || bufferSize == AudioRecord.ERROR) {
             Log.e(TAG, "Invalid buffer size")
-            Toast.makeText(this, "Audio recording not supported on this device", Toast.LENGTH_LONG).show()
+            statusText = "Audio recording not supported on this device"
         }
 
+        setContent {
+            WhisperAppTheme {
+                Surface(
+                    modifier = Modifier.fillMaxSize(),
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    when (currentScreen) {
+                        Screen.MAIN -> {
+                            WhisperScreen(
+                                buttonText = buttonText,
+                                buttonEnabled = buttonEnabled && viewModel.isReadyForInference(),
+                                statusText = statusText,
+                                transcriptionResult = transcriptionOutput,
+                                modelSettings = viewModel.modelSettings,
+                                availableWavFiles = viewModel.availableWavFiles,
+                                showWavFileDialog = showWavFileDialog,
+                                onRecordClick = { onRecordButtonClick() },
+                                onUseWavFileClick = {
+                                    viewModel.refreshFileLists()
+                                    showWavFileDialog = true
+                                },
+                                onWavFileSelected = { wavPath ->
+                                    showWavFileDialog = false
+                                    runWhisperFromFile(wavPath)
+                                },
+                                onWavDialogDismiss = { showWavFileDialog = false },
+                                onSettingsClick = { currentScreen = Screen.SETTINGS }
+                            )
+                        }
+                        Screen.SETTINGS -> {
+                            ModelSettingsScreen(
+                                viewModel = viewModel,
+                                onBackClick = { currentScreen = Screen.MAIN }
+                            )
+                        }
+                    }
+                }
+            }
+        }
     }
 
+    private fun onRecordButtonClick() {
+        if (isRecording) {
+            stopRecording()
+        } else {
+            startRecording()
+        }
+    }
+
+    /**
+     * Run Whisper inference on the recorded audio file.
+     */
     private fun runWhisper() {
-        // The entire audio flow:
-        val wavFile = File(getExternalFilesDir(null), "audio_record.wav") // do this better
-        val absolutePath: String = wavFile.absolutePath
-        val PCMBytes = readWavPcmBytes(absolutePath)
-        val inputFloatArray = convertPcm16ToFloat(PCMBytes)
-
-        val tensor1 = Tensor.fromBlob(inputFloatArray,
-            longArrayOf(inputFloatArray.size.toLong())
-        )
-        val module = Module.load("/data/local/tmp/whisper/whisper_preprocess.pte")
-        val eValue1 = EValue.from(tensor1)
-        val result = module.forward(eValue1)[0].toTensor().dataAsFloatArray
-
-        // Convert result (FloatArray) to raw ByteArray to feed into runner transcribe function
-        val byteBuffer = ByteBuffer.allocate(result.size * 4).order(ByteOrder.LITTLE_ENDIAN)
-        result.forEach { byteBuffer.putFloat(it) }
-        val byteArray = arrayOf(byteBuffer.array())
-
-        val whisperModule = ASRModule("/data/local/tmp/whisper/whisper_qnn_16a8w.pte",
-            "/data/local/tmp/whisper/tokenizer.json")
-
-        Log.v(TAG, "Starting transcribe")
-        whisperModule.transcribe(128, byteArray, this@MainActivity) // this runs runner.transcribe()
-        Log.v(TAG, "Finished transcribe")
-        Toast.makeText(this, Output.substring(37, Output.length-13), Toast.LENGTH_LONG).show()
-        // hack to remove start and end tokens; ideally the runner should not do callback on these tokens
-
+        val wavFile = File(getExternalFilesDir(null), "audio_record.wav")
+        runWhisperOnWavFile(wavFile.absolutePath)
     }
 
-    override fun onResult(result: String) {
-        Log.v(TAG, "Called callback: here's the current output")
-        Output += result
-        Log.v(TAG, Output)
+    /**
+     * Run Whisper inference on a WAV file from /data/local/tmp/whisper.
+     */
+    private fun runWhisperFromFile(wavFilePath: String) {
+        buttonEnabled = false
+        statusText = "Loading WAV file..."
 
+        Thread {
+            try {
+                runWhisperOnWavFile(wavFilePath)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error processing WAV file", e)
+                runOnUiThread {
+                    statusText = "Error: ${e.message}"
+                    buttonEnabled = true
+                }
+            }
+        }.start()
+    }
+
+    /**
+     * Common method to run Whisper on a WAV file path.
+     */
+    private fun runWhisperOnWavFile(wavFilePath: String) {
+        val settings = viewModel.modelSettings
+
+        if (!settings.isValid()) {
+            runOnUiThread {
+                statusText = "Please select model and tokenizer in Settings"
+                buttonEnabled = true
+            }
+            return
+        }
+
+        rawTranscriptionOutput = ""
+        runOnUiThread {
+            transcriptionOutput = ""
+            statusText = "Loading model..."
+            buttonText = "Transcribing..."
+            buttonEnabled = false
+        }
+
+        val whisperModule = AsrModule(
+            modelPath = settings.modelPath,
+            tokenizerPath = settings.tokenizerPath,
+            dataPath = settings.dataPath.ifBlank { null },
+            preprocessorPath = settings.preprocessorPath.ifBlank { null }
+        )
+
+        Log.v(TAG, "Starting transcribe for: $wavFilePath")
+        runOnUiThread {
+            statusText = "Transcribing..."
+        }
+        val startTime = System.currentTimeMillis()
+        whisperModule.transcribe(wavFilePath, callback = this@MainActivity)
+        val elapsedTime = System.currentTimeMillis() - startTime
+        val elapsedSeconds = elapsedTime / 1000.0
+        Log.v(TAG, "Finished transcribe in ${elapsedSeconds}s")
+
+        // Display result in Text view instead of Toast
+        // hack to remove start and end tokens; ideally the runner should not do callback on these tokens
+        runOnUiThread {
+            val minLength = START_TOKEN_LENGTH + END_TOKEN_LENGTH
+            if (rawTranscriptionOutput.length > minLength) {
+                val endIndex = rawTranscriptionOutput.length - END_TOKEN_LENGTH
+                if (endIndex > START_TOKEN_LENGTH) {
+                    transcriptionOutput = rawTranscriptionOutput.substring(START_TOKEN_LENGTH, endIndex)
+                }
+            }
+            statusText = "Transcription complete (%.2fs)".format(elapsedSeconds)
+            buttonText = "Record"
+            buttonEnabled = true
+        }
+    }
+
+    override fun onToken(result: String) {
+        Log.v(TAG, "Called callback: here's the current output")
+        rawTranscriptionOutput += result
+        runOnUiThread {
+            // Strip start token prefix for display while transcribing
+            if (rawTranscriptionOutput.length > START_TOKEN_LENGTH) {
+                transcriptionOutput = rawTranscriptionOutput.substring(START_TOKEN_LENGTH)
+            }
+        }
+        Log.v(TAG, rawTranscriptionOutput)
     }
 
     private fun startRecording() {
@@ -183,24 +274,21 @@ class MainActivity : ComponentActivity(),  ASRCallback {
 
                     if (audioRecord?.state != AudioRecord.STATE_INITIALIZED) {
                         Log.e(TAG, "AudioRecord initialization failed")
-                        Toast.makeText(this, "Failed to initialize audio recorder", Toast.LENGTH_SHORT).show()
+                        statusText = "Failed to initialize audio recorder"
                         return
                     }
 
                     audioRecord?.startRecording()
                     isRecording = true
-                    // recordButton.text = "Stop Recording"
 
-                    recordButton.text = "Recording... (5s)"
-                    recordButton.isEnabled = false // Disable button during recording
+                    buttonText = "Recording... (30s)"
+                    buttonEnabled = false
 
-                    // Schedule automatic stop after 5 seconds
+                    // Schedule automatic stop after 30 seconds
                     stopRecordingRunnable = Runnable {
                         stopRecording()
                     }
                     handler.postDelayed(stopRecordingRunnable!!, RECORDING_DURATION_MS)
-
-                    // recordButton.text = "Finished recording"
 
                     val pcmFile = File(getExternalFilesDir(null), "audio_record.pcm")
 
@@ -220,16 +308,14 @@ class MainActivity : ComponentActivity(),  ASRCallback {
 
                             runOnUiThread {
                                 writeWavFile(pcmFile)
-                                Toast.makeText(this@MainActivity, "Recording saved", Toast.LENGTH_SHORT).show()
+                                statusText = "Recording saved"
                                 runWhisper()
                             }
-
-
 
                         } catch (e: IOException) {
                             Log.e(TAG, "Recording failed", e)
                             runOnUiThread {
-                                Toast.makeText(this@MainActivity, "Recording failed", Toast.LENGTH_SHORT).show()
+                                statusText = "Recording failed"
                             }
                         }
                     }
@@ -238,22 +324,16 @@ class MainActivity : ComponentActivity(),  ASRCallback {
 
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to start recording", e)
-                    Toast.makeText(this, "Failed to start recording", Toast.LENGTH_SHORT).show()
+                    statusText = "Failed to start recording"
                 }
             }
 
             shouldShowRequestPermissionRationale(Manifest.permission.RECORD_AUDIO) -> {
-                // Show rationale and request permission
-                Toast.makeText(
-                    this,
-                    "Audio recording permission is needed to record audio",
-                    Toast.LENGTH_LONG
-                ).show()
+                statusText = "Audio recording permission is needed to record audio"
                 requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
             }
 
             else -> {
-                // Request permission directly
                 requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
             }
         }
@@ -270,7 +350,8 @@ class MainActivity : ComponentActivity(),  ASRCallback {
         }
 
         audioRecord = null
-        recordButton.text = "Finished Recording"
+        buttonText = "Record"
+        buttonEnabled = true
 
         recordingThread?.join()
         recordingThread = null
@@ -385,7 +466,6 @@ class MainActivity : ComponentActivity(),  ASRCallback {
         out.write(header, 0, 44)
     }
 
-
     override fun onDestroy() {
         super.onDestroy()
         if (isRecording) {
@@ -399,8 +479,242 @@ class MainActivity : ComponentActivity(),  ASRCallback {
         if (isGranted) {
             startRecording()
         } else {
-            Toast.makeText(this, "Audio recording permission required", Toast.LENGTH_LONG).show()
+            statusText = "Audio recording permission required"
+        }
+    }
+}
+
+@Composable
+fun WhisperScreen(
+    buttonText: String,
+    buttonEnabled: Boolean,
+    statusText: String,
+    transcriptionResult: String,
+    modelSettings: ModelSettings,
+    availableWavFiles: List<String>,
+    showWavFileDialog: Boolean,
+    onRecordClick: () -> Unit,
+    onUseWavFileClick: () -> Unit,
+    onWavFileSelected: (String) -> Unit,
+    onWavDialogDismiss: () -> Unit,
+    onSettingsClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Top
+    ) {
+        Spacer(modifier = Modifier.height(32.dp))
+
+        Text(
+            text = "Whisper Demo",
+            style = MaterialTheme.typography.headlineMedium
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        // Model info card
+        Surface(
+            modifier = Modifier.fillMaxWidth(),
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            shape = MaterialTheme.shapes.medium
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(
+                    text = "Model Configuration",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                if (modelSettings.isValid()) {
+                    Text(
+                        text = "Model: ${modelSettings.modelPath.substringAfterLast('/')}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Text(
+                        text = "Tokenizer: ${modelSettings.tokenizerPath.substringAfterLast('/')}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    if (modelSettings.hasPreprocessor()) {
+                        Text(
+                            text = "Preprocessor: ${modelSettings.preprocessorPath.substringAfterLast('/')}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    } else {
+                        Text(
+                            text = "Preprocessor: None (raw WAV mode)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (modelSettings.dataPath.isNotBlank()) {
+                        Text(
+                            text = "Data: ${modelSettings.dataPath.substringAfterLast('/')}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "No model configured",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        text = "Please configure models in Settings",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Audio input buttons
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Button(
+                onClick = onRecordClick,
+                enabled = buttonEnabled,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(text = buttonText)
+            }
+
+            OutlinedButton(
+                onClick = onUseWavFileClick,
+                enabled = buttonEnabled,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(text = "Use WAV File")
+            }
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        // Settings button
+        OutlinedButton(
+            onClick = onSettingsClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = "Settings")
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        if (statusText.isNotEmpty()) {
+            Text(
+                text = statusText,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.secondary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        if (transcriptionResult.isNotEmpty()) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "Transcription",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = transcriptionResult,
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
         }
     }
 
+    // WAV file selection dialog
+    if (showWavFileDialog) {
+        WavFileSelectionDialog(
+            files = availableWavFiles,
+            onDismiss = onWavDialogDismiss,
+            onSelect = onWavFileSelected
+        )
+    }
+}
+
+@Composable
+fun WavFileSelectionDialog(
+    files: List<String>,
+    onDismiss: () -> Unit,
+    onSelect: (String) -> Unit
+) {
+    var selectedFile by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Select WAV File") },
+        text = {
+            if (files.isEmpty()) {
+                Column {
+                    Text("No WAV files found in ${ModelSettings.DEFAULT_DIRECTORY}")
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Use adb to push WAV files:\nadb push audio.wav ${ModelSettings.DEFAULT_DIRECTORY}/",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                    files.forEach { filePath ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            RadioButton(
+                                selected = filePath == selectedFile,
+                                onClick = { selectedFile = filePath }
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = filePath.substringAfterLast('/'),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                Text(
+                                    text = filePath,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            if (files.isNotEmpty()) {
+                TextButton(
+                    onClick = { selectedFile?.let { onSelect(it) } },
+                    enabled = selectedFile != null
+                ) {
+                    Text("Transcribe")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }

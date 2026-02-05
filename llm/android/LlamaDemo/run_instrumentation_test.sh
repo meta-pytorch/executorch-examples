@@ -18,4 +18,5 @@ python -m pytorch_tokenizers.tools.llama2c.convert -t tokenizer.model -o tokeniz
 adb mkdir -p /data/local/tmp/llama
 adb push stories110m_h.pte /data/local/tmp/llama
 adb push tokenizer.bin /data/local/tmp/llama
+adb shell sync
 

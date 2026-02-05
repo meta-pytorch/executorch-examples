@@ -24,6 +24,7 @@ import com.example.executorchllamademo.ETImage
 import com.example.executorchllamademo.ETLogging
 import com.example.executorchllamademo.Message
 import com.example.executorchllamademo.MessageType
+import com.example.executorchllamademo.ModelConfiguration
 import com.example.executorchllamademo.ModelType
 import com.example.executorchllamademo.ModelUtils
 import com.example.executorchllamademo.PromptFormat
@@ -69,6 +70,17 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     var showModelLoadErrorDialog by mutableStateOf(false)
     var modelLoadError by mutableStateOf("")
 
+    // LoRA mode state
+    var isLoraMode by mutableStateOf(false)
+        private set
+    var availableModels by mutableStateOf<List<ModelConfiguration>>(emptyList())
+        private set
+    var activeModelId by mutableStateOf("")
+        private set
+
+    // Map of loaded LlmModules by model ID for LoRA mode
+    private val loadedModules = mutableMapOf<String, LlmModule>()
+
     private var module: LlmModule? = null
     private var resultMessage: Message? = null
     private val demoSharedPreferences = DemoSharedPreferences(application)
@@ -82,10 +94,29 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     private val contentResolver = application.contentResolver
 
     init {
-        loadSavedMessages()
+        // Check for clear chat history flag BEFORE loading saved messages
+        val moduleSettings = demoSharedPreferences.getModuleSettings()
+        if (moduleSettings.isClearChatHistory) {
+            // Clear the flag and don't load messages
+            // Keep isLoadModel flag so model still loads in checkAndLoadSettings()
+            demoSharedPreferences.removeExistingMessages()
+            demoSharedPreferences.saveModuleSettings(moduleSettings.copy(isClearChatHistory = false))
+            // Don't update currentSettingsFields here - let checkAndLoadSettings() handle it
+            // so it detects the change and loads the model if needed
+        } else {
+            loadSavedMessages()
+        }
     }
 
     private fun loadSavedMessages() {
+        val appSettings = demoSharedPreferences.getAppSettings()
+        // Only load saved messages if saveChatHistory is enabled
+        if (!appSettings.saveChatHistory) {
+            // Clear any existing saved messages since saving is disabled
+            demoSharedPreferences.removeExistingMessages()
+            return
+        }
+
         val existingMsgJSON = demoSharedPreferences.getSavedMessages()
         if (existingMsgJSON.isNotEmpty()) {
             val gson = Gson()
@@ -99,7 +130,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     }
 
     fun saveMessages() {
-        demoSharedPreferences.addMessages(_messages.toList())
+        val appSettings = demoSharedPreferences.getAppSettings()
+        // Only save messages if saveChatHistory is enabled
+        if (appSettings.saveChatHistory) {
+            demoSharedPreferences.addMessages(_messages.toList())
+        } else {
+            // Make sure no messages are persisted
+            demoSharedPreferences.removeExistingMessages()
+        }
     }
 
     private val systemPromptMessage = "To get started, select your desired model and tokenizer from the top right corner"
@@ -108,29 +146,41 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
         val updatedSettingsFields = demoSharedPreferences.getModuleSettings()
         val isUpdated = currentSettingsFields != updatedSettingsFields
         val isLoadModel = updatedSettingsFields.isLoadModel
+
+        // Update LoRA mode state
+        isLoraMode = updatedSettingsFields.isLoraMode
+        availableModels = updatedSettingsFields.models
+        activeModelId = updatedSettingsFields.activeModelId
+
         if (isUpdated) {
-            checkForClearChatHistory(updatedSettingsFields)
+            val settingsAfterClear = checkForClearChatHistory(updatedSettingsFields)
 
             if (isLoadModel) {
                 // Update local copy BEFORE checking media capabilities
-                val settingsWithLoadFlagCleared = updatedSettingsFields.copy(isLoadModel = false)
+                val settingsWithLoadFlagCleared = settingsAfterClear.copy(isLoadModel = false)
                 currentSettingsFields = settingsWithLoadFlagCleared
                 demoSharedPreferences.saveModuleSettings(settingsWithLoadFlagCleared)
 
                 // Update media capabilities after settings are updated
-                setBackendMode(updatedSettingsFields.backendType)
+                setBackendMode(settingsAfterClear.backendType)
 
-                loadLocalModelAndParameters(
-                    updatedSettingsFields.modelFilePath,
-                    updatedSettingsFields.tokenizerFilePath,
-                    updatedSettingsFields.dataPath,
-                    updatedSettingsFields.temperature.toFloat()
-                )
+                if (isLoraMode && settingsAfterClear.hasModels()) {
+                    // LoRA mode: Load all configured models
+                    loadLoraModels(settingsAfterClear)
+                } else {
+                    // Legacy single-model mode
+                    loadLocalModelAndParameters(
+                        settingsAfterClear.modelFilePath,
+                        settingsAfterClear.tokenizerFilePath,
+                        settingsAfterClear.dataPath,
+                        settingsAfterClear.temperature.toFloat()
+                    )
+                }
             } else {
-                currentSettingsFields = updatedSettingsFields.copy()
+                currentSettingsFields = settingsAfterClear.copy()
                 // Update media capabilities after settings are updated
-                setBackendMode(updatedSettingsFields.backendType)
-                if (module == null) {
+                setBackendMode(settingsAfterClear.backendType)
+                if (module == null && loadedModules.isEmpty()) {
                     addSystemMessage(systemPromptMessage)
                 }
             }
@@ -140,8 +190,189 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
             val modelPath = updatedSettingsFields.modelFilePath
             val tokenizerPath = updatedSettingsFields.tokenizerFilePath
             if (modelPath.isEmpty() || tokenizerPath.isEmpty()) {
-                addSystemMessage(systemPromptMessage)
+                if (!isLoraMode || !updatedSettingsFields.hasModels()) {
+                    addSystemMessage(systemPromptMessage)
+                }
             }
+        }
+    }
+
+    /**
+     * Loads all models configured in LoRA mode.
+     */
+    private fun loadLoraModels(settings: ModuleSettings) {
+        Thread {
+            val sharedDataPath = settings.getEffectiveDataPath()
+            
+            // Build detailed loading message with args for each model
+            val loadingDetails = StringBuilder("Loading ${settings.models.size} LoRA model(s):\n")
+            settings.models.forEachIndexed { index, modelConfig ->
+                if (modelConfig.isValid()) {
+                    val dataFiles = mutableListOf<String>()
+                    if (sharedDataPath.isNotEmpty()) {
+                        dataFiles.add(sharedDataPath)
+                    }
+                    dataFiles.addAll(modelConfig.adapterFilePaths)
+                    
+                    loadingDetails.append("\n${index + 1}. ${modelConfig.displayName}\n")
+                    loadingDetails.append("   PTE: ${modelConfig.modelFilePath.substringAfterLast('/')}\n")
+                    loadingDetails.append("   Tokenizer: ${modelConfig.tokenizerFilePath.substringAfterLast('/')}\n")
+                    loadingDetails.append("   Data files: ${if (dataFiles.isEmpty()) "none" else dataFiles.joinToString(", ") { it.substringAfterLast('/') }}\n")
+                }
+            }
+            
+            val modelLoadingMessage = Message(loadingDetails.toString(), false, MessageType.SYSTEM, 0)
+            _messages.add(modelLoadingMessage)
+            isModelReady = false
+
+            var loadedCount = 0
+            var firstLoadedModelId: String? = null
+
+            for (modelConfig in settings.models) {
+                if (!modelConfig.isValid()) continue
+
+                try {
+                    // Build dataFiles list: foundation PTD + adapter PTDs
+                    val dataFiles = mutableListOf<String>()
+                    if (sharedDataPath.isNotEmpty()) {
+                        dataFiles.add(sharedDataPath)
+                    }
+                    dataFiles.addAll(modelConfig.adapterFilePaths)
+
+                    val dataFilesLog = if (dataFiles.isEmpty()) "no data files" else dataFiles.joinToString(", ")
+                    ETLogging.getInstance().log(
+                        "LoRA: Loading model ${modelConfig.displayName} with tokenizer ${modelConfig.tokenizerFilePath}, data files: $dataFilesLog"
+                    )
+
+                    val runStartTime = System.currentTimeMillis()
+                    val llmModule = LlmModule(
+                        ModelUtils.getModelCategory(modelConfig.modelType, modelConfig.backendType),
+                        modelConfig.modelFilePath,
+                        modelConfig.tokenizerFilePath,
+                        modelConfig.temperature.toFloat(),
+                        dataFiles
+                    )
+
+                    llmModule.load()
+                    val loadDuration = System.currentTimeMillis() - runStartTime
+
+                    // Store in map
+                    loadedModules[modelConfig.id] = llmModule
+                    loadedCount++
+
+                    if (firstLoadedModelId == null) {
+                        firstLoadedModelId = modelConfig.id
+                    }
+
+                    ETLogging.getInstance().log(
+                        "LoRA: Loaded ${modelConfig.displayName} in ${loadDuration.toFloat() / 1000} sec"
+                    )
+                } catch (e: ExecutorchRuntimeException) {
+                    ETLogging.getInstance().log("LoRA: Failed to load ${modelConfig.displayName}: ${e.message}")
+                    _messages.add(Message("Failed to load ${modelConfig.displayName}: ${e.message}", false, MessageType.SYSTEM, 0))
+                }
+            }
+
+            _messages.remove(modelLoadingMessage)
+
+            if (loadedCount > 0) {
+                // Set the active module
+                val activeId = if (settings.activeModelId.isNotEmpty() && loadedModules.containsKey(settings.activeModelId)) {
+                    settings.activeModelId
+                } else {
+                    firstLoadedModelId ?: ""
+                }
+
+                activeModelId = activeId
+                module = loadedModules[activeId]
+
+                val activeModelName = settings.getModelById(activeId)?.displayName ?: "Unknown"
+                _messages.add(Message(
+                    "Successfully loaded $loadedCount model(s). Active: $activeModelName. Use the switch button to change models.",
+                    false, MessageType.SYSTEM, 0
+                ))
+                isModelReady = true
+            } else {
+                _messages.add(Message("No models loaded. Please check your configuration.", false, MessageType.SYSTEM, 0))
+                isModelReady = false
+            }
+        }.start()
+    }
+
+    /**
+     * Switches to a different model in LoRA mode.
+     * Creates a new LlmModule with the selected PTE and the same PTD.
+     */
+    fun switchToModel(modelId: String) {
+        if (!isLoraMode) return
+        if (isGenerating) {
+            addSystemMessage("Cannot switch models while generating. Please wait or stop generation.")
+            return
+        }
+
+        val modelConfig = currentSettingsFields.getModelById(modelId)
+        if (modelConfig == null) {
+            addSystemMessage("Model not found.")
+            return
+        }
+
+        // Check if model is already loaded
+        if (loadedModules.containsKey(modelId)) {
+            // Just switch to the already loaded module
+            module = loadedModules[modelId]
+            activeModelId = modelId
+
+            // Update settings with new active model
+            currentSettingsFields = currentSettingsFields.setActiveModel(modelId)
+            demoSharedPreferences.saveModuleSettings(currentSettingsFields)
+
+            addSystemMessage("Switched to ${modelConfig.displayName}")
+            ETLogging.getInstance().log("LoRA: Switched to already loaded model ${modelConfig.displayName}")
+        } else {
+            // Need to load the model first
+            Thread {
+                val sharedDataPath = currentSettingsFields.getEffectiveDataPath()
+                addSystemMessage("Loading ${modelConfig.displayName}...")
+                isModelReady = false
+
+                try {
+                    // Build dataFiles list: foundation PTD + adapter PTDs
+                    val dataFiles = mutableListOf<String>()
+                    if (sharedDataPath.isNotEmpty()) {
+                        dataFiles.add(sharedDataPath)
+                    }
+                    dataFiles.addAll(modelConfig.adapterFilePaths)
+
+                    val runStartTime = System.currentTimeMillis()
+                    val llmModule = LlmModule(
+                        ModelUtils.getModelCategory(modelConfig.modelType, modelConfig.backendType),
+                        modelConfig.modelFilePath,
+                        modelConfig.tokenizerFilePath,
+                        modelConfig.temperature.toFloat(),
+                        dataFiles
+                    )
+
+                    llmModule.load()
+                    val loadDuration = System.currentTimeMillis() - runStartTime
+
+                    // Store and switch
+                    loadedModules[modelId] = llmModule
+                    module = llmModule
+                    activeModelId = modelId
+
+                    // Update settings
+                    currentSettingsFields = currentSettingsFields.setActiveModel(modelId)
+                    demoSharedPreferences.saveModuleSettings(currentSettingsFields)
+
+                    addSystemMessage("Switched to ${modelConfig.displayName} (loaded in ${loadDuration.toFloat() / 1000} sec)")
+                    ETLogging.getInstance().log("LoRA: Loaded and switched to ${modelConfig.displayName} in ${loadDuration.toFloat() / 1000} sec")
+                    isModelReady = true
+                } catch (e: ExecutorchRuntimeException) {
+                    addSystemMessage("Failed to load ${modelConfig.displayName}: ${e.message}")
+                    ETLogging.getInstance().log("LoRA: Failed to load ${modelConfig.displayName}: ${e.message}")
+                    isModelReady = loadedModules.isNotEmpty()
+                }
+            }.start()
         }
     }
 
@@ -155,7 +386,13 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     }
 
     private fun updateMediaCapabilities(backendSupportsMedia: Boolean) {
-        val modelType = currentSettingsFields.modelType
+        // In LoRA mode, use foundation model type; otherwise use regular model type
+        val modelType = if (currentSettingsFields.isLoraMode) {
+            currentSettingsFields.foundationModelType
+        } else {
+            currentSettingsFields.modelType
+        }
+        
         supportsImageInput = backendSupportsMedia && modelType.supportsImage()
         supportsAudioInput = backendSupportsMedia && modelType.supportsAudio()
         showMediaButtons = supportsImageInput || supportsAudioInput
@@ -175,13 +412,18 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
         }
     }
 
-    private fun checkForClearChatHistory(updatedSettingsFields: ModuleSettings) {
+    private fun checkForClearChatHistory(updatedSettingsFields: ModuleSettings): ModuleSettings {
         if (updatedSettingsFields.isClearChatHistory) {
             _messages.clear()
             demoSharedPreferences.removeExistingMessages()
-            demoSharedPreferences.saveModuleSettings(updatedSettingsFields.copy(isClearChatHistory = false))
+            val clearedSettings = updatedSettingsFields.copy(isClearChatHistory = false)
+            demoSharedPreferences.saveModuleSettings(clearedSettings)
             module?.resetContext()
+            shouldAddSystemPrompt = true
+            promptID = 0
+            return clearedSettings
         }
+        return updatedSettingsFields
     }
 
     private fun loadLocalModelAndParameters(
@@ -498,11 +740,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
         var processedResult = result
 
         if (processedResult == PromptFormat.getStopToken(currentSettingsFields.modelType)) {
-            if (currentSettingsFields.modelType == ModelType.GEMMA_3 ||
-                currentSettingsFields.modelType == ModelType.LLAVA_1_5
-            ) {
-                module?.stop()
-            }
+            module?.stop()
             return
         }
 

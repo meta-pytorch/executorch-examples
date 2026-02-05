@@ -30,6 +30,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -141,6 +143,42 @@ fun AppSettingsScreen(
 
             Spacer(modifier = Modifier.height(8.dp))
 
+            // Save Chat History toggle
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(appColors.settingsRowBackground, RoundedCornerShape(8.dp))
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Save Chat History",
+                        fontSize = 14.sp,
+                        color = appColors.settingsText
+                    )
+                    Text(
+                        text = "Persist conversations between sessions",
+                        fontSize = 12.sp,
+                        color = appColors.settingsText.copy(alpha = 0.6f)
+                    )
+                }
+                Switch(
+                    checked = appSettings.saveChatHistory,
+                    onCheckedChange = { enabled ->
+                        appSettings = appSettings.copy(saveChatHistory = enabled)
+                        val prefs = DemoSharedPreferences(context)
+                        prefs.saveAppSettings(appSettings)
+                    },
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = Color.White,
+                        checkedTrackColor = BtnEnabled
+                    )
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             // Clear Chat button
             Button(
                 onClick = { showClearChatDialog = true },
@@ -188,6 +226,8 @@ fun AppSettingsScreen(
                         val prefs = DemoSharedPreferences(context)
                         moduleSettings = moduleSettings.copy(isClearChatHistory = true)
                         prefs.saveModuleSettings(moduleSettings)
+                        // Also clear the saved messages immediately
+                        prefs.removeExistingMessages()
                         showClearChatDialog = false
                     }
                 ) {

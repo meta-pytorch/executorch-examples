@@ -31,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -108,7 +109,6 @@ class MainActivity : ComponentActivity() {
         var isDownloading by remember { mutableStateOf(false) }
         var canReset by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
-        val context = LocalContext.current
 
         // Load initial sample image
         LaunchedEffect(Unit) {
@@ -155,19 +155,22 @@ class MainActivity : ComponentActivity() {
                     Box(
                         modifier = Modifier
                             .weight(1f)
-                            .fillMaxWidth(),
+                            .fillMaxWidth()
+                            .testTag("imageBox"),
                         contentAlignment = Alignment.Center
                     ) {
                         bitmap?.let {
                             Image(
                                 bitmap = it.asImageBitmap(),
                                 contentDescription = "Segmentation Image",
-                                modifier = Modifier.fillMaxSize()
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .testTag("segmentationImage")
                             )
                         }
 
                         if (isProcessing || isDownloading) {
-                            CircularProgressIndicator()
+                            CircularProgressIndicator(modifier = Modifier.testTag("progressIndicator"))
                         }
                     }
 
@@ -177,7 +180,9 @@ class MainActivity : ComponentActivity() {
                             text = "Inference: $it ms",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(vertical = 8.dp)
+                            modifier = Modifier
+                                .padding(vertical = 8.dp)
+                                .testTag("inferenceTime")
                         )
                     }
 
@@ -210,7 +215,9 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     enabled = !isDownloading,
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .testTag("downloadButton")
                                 ) {
                                     Text(if (isDownloading) "Downloading..." else "Download Model")
                                 }
@@ -230,7 +237,9 @@ class MainActivity : ComponentActivity() {
                                         inferenceTime = null
                                         canReset = false
                                     },
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .testTag("nextButton")
                                 ) {
                                     Text("Next")
                                 }
@@ -240,7 +249,9 @@ class MainActivity : ComponentActivity() {
                                     onClick = {
                                         imagePickerLauncher.launch("image/*")
                                     },
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .testTag("pickButton")
                                 ) {
                                     Text("Pick")
                                 }
@@ -269,7 +280,9 @@ class MainActivity : ComponentActivity() {
                                         }
                                     },
                                     enabled = !isProcessing && modelReady,
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .testTag("runButton")
                                 ) {
                                     Text("Run")
                                 }
@@ -282,7 +295,9 @@ class MainActivity : ComponentActivity() {
                                         canReset = false
                                     },
                                     enabled = canReset,
-                                    modifier = Modifier.weight(1f)
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .testTag("resetButton")
                                 ) {
                                     Text("Reset")
                                 }

@@ -1,11 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="org.pytorch.executorchexamples.dl3">
-
-    <uses-sdk android:minSdkVersion="19"
-          android:targetSdkVersion="34"
-          android:maxSdkVersion="40" />
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
@@ -20,7 +15,6 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.DeepLabV3Demo"
-        android:extractNativeLibs="true"
         tools:targetApi="34">
 
         <activity
