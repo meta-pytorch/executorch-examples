@@ -63,7 +63,7 @@ dependencies {
   if (useLocalAar == true) {
     implementation(files("libs/executorch.aar"))
   } else {
-    implementation("org.pytorch:executorch-android:1.0.1")
+    implementation("org.pytorch:executorch-android:1.1.0")
   }
 
   implementation("com.google.android.material:material:1.12.0")
