@@ -9,6 +9,7 @@
 package com.example.executorchllamademo.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,6 +21,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -30,7 +32,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -45,7 +46,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -162,7 +165,7 @@ fun AppSettingsScreen(
                     fontWeight = FontWeight.Medium
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                OutlinedTextField(
+                BasicTextField(
                     value = maxSeqLenText,
                     onValueChange = { newValue ->
                         maxSeqLenText = newValue
@@ -173,10 +176,31 @@ fun AppSettingsScreen(
                             prefs.saveAppSettings(appSettings)
                         }
                     },
-                    label = { Text("Enter max sequence length") },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    textStyle = TextStyle(
+                        color = appColors.settingsText,
+                        fontSize = 16.sp
+                    ),
+                    cursorBrush = SolidColor(appColors.settingsText),
                     modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
+                    decorationBox = { innerTextField ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(1.dp, appColors.settingsText.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 12.dp, vertical = 14.dp)
+                        ) {
+                            if (maxSeqLenText.isEmpty()) {
+                                Text(
+                                    text = "Enter max sequence length",
+                                    color = appColors.settingsText.copy(alpha = 0.5f),
+                                    fontSize = 16.sp
+                                )
+                            }
+                            innerTextField()
+                        }
+                    }
                 )
                 Text(
                     text = "Maximum number of tokens to generate (default: ${AppSettings.DEFAULT_MAX_SEQ_LEN})",
