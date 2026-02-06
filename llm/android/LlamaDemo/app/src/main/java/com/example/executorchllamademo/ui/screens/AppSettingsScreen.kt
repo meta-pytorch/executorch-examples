@@ -9,6 +9,7 @@
 package com.example.executorchllamademo.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,6 +21,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -43,8 +46,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.executorchllamademo.AppSettings
@@ -68,11 +74,13 @@ fun AppSettingsScreen(
     var moduleSettings by remember { mutableStateOf(ModuleSettings()) }
     var showAppearanceDialog by remember { mutableStateOf(false) }
     var showClearChatDialog by remember { mutableStateOf(false) }
+    var maxSeqLenText by remember { mutableStateOf("") }
 
     LaunchedEffect(Unit) {
         val prefs = DemoSharedPreferences(context)
         appSettings = prefs.getAppSettings()
         moduleSettings = prefs.getModuleSettings()
+        maxSeqLenText = appSettings.maxSeqLen.toString()
     }
 
     Column(
@@ -130,6 +138,77 @@ fun AppSettingsScreen(
                 value = appSettings.appearanceMode.displayName,
                 onClick = { showAppearanceDialog = true }
             )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Model Configuration section header
+            Text(
+                text = "Model Configuration",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = appColors.settingsText
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Max Seq Len input field
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(appColors.settingsRowBackground, RoundedCornerShape(8.dp))
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            ) {
+                Text(
+                    text = "Max Sequence Length",
+                    fontSize = 14.sp,
+                    color = appColors.settingsText,
+                    fontWeight = FontWeight.Medium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                BasicTextField(
+                    value = maxSeqLenText,
+                    onValueChange = { newValue ->
+                        maxSeqLenText = newValue
+                        val newMaxSeqLen = newValue.toIntOrNull()
+                        if (newMaxSeqLen != null && newMaxSeqLen > 0) {
+                            appSettings = appSettings.copy(maxSeqLen = newMaxSeqLen)
+                            val prefs = DemoSharedPreferences(context)
+                            prefs.saveAppSettings(appSettings)
+                        }
+                    },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    singleLine = true,
+                    textStyle = TextStyle(
+                        color = appColors.settingsText,
+                        fontSize = 16.sp
+                    ),
+                    cursorBrush = SolidColor(appColors.settingsText),
+                    modifier = Modifier.fillMaxWidth(),
+                    decorationBox = { innerTextField ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .border(1.dp, appColors.settingsText.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
+                                .padding(horizontal = 12.dp, vertical = 14.dp)
+                        ) {
+                            if (maxSeqLenText.isEmpty()) {
+                                Text(
+                                    text = "Enter max sequence length",
+                                    color = appColors.settingsText.copy(alpha = 0.5f),
+                                    fontSize = 16.sp
+                                )
+                            }
+                            innerTextField()
+                        }
+                    }
+                )
+                Text(
+                    text = "Maximum number of tokens to generate (default: ${AppSettings.DEFAULT_MAX_SEQ_LEN})",
+                    fontSize = 12.sp,
+                    color = appColors.settingsText.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
