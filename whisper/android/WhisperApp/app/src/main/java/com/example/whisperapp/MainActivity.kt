@@ -86,8 +86,10 @@ class MainActivity : ComponentActivity(), AsrCallback {
     )
 
     private lateinit var viewModel: ModelSettingsViewModel
+    private lateinit var downloadViewModel: ModelDownloadViewModel
 
     enum class Screen {
+        DOWNLOAD,
         MAIN,
         SETTINGS
     }
@@ -102,9 +104,20 @@ class MainActivity : ComponentActivity(), AsrCallback {
             finish()
         }
 
-        // Initialize view model
+        // Initialize view models
         viewModel = ViewModelProvider(this)[ModelSettingsViewModel::class.java]
+        viewModel.setAppStorageDirectory(filesDir.absolutePath)
         viewModel.initialize()
+
+        downloadViewModel = ViewModelProvider(this)[ModelDownloadViewModel::class.java]
+        downloadViewModel.initialize(filesDir.absolutePath)
+
+        // If the first preset is already downloaded, auto-select its paths
+        val firstPreset = ModelDownloadViewModel.MODEL_PRESETS[0]
+        if (downloadViewModel.isPresetDownloaded(firstPreset)) {
+            downloadViewModel.selectPreset(0)
+            applyDownloadedModelPaths()
+        }
 
         // Check if minimum buffer size is valid
         if (bufferSize == AudioRecord.ERROR_BAD_VALUE || bufferSize == AudioRecord.ERROR) {
@@ -119,6 +132,19 @@ class MainActivity : ComponentActivity(), AsrCallback {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     when (currentScreen) {
+                        Screen.DOWNLOAD -> {
+                            ModelDownloadScreen(
+                                downloadViewModel = downloadViewModel,
+                                onDownloadComplete = {
+                                    applyDownloadedModelPaths()
+                                    viewModel.refreshFileLists()
+                                    currentScreen = Screen.SETTINGS
+                                },
+                                onSkip = {
+                                    currentScreen = Screen.SETTINGS
+                                }
+                            )
+                        }
                         Screen.MAIN -> {
                             WhisperScreen(
                                 buttonText = buttonText,
@@ -138,19 +164,29 @@ class MainActivity : ComponentActivity(), AsrCallback {
                                     runWhisperFromFile(wavPath)
                                 },
                                 onWavDialogDismiss = { showWavFileDialog = false },
-                                onSettingsClick = { currentScreen = Screen.SETTINGS }
+                                onSettingsClick = {
+                                    viewModel.refreshFileLists()
+                                    currentScreen = Screen.SETTINGS
+                                }
                             )
                         }
                         Screen.SETTINGS -> {
                             ModelSettingsScreen(
                                 viewModel = viewModel,
-                                onBackClick = { currentScreen = Screen.MAIN }
+                                onBackClick = { currentScreen = Screen.MAIN },
+                                onDownloadClick = { currentScreen = Screen.DOWNLOAD }
                             )
                         }
                     }
                 }
             }
         }
+    }
+
+    private fun applyDownloadedModelPaths() {
+        viewModel.selectModel(downloadViewModel.getModelPath())
+        viewModel.selectTokenizer(downloadViewModel.getTokenizerPath())
+        viewModel.selectPreprocessor(downloadViewModel.getPreprocessorPath())
     }
 
     private fun onRecordButtonClick() {
