@@ -16,7 +16,8 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun ModelSettingsScreen(
     viewModel: ModelSettingsViewModel,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onDownloadClick: () -> Unit
 ) {
     var showModelDialog by remember { mutableStateOf(false) }
     var showTokenizerDialog by remember { mutableStateOf(false) }
@@ -41,7 +42,10 @@ fun ModelSettingsScreen(
             label = "Model File (.pte)",
             selectedPath = viewModel.modelSettings.modelPath,
             required = true,
-            onClick = { showModelDialog = true }
+            onClick = {
+                viewModel.refreshFileLists()
+                showModelDialog = true
+            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -51,7 +55,10 @@ fun ModelSettingsScreen(
             label = "Tokenizer File",
             selectedPath = viewModel.modelSettings.tokenizerPath,
             required = true,
-            onClick = { showTokenizerDialog = true }
+            onClick = {
+                viewModel.refreshFileLists()
+                showTokenizerDialog = true
+            }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -61,7 +68,10 @@ fun ModelSettingsScreen(
             label = "Preprocessor (.pte) - Optional",
             selectedPath = viewModel.modelSettings.preprocessorPath,
             required = false,
-            onClick = { showPreprocessorDialog = true },
+            onClick = {
+                viewModel.refreshFileLists()
+                showPreprocessorDialog = true
+            },
             onClear = if (viewModel.modelSettings.hasPreprocessor()) {
                 { viewModel.clearPreprocessor() }
             } else null
@@ -74,7 +84,10 @@ fun ModelSettingsScreen(
             label = "Data File (.ptd) - Optional",
             selectedPath = viewModel.modelSettings.dataPath,
             required = false,
-            onClick = { showDataDialog = true },
+            onClick = {
+                viewModel.refreshFileLists()
+                showDataDialog = true
+            },
             onClear = if (viewModel.modelSettings.dataPath.isNotBlank()) {
                 { viewModel.clearDataFile() }
             } else null
@@ -82,12 +95,12 @@ fun ModelSettingsScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Refresh button
+        // Download model button
         OutlinedButton(
-            onClick = { viewModel.refreshFileLists() },
+            onClick = onDownloadClick,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Refresh File Lists")
+            Text("Download Model")
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -114,13 +127,13 @@ fun ModelSettingsScreen(
             onClick = onBackClick,
             modifier = Modifier.fillMaxWidth()
         ) {
-            Text("Back to Recording")
+            Text("OK")
         }
 
         // Info text
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Files should be in ${ModelSettings.DEFAULT_DIRECTORY}",
+            text = "Scanning: ${ModelSettings.DEFAULT_DIRECTORY} and app storage",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -275,7 +288,7 @@ fun FileSelectionDialog(
         text = {
             if (files.isEmpty()) {
                 Column {
-                    Text("No files found in ${ModelSettings.DEFAULT_DIRECTORY}")
+                    Text("No files found. Download from the setup screen or use adb push to ${ModelSettings.DEFAULT_DIRECTORY}")
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Use adb to push files:\nadb push <file> ${ModelSettings.DEFAULT_DIRECTORY}/",

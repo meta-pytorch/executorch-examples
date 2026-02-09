@@ -33,6 +33,8 @@ class ModelSettingsViewModel : ViewModel() {
     var errorMessage by mutableStateOf<String?>(null)
         private set
 
+    private var appStorageDirectory: String? = null
+
     /**
      * Initialize the ViewModel by scanning for available files.
      */
@@ -41,68 +43,57 @@ class ModelSettingsViewModel : ViewModel() {
     }
 
     /**
-     * Scan the default directory for available model files.
+     * Set the app-internal storage directory (filesDir/whisper) so we can scan it too.
+     */
+    fun setAppStorageDirectory(filesDir: String) {
+        appStorageDirectory = "$filesDir/whisper"
+        refreshFileLists()
+    }
+
+    /**
+     * Scan all known directories for available model files.
      */
     fun refreshFileLists() {
-        val directory = ModelSettings.DEFAULT_DIRECTORY
+        val directories = buildList {
+            add(ModelSettings.DEFAULT_DIRECTORY)
+            appStorageDirectory?.let { add(it) }
+        }
 
-        availableModels = listLocalFiles(directory, ModelSettings.MODEL_EXTENSIONS)
-        availableTokenizers = listLocalFiles(directory, ModelSettings.TOKENIZER_EXTENSIONS)
-        availablePreprocessors = listLocalFiles(directory, ModelSettings.MODEL_EXTENSIONS)
-        availableDataFiles = listLocalFiles(directory, ModelSettings.DATA_EXTENSIONS)
-        availableWavFiles = listLocalFiles(directory, WAV_EXTENSIONS)
+        availableModels = listLocalFilesFromDirs(directories, ModelSettings.MODEL_EXTENSIONS)
+        availableTokenizers = listLocalFilesFromDirs(directories, ModelSettings.TOKENIZER_EXTENSIONS)
+        availablePreprocessors = listLocalFilesFromDirs(directories, ModelSettings.MODEL_EXTENSIONS)
+        availableDataFiles = listLocalFilesFromDirs(directories, ModelSettings.DATA_EXTENSIONS)
+        availableWavFiles = listLocalFilesFromDirs(directories, WAV_EXTENSIONS)
 
-        // Clear error if files are found
         if (availableModels.isNotEmpty() || availableTokenizers.isNotEmpty()) {
             errorMessage = null
         }
     }
 
-    /**
-     * Select a model file.
-     */
     fun selectModel(path: String) {
         modelSettings = modelSettings.copy(modelPath = path)
     }
 
-    /**
-     * Select a tokenizer file.
-     */
     fun selectTokenizer(path: String) {
         modelSettings = modelSettings.copy(tokenizerPath = path)
     }
 
-    /**
-     * Select a preprocessor file. Pass empty string to clear.
-     */
     fun selectPreprocessor(path: String) {
         modelSettings = modelSettings.copy(preprocessorPath = path)
     }
 
-    /**
-     * Select a data file. Pass empty string to clear.
-     */
     fun selectDataFile(path: String) {
         modelSettings = modelSettings.copy(dataPath = path)
     }
 
-    /**
-     * Clear the preprocessor selection.
-     */
     fun clearPreprocessor() {
         selectPreprocessor("")
     }
 
-    /**
-     * Clear the data file selection.
-     */
     fun clearDataFile() {
         selectDataFile("")
     }
 
-    /**
-     * Check if the current settings are valid for inference.
-     */
     fun isReadyForInference(): Boolean {
         return modelSettings.isValid()
     }
@@ -125,6 +116,15 @@ class ModelSettingsViewModel : ViewModel() {
                 ?.map { it.absolutePath }
                 ?.sorted()
                 ?: emptyList()
+        }
+
+        /**
+         * List files from multiple directories, deduplicated by absolute path.
+         */
+        fun listLocalFilesFromDirs(dirs: List<String>, extensions: Array<String>): List<String> {
+            return dirs.flatMap { listLocalFiles(it, extensions) }
+                .distinct()
+                .sorted()
         }
     }
 }
