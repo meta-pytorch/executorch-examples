@@ -132,7 +132,13 @@ class MainActivity : ComponentActivity() {
             if (uris.isNotEmpty()) {
                 Log.d("PhotoPicker", "Selected URIs: $uris")
                 for (uri in uris) {
-                    contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    // Try to take persistable permission, but don't fail if not supported
+                    // (e.g., file:// URIs don't support persistable permissions)
+                    try {
+                        contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    } catch (e: SecurityException) {
+                        Log.d("PhotoPicker", "Could not take persistable permission for $uri: ${e.message}")
+                    }
                     chatViewModel?.addImage(uri)
                 }
             } else {
