@@ -10,8 +10,6 @@ package com.example.executorchyolodemo
 
 import android.util.Log
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -65,13 +63,13 @@ class ModelDownloadViewModel : ViewModel() {
     var downloadStatus by mutableStateOf(DownloadStatus.NOT_STARTED)
         private set
 
-    var downloadProgress by mutableFloatStateOf(0f)
+    var downloadProgress by mutableStateOf(0f)
         private set
 
-    var currentFileIndex by mutableIntStateOf(0)
+    var currentFileIndex by mutableStateOf(0)
         private set
 
-    var totalFileCount by mutableIntStateOf(0)
+    var totalFileCount by mutableStateOf(0)
         private set
 
     var currentFileName by mutableStateOf("")
