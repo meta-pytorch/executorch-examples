@@ -14,30 +14,100 @@ from pathlib import Path
 import cv2
 import numpy as np
 import torch
-from PIL import Image, ImageDraw
 from executorch.runtime import Runtime
+from PIL import Image, ImageDraw
 from ultralytics.data.augment import LetterBox
 
 
 # COCO class names (80 classes)
 COCO_CLASSES = [
-    "person", "bicycle", "car", "motorcycle", "airplane", "bus", "train",
-    "truck", "boat", "traffic light", "fire hydrant", "stop sign",
-    "parking meter", "bench", "bird", "cat", "dog", "horse", "sheep", "cow",
-    "elephant", "bear", "zebra", "giraffe", "backpack", "umbrella", "handbag",
-    "tie", "suitcase", "frisbee", "skis", "snowboard", "sports ball", "kite",
-    "baseball bat", "baseball glove", "skateboard", "surfboard", "tennis racket",
-    "bottle", "wine glass", "cup", "fork", "knife", "spoon", "bowl", "banana",
-    "apple", "sandwich", "orange", "broccoli", "carrot", "hot dog", "pizza",
-    "donut", "cake", "chair", "couch", "potted plant", "bed", "dining table",
-    "toilet", "tv", "laptop", "mouse", "remote", "keyboard", "cell phone",
-    "microwave", "oven", "toaster", "sink", "refrigerator", "book", "clock",
-    "vase", "scissors", "teddy bear", "hair drier", "toothbrush",
+    "person",
+    "bicycle",
+    "car",
+    "motorcycle",
+    "airplane",
+    "bus",
+    "train",
+    "truck",
+    "boat",
+    "traffic light",
+    "fire hydrant",
+    "stop sign",
+    "parking meter",
+    "bench",
+    "bird",
+    "cat",
+    "dog",
+    "horse",
+    "sheep",
+    "cow",
+    "elephant",
+    "bear",
+    "zebra",
+    "giraffe",
+    "backpack",
+    "umbrella",
+    "handbag",
+    "tie",
+    "suitcase",
+    "frisbee",
+    "skis",
+    "snowboard",
+    "sports ball",
+    "kite",
+    "baseball bat",
+    "baseball glove",
+    "skateboard",
+    "surfboard",
+    "tennis racket",
+    "bottle",
+    "wine glass",
+    "cup",
+    "fork",
+    "knife",
+    "spoon",
+    "bowl",
+    "banana",
+    "apple",
+    "sandwich",
+    "orange",
+    "broccoli",
+    "carrot",
+    "hot dog",
+    "pizza",
+    "donut",
+    "cake",
+    "chair",
+    "couch",
+    "potted plant",
+    "bed",
+    "dining table",
+    "toilet",
+    "tv",
+    "laptop",
+    "mouse",
+    "remote",
+    "keyboard",
+    "cell phone",
+    "microwave",
+    "oven",
+    "toaster",
+    "sink",
+    "refrigerator",
+    "book",
+    "clock",
+    "vase",
+    "scissors",
+    "teddy bear",
+    "hair drier",
+    "toothbrush",
 ]
 
 # Random colors for visualization
 np.random.seed(42)
-CLASS_COLORS = [(int(r), int(g), int(b)) for r, g, b in np.random.randint(0, 255, size=(80, 3))]
+CLASS_COLORS = [
+    (int(r), int(g), int(b)) for r, g, b in np.random.randint(0, 255, size=(80, 3))
+]
 
 
 def preprocess(image_path: str, imgsz: int = 640):
@@ -66,7 +136,7 @@ def preprocess(image_path: str, imgsz: int = 640):
     # Convert BGR->RGB, normalize, to tensor
     img_rgb = cv2.cvtColor(img_lb, cv2.COLOR_BGR2RGB)
     img_norm = img_rgb.astype(np.float32) / 255.0
-    tensor = torch.from_numpy(img_norm).permute(2, 0, 1).unsqueeze(0)
+    tensor = torch.from_numpy(img_norm).permute(2, 0, 1).contiguous().unsqueeze(0)
 
     return tensor, scale, (pad_w, pad_h), orig_shape
 
@@ -75,10 +145,10 @@ def postprocess(output, conf_thresh: float, scale: float, padding: tuple):
     """
     Post-process YOLO end-to-end output [batch, 300, 6].
 
-    Output format: [x_center, y_center, width, height, confidence, class_id]
+    Output format: [x1, y1, x2, y2, confidence, class_id] (xyxy corner format)
 
     Returns:
-        List of detections as dicts with keys: x, y, w, h, conf, cls
+        List of detections as dicts with keys: x1, y1, x2, y2, conf, cls
     """
     preds = output[0] if len(output.shape) == 3 else output
     pad_w, pad_h = padding
@@ -89,16 +159,22 @@ def postprocess(output, conf_thresh: float, scale: float, padding: tuple):
     detections = []
     for i in range(len(preds)):
         if mask[i]:
-            x = (preds[i, 0].item() - pad_w) / scale
-            y = (preds[i, 1].item() - pad_h) / scale
-            w = preds[i, 2].item() / scale
-            h = preds[i, 3].item() / scale
+            # Convert from letterbox space to original image space
+            x1 = (preds[i, 0].item() - pad_w) / scale
+            y1 = (preds[i, 1].item() - pad_h) / scale
+            x2 = (preds[i, 2].item() - pad_w) / scale
+            y2 = (preds[i, 3].item() - pad_h) / scale
 
-            detections.append({
-                "x": x, "y": y, "w": w, "h": h,
-                "conf": preds[i, 4].item(),
-                "cls": int(preds[i, 5].item()),
-            })
+            detections.append(
+                {
+                    "x1": x1,
+                    "y1": y1,
+                    "x2": x2,
+                    "y2": y2,
+                    "conf": preds[i, 4].item(),
+                    "cls": int(preds[i, 5].item()),
+                }
+            )
 
     return sorted(detections, key=lambda d: d["conf"], reverse=True)
 
@@ -110,12 +186,12 @@ def draw_boxes(image_path: str, detections: list, output_path: str):
     W, H = img.size
 
     for det in detections:
-        x, y, w, h = det["x"], det["y"], det["w"], det["h"]
+        x1, y1, x2, y2 = det["x1"], det["y1"], det["x2"], det["y2"]
         cls, conf = det["cls"], det["conf"]
 
-        # Convert center format to corners, clip to image
-        x1, y1 = max(0, x - w/2), max(0, y - h/2)
-        x2, y2 = min(W, x + w/2), min(H, y + h/2)
+        # Clip to image bounds
+        x1, y1 = max(0, x1), max(0, y1)
+        x2, y2 = min(W, x2), min(H, y2)
 
         if x2 <= x1 or y2 <= y1:
             continue
@@ -137,7 +213,9 @@ def draw_boxes(image_path: str, detections: list, output_path: str):
     return len(detections)
 
 
-def run_inference(model_path: str, image_path: str, output_path: str, conf_thresh: float = 0.25):
+def run_inference(
+    model_path: str, image_path: str, output_path: str, conf_thresh: float = 0.25
+):
     """Run YOLO inference with ExecuTorch."""
 
     # Load model
@@ -163,8 +241,11 @@ def run_inference(model_path: str, image_path: str, output_path: str, conf_thres
 def main():
     parser = argparse.ArgumentParser(description="YOLO ExecuTorch Inference")
     parser.add_argument("--image", default="example.jpg", help="Input image path")
-    parser.add_argument("--model", default="models/yolo26m-ExecuTorch-XNNPACK/yolo26m_xnnpack.pte",
-                        help="ExecuTorch model path")
+    parser.add_argument(
+        "--model",
+        default="models/yolo26m-ExecuTorch-XNNPACK/yolo26m_xnnpack.pte",
+        help="ExecuTorch model path",
+    )
     parser.add_argument("--output", default="output.jpg", help="Output image path")
     parser.add_argument("--conf", type=float, default=0.25, help="Confidence threshold")
     args = parser.parse_args()
@@ -178,15 +259,25 @@ def main():
     print(f"Image: {image_path}")
     print(f"Confidence threshold: {args.conf}")
 
-    detections, raw_output = run_inference(model_path, image_path, output_path, args.conf)
+    detections, raw_output = run_inference(
+        model_path, image_path, output_path, args.conf
+    )
 
     print(f"\nOutput shape: {raw_output.shape}")
-    print(f"Confidence range: [{raw_output[0, :, 4].min():.4f}, {raw_output[0, :, 4].max():.4f}]")
+    print(
+        f"Confidence range: [{raw_output[0, :, 4].min():.4f}, {raw_output[0, :, 4].max():.4f}]"
+    )
     print(f"\nDetections: {len(detections)}")
 
     for i, det in enumerate(detections[:10]):
         cls_name = COCO_CLASSES[det["cls"]] if det["cls"] < 80 else f"cls_{det['cls']}"
-        print(f"  {i+1}. {cls_name}: {det['conf']:.3f} @ ({det['x']:.0f}, {det['y']:.0f}) {det['w']:.0f}x{det['h']:.0f}")
+        w = det["x2"] - det["x1"]
+        h = det["y2"] - det["y1"]
+        cx = (det["x1"] + det["x2"]) / 2
+        cy = (det["y1"] + det["y2"]) / 2
+        print(
+            f"  {i+1}. {cls_name}: {det['conf']:.3f} @ ({cx:.0f}, {cy:.0f}) {w:.0f}x{h:.0f}"
+        )
 
     print(f"\nSaved: {output_path}")
 
