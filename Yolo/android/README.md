@@ -14,17 +14,34 @@ Bird Detection Feature: Uses a two-stage pipeline where YOLO (COCO class 14) det
 Install dependencies
 
 ```
-pip install transformers torch pillow executorch
-Download EfficientNet bird classifier
-python -c "
-from transformers import AutoImageProcessor, AutoModelForImageClassification
-import torch
-model_name = 'dennisjooo/Birds-Classifier-EfficientNetB2'
-processor = AutoImageProcessor.from_pretrained(model_name)
-model = AutoModelForImageClassification.from_pretrained(model_name)
-model.save_pretrained('./bird_classifier_model')
-processor.save_pretrained('./bird_classifier_model')
-print('Bird classifier downloaded')
+import torch                                                                                                                                  
+from transformers import AutoModelForImageClassification  
+from torch.export import export                                                                                                               
+from executorch.exir import to_edge_transform_and_lower   
+from executorch.backends.xnnpack.partition.xnnpack_partitioner import XnnpackPartitioner
+
+# Download and load model
+model = AutoModelForImageClassification.from_pretrained("chriamue/bird-species-classifier")
+model.eval()
+
+# Export to ExecuTorch
+example_input = torch.randn(1, 3, 224, 224)
+exported_program = export(model, (example_input,))
+edge_program = to_edge_transform_and_lower(
+    exported_program,
+    partitioner=[XnnpackPartitioner()]
+)
+et_program = edge_program.to_executorch()
+
+# Save as .pte file
+with open("bird_classifier.pte", "wb") as f:
+    et_program.write_to_file(f)
+print("Bird classifier converted to bird_classifier.pte")
+
+Run it from a regular terminal (not Claude Code) to avoid the proxy block:
+
+cd /home/sidart/executorch
+python convert_bird_classifier.py
 "
 ```
 
