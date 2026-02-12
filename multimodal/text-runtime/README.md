@@ -46,9 +46,3 @@ python qwen_inference.py --prompt "Explain quantum computing" --max_seq_len 256
 | `--chat` | `false` | Use chat template formatting |
 | `--thinking` | `false` | Enable thinking mode |
 | `--echo` | `false` | Include prompt in output |
-
-## References
-
-- [Qwen3](https://github.com/QwenLM/Qwen)
-- [ExecuTorch](https://github.com/pytorch/executorch)
-- [optimum-executorch](https://github.com/huggingface/optimum-executorch)
