@@ -6,14 +6,14 @@ import android.media.AudioFormat
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.system.ErrnoException
 import android.system.Os
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -34,9 +34,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,11 +56,10 @@ class MainActivity : ComponentActivity() {
 
     companion object {
         private const val TAG = "MainActivity"
-        private const val RECORDING_DURATION_MS = 30000L // 30 seconds
     }
 
     private var transcriptionOutput by mutableStateOf("")
-    private var buttonText by mutableStateOf("Record")
+    private var buttonText by mutableStateOf("Hold to Record")
     private var buttonEnabled by mutableStateOf(true)
     private var statusText by mutableStateOf("")
     private var currentScreen by mutableStateOf(Screen.MAIN)
@@ -67,8 +68,6 @@ class MainActivity : ComponentActivity() {
     private var isRecording = false
     private var audioRecord: AudioRecord? = null
     private var recordingThread: Thread? = null
-    private val handler = Handler(Looper.getMainLooper())
-    private var stopRecordingRunnable: Runnable? = null
 
     private val sampleRate = 16000
     private val channelConfig = AudioFormat.CHANNEL_IN_MONO
@@ -149,7 +148,8 @@ class MainActivity : ComponentActivity() {
                                 modelSettings = viewModel.modelSettings,
                                 availableWavFiles = viewModel.availableWavFiles,
                                 showWavFileDialog = showWavFileDialog,
-                                onRecordClick = { onRecordButtonClick() },
+                                onRecordStart = { startRecording() },
+                                onRecordStop = { stopRecording() },
                                 onUseWavFileClick = {
                                     viewModel.refreshFileLists()
                                     showWavFileDialog = true
@@ -181,14 +181,6 @@ class MainActivity : ComponentActivity() {
     private fun applyDownloadedModelPaths() {
         viewModel.selectModel(downloadViewModel.getModelPath())
         viewModel.selectTokenizer(downloadViewModel.getTokenizerPath())
-    }
-
-    private fun onRecordButtonClick() {
-        if (isRecording) {
-            stopRecording()
-        } else {
-            startRecording()
-        }
     }
 
     /**
@@ -261,7 +253,7 @@ class MainActivity : ComponentActivity() {
         runOnUiThread {
             transcriptionOutput = result
             statusText = "Transcription complete (%.2fs)".format(elapsedSeconds)
-            buttonText = "Record"
+            buttonText = "Hold to Record"
             buttonEnabled = true
         }
     }
@@ -291,14 +283,7 @@ class MainActivity : ComponentActivity() {
                     audioRecord?.startRecording()
                     isRecording = true
 
-                    buttonText = "Recording... (30s)"
-                    buttonEnabled = false
-
-                    // Schedule automatic stop after 30 seconds
-                    stopRecordingRunnable = Runnable {
-                        stopRecording()
-                    }
-                    handler.postDelayed(stopRecordingRunnable!!, RECORDING_DURATION_MS)
+                    buttonText = "Recording..."
 
                     val pcmFile = File(getExternalFilesDir(null), "audio_record.pcm")
 
@@ -350,6 +335,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun stopRecording() {
+        if (!isRecording) return
+
         isRecording = false
 
         try {
@@ -360,8 +347,8 @@ class MainActivity : ComponentActivity() {
         }
 
         audioRecord = null
-        buttonText = "Record"
-        buttonEnabled = true
+        buttonText = "Processing..."
+        buttonEnabled = false
 
         recordingThread?.join()
         recordingThread = null
@@ -487,7 +474,7 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
         if (isGranted) {
-            startRecording()
+            statusText = "Permission granted. Hold the button to record."
         } else {
             statusText = "Audio recording permission required"
         }
@@ -503,7 +490,8 @@ fun ParakeetScreen(
     modelSettings: ModelSettings,
     availableWavFiles: List<String>,
     showWavFileDialog: Boolean,
-    onRecordClick: () -> Unit,
+    onRecordStart: () -> Unit,
+    onRecordStop: () -> Unit,
     onUseWavFileClick: () -> Unit,
     onWavFileSelected: (String) -> Unit,
     onWavDialogDismiss: () -> Unit,
@@ -573,12 +561,41 @@ fun ParakeetScreen(
         Spacer(modifier = Modifier.height(16.dp))
 
         // Audio input buttons
+        val interactionSource = remember { MutableInteractionSource() }
+        val currentOnRecordStart by rememberUpdatedState(onRecordStart)
+        val currentOnRecordStop by rememberUpdatedState(onRecordStop)
+
+        LaunchedEffect(interactionSource) {
+            var isPressed = false
+            interactionSource.interactions.collect { interaction ->
+                when (interaction) {
+                    is PressInteraction.Press -> {
+                        isPressed = true
+                        currentOnRecordStart()
+                    }
+                    is PressInteraction.Release -> {
+                        if (isPressed) {
+                            isPressed = false
+                            currentOnRecordStop()
+                        }
+                    }
+                    is PressInteraction.Cancel -> {
+                        if (isPressed) {
+                            isPressed = false
+                            currentOnRecordStop()
+                        }
+                    }
+                }
+            }
+        }
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Button(
-                onClick = onRecordClick,
+                onClick = {},
+                interactionSource = interactionSource,
                 enabled = buttonEnabled,
                 modifier = Modifier.weight(1f)
             ) {
