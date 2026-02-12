@@ -154,22 +154,19 @@ public class BirdDetectionPipeline {
     public List<BirdDetection> detectBirds(Bitmap bitmap) {
         List<BirdDetection> results = new ArrayList<>();
         frameCounter++;
-    
-        Tensor yoloInput = null;
-        EValue[] yoloOutputs = null;
-        
+
         try {
             // Cleanup old detection history every 30 frames
             if (frameCounter % 30 == 0) {
                 cleanupOldDetections();
             }
-    
-            yoloInput = preprocessForYolo(bitmap);
+
+            Tensor yoloInput = preprocessForYolo(bitmap);
             if (yoloInput == null) {
                 return results;
             }
-    
-            yoloOutputs = yoloModule.forward(EValue.from(yoloInput));
+
+            EValue[] yoloOutputs = yoloModule.forward(EValue.from(yoloInput));
             if (yoloOutputs == null || yoloOutputs.length == 0) {
                 return results;
             }
@@ -240,29 +237,8 @@ public class BirdDetectionPipeline {
     
         } catch (Exception e) {
             Log.e(TAG, "Error in detectBirds", e);
-        } finally {
-            // CRITICAL: Release tensors to prevent memory leak
-            if (yoloInput != null) {
-                try {
-                    yoloInput.close();
-                } catch (Exception e) {
-                    Log.e(TAG, "Error closing yoloInput", e);
-                }
-            }
-            
-            if (yoloOutputs != null) {
-                for (EValue output : yoloOutputs) {
-                    if (output != null) {
-                        try {
-                            output.close();
-                        } catch (Exception e) {
-                            Log.e(TAG, "Error closing output", e);
-                        }
-                    }
-                }
-            }
         }
-    
+
         return results;
     }
 
@@ -596,19 +572,15 @@ public class BirdDetectionPipeline {
         }
     }
 
-    private String[] classifyBird(Bitmap bitmap, RectF boundingBox) throws Exception {
-        Bitmap croppedBird = cropBitmap(bitmap, boundingBox);
-        if (croppedBird == null) {
-            return new String[]{"Bird", "0.5"};
-        }
-
-        Tensor classifierInput = preprocessForClassifier(croppedBird);
+    private String classifyBird(Bitmap croppedBitmap) throws Exception {
+        Tensor classifierInput = preprocessForClassifier(croppedBitmap);
         if (classifierInput == null) {
-            return new String[]{"Bird", "0.5"};
+            return "Bird";
         }
 
         EValue[] classifierOutputs = classifierModule.forward(EValue.from(classifierInput));
-        return parseClassifierOutput(classifierOutputs);
+        String[] result = parseClassifierOutput(classifierOutputs);
+        return result[0];
     }
 
     private String[] parseClassifierOutput(EValue[] outputs) {

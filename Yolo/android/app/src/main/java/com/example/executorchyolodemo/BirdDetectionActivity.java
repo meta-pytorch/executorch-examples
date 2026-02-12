@@ -97,30 +97,6 @@ public class BirdDetectionActivity extends AppCompatActivity {
         }
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        
-        // Clean up the detection pipeline
-        if (detectionPipeline != null) {
-            detectionPipeline.close();
-            detectionPipeline = null;
-        }
-        
-        Log.d(TAG, "BirdDetectionActivity destroyed");
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        
-        // Optional: Release resources when app goes to background
-        if (detectionPipeline != null) {
-            detectionPipeline.close();
-            detectionPipeline = null;
-        }
-    }
-
     private void initializeViews() {
         previewView = findViewById(R.id.previewView);
         overlayImageView = findViewById(R.id.overlayImageView);
