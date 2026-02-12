@@ -18,6 +18,8 @@ pip install ultralytics opencv-python pillow
 pip install executorch
 ```
 
+[huggingface-cli]: https://huggingface.co/docs/huggingface_hub/en/guides/cli
+
 ## Download Model
 
 Download the YOLO26m ExecuTorch model from Hugging Face:
