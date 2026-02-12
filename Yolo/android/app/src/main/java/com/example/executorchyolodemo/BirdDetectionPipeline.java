@@ -154,87 +154,115 @@ public class BirdDetectionPipeline {
     public List<BirdDetection> detectBirds(Bitmap bitmap) {
         List<BirdDetection> results = new ArrayList<>();
         frameCounter++;
-
+    
+        Tensor yoloInput = null;
+        EValue[] yoloOutputs = null;
+        
         try {
             // Cleanup old detection history every 30 frames
             if (frameCounter % 30 == 0) {
                 cleanupOldDetections();
             }
-
-            Tensor yoloInput = preprocessForYolo(bitmap);
+    
+            yoloInput = preprocessForYolo(bitmap);
             if (yoloInput == null) {
                 return results;
             }
-
-            EValue[] yoloOutputs = yoloModule.forward(EValue.from(yoloInput));
+    
+            yoloOutputs = yoloModule.forward(EValue.from(yoloInput));
             if (yoloOutputs == null || yoloOutputs.length == 0) {
                 return results;
             }
-
+    
             List<Detection> detections = parseYoloV8OutputOptimized(yoloOutputs, bitmap.getWidth(), bitmap.getHeight());
-
+    
             if (DEBUG_OUTPUT) {
                 Log.d(TAG, "Raw detections before NMS: " + detections.size());
             }
-
+    
             // Apply enhanced NMS
-            List<Detection> filteredDetections = applyEnhancedNMS(detections);
-
+            List<Detection> nmsDetections = applyEnhancedNMS(detections);
+    
             if (DEBUG_OUTPUT) {
-                Log.d(TAG, "Detections after enhanced NMS: " + filteredDetections.size());
+                Log.d(TAG, "Detections after NMS: " + nmsDetections.size());
             }
-
-            // Apply temporal stability tracking
-            List<Detection> stableDetections = applyTemporalStabilityTracking(filteredDetections);
-
-            // Limit to MAX_DETECTIONS with quality ranking
-            if (stableDetections.size() > MAX_DETECTIONS) {
-                // Sort by confidence and take top detections
-                Collections.sort(stableDetections, (a, b) -> Float.compare(b.confidence, a.confidence));
-                stableDetections = stableDetections.subList(0, MAX_DETECTIONS);
-            }
-
-            // Process stable detections only
-            for (Detection detection : stableDetections) {
+    
+            // Classify each detection
+            for (Detection detection : nmsDetections) {
                 try {
-                    if (validateBirdDetectionEnhanced(bitmap, detection.boundingBox)) {
-                        String[] speciesResult = classifyBird(bitmap, detection.boundingBox);
-                        float classifierConfidence = Float.parseFloat(speciesResult[1]);
-
-                        // Stricter classifier requirement for false positive reduction
-                        if (classifierConfidence > 0.5f) {
-                            // Weighted average favoring detection confidence
-                            float finalConfidence = (detection.confidence * 0.8f + classifierConfidence * 0.2f);
-
-                            // Check if this detection is stable over time
-                            DetectionHistory history = detectionHistory.get(detection.locationKey);
-                            boolean isStable = history != null && history.isStable();
-
-                            results.add(new BirdDetection(
-                                    detection.boundingBox,
-                                    speciesResult[0],
-                                    finalConfidence,
-                                    isStable
-                            ));
-
-                            if (DEBUG_OUTPUT) {
-                                Log.d(TAG, "FINAL BIRD: " + speciesResult[0] + " conf=" + finalConfidence + " stable=" + isStable);
-                            }
-                        }
+                    Bitmap croppedBird = cropBitmap(bitmap, detection.boundingBox);
+                    if (croppedBird == null) continue;
+    
+                    String species = classifyBird(croppedBird);
+                    
+                    // Recycle the cropped bitmap immediately after classification
+                    if (!croppedBird.isRecycled()) {
+                        croppedBird.recycle();
+                    }
+    
+                    // Update detection history
+                    DetectionHistory history = detectionHistory.get(detection.locationKey);
+                    if (history == null) {
+                        history = new DetectionHistory();
+                        detectionHistory.put(detection.locationKey, history);
+                    }
+                    history.addConfidence(detection.confidence);
+    
+                    // Apply temporal bonus for stable detections
+                    float finalConfidence = detection.confidence;
+                    if (history.isStable()) {
+                        finalConfidence = Math.min(1.0f, detection.confidence + TEMPORAL_BONUS);
+                    }
+    
+                    BirdDetection birdDetection = new BirdDetection(
+                        detection.boundingBox,
+                        species,
+                        finalConfidence,
+                        history.isStable()
+                    );
+                    results.add(birdDetection);
+    
+                    if (DEBUG_OUTPUT) {
+                        Log.d(TAG, String.format("Bird detected: %s (%.2f) at [%.0f,%.0f,%.0f,%.0f] stable=%b",
+                            species, finalConfidence,
+                            detection.boundingBox.left, detection.boundingBox.top,
+                            detection.boundingBox.right, detection.boundingBox.bottom,
+                            history.isStable()));
                     }
                 } catch (Exception e) {
-                    Log.e(TAG, "Failed to classify detection", e);
+                    Log.e(TAG, "Error classifying detection", e);
                 }
             }
-
+    
+            if (DEBUG_OUTPUT) {
+                Log.d(TAG, "Final bird detections: " + results.size());
+            }
+    
         } catch (Exception e) {
-            Log.e(TAG, "Bird detection failed", e);
+            Log.e(TAG, "Error in detectBirds", e);
+        } finally {
+            // CRITICAL: Release tensors to prevent memory leak
+            if (yoloInput != null) {
+                try {
+                    yoloInput.close();
+                } catch (Exception e) {
+                    Log.e(TAG, "Error closing yoloInput", e);
+                }
+            }
+            
+            if (yoloOutputs != null) {
+                for (EValue output : yoloOutputs) {
+                    if (output != null) {
+                        try {
+                            output.close();
+                        } catch (Exception e) {
+                            Log.e(TAG, "Error closing output", e);
+                        }
+                    }
+                }
+            }
         }
-
-        if (DEBUG_OUTPUT) {
-            Log.d(TAG, "TOTAL FINAL RESULTS: " + results.size());
-        }
-
+    
         return results;
     }
 
@@ -313,6 +341,39 @@ public class BirdDetectionPipeline {
         if (DEBUG_OUTPUT) {
             Log.d(TAG, "Cleaned up old detections, remaining: " + detectionHistory.size());
         }
+    }
+
+    /**
+     * Release all resources and destroy models.
+     * Call this when the pipeline is no longer needed.
+     */
+    public void close() {
+        Log.d(TAG, "Closing BirdDetectionPipeline and releasing resources");
+        
+        try {
+            if (yoloModule != null) {
+                yoloModule.destroy();
+                yoloModule = null;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error destroying yoloModule", e);
+        }
+        
+        try {
+            if (classifierModule != null) {
+                classifierModule.destroy();
+                classifierModule = null;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error destroying classifierModule", e);
+        }
+        
+        // Clear detection history
+        if (detectionHistory != null) {
+            detectionHistory.clear();
+        }
+        
+        Log.d(TAG, "BirdDetectionPipeline closed successfully");
     }
 
     private Tensor preprocessForYolo(Bitmap bitmap) {
