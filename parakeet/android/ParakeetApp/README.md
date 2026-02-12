@@ -2,7 +2,14 @@
 
 This app demonstrates running the Parakeet TDT speech recognition model on Android using ExecuTorch.
 
-> **Note:** The ExecuTorch `ParakeetModule` API is not yet released. We will give a snapshot AAR soon.
+## Download ExecuTorch AAR
+
+Download the prebuilt ExecuTorch AAR (with Parakeet JNI bindings) and place it in `app/libs/`:
+
+```bash
+mkdir -p app/libs
+curl -L -o app/libs/executorch.aar https://gha-artifacts.s3.amazonaws.com/pytorch/executorch/21934561658/artifacts/executorch.aar
+```
 
 ## Export Model Files
 
@@ -13,8 +20,8 @@ This app requires a model `.pte` and a tokenizer `.model` file.
 
 ## Run the App
 
-1. Open ParakeetApp in Android Studio
-2. Copy the `executorch.aar` library (with parakeet JNI bindings) into `app/libs`
+1. Download the ExecuTorch AAR (see above)
+2. Open ParakeetApp in Android Studio
 3. Build and run on device
 
 ## Download Models
