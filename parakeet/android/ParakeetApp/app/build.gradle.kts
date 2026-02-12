@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+val useLocalAar: Boolean? = (project.findProperty("useLocalAar") as? String)?.toBoolean()
+
 android {
     namespace = "com.example.parakeetapp"
     compileSdk = 35
@@ -47,6 +49,10 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     debugImplementation(libs.androidx.ui.tooling)
-    implementation(files("libs/executorch.aar"))
+    if (useLocalAar == true) {
+        implementation(files("libs/executorch.aar"))
+    } else {
+        implementation("org.pytorch:executorch-android:1.1.0")
+    }
     implementation("com.facebook.fbjni:fbjni:0.5.1")
 }
