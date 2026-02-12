@@ -7,6 +7,7 @@
 name: Android Build
 
 on:
+  pull_request:
   schedule:
     # Run nightly at midnight UTC
     - cron: '0 0 * * *'
