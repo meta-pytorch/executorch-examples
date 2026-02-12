@@ -44,18 +44,20 @@ jobs:
 
 
     name: Build ${{ matrix.name }}
-    if: ${{ !matrix.require_aar || inputs.local_aar }}
     steps:
       - name: Checkout repository
+        if: ${{ !matrix.require_aar || inputs.local_aar }}
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
+        if: ${{ !matrix.require_aar || inputs.local_aar }}
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
       - name: Setup Gradle
+        if: ${{ !matrix.require_aar || inputs.local_aar }}
         uses: gradle/actions/setup-gradle@v4
 
       - name: Download local AAR
@@ -65,6 +67,7 @@ jobs:
           curl -fL -o ${{ matrix.path }}/app/libs/executorch.aar "${{ inputs.local_aar }}"
 
       - name: Build with Gradle
+        if: ${{ !matrix.require_aar || inputs.local_aar }}
         working-directory: ${{ matrix.path }}
         run: |
           if [ -n "${{ inputs.local_aar }}" ] && ([ "${{ matrix.name }}" == "LlamaDemo" ] || [ "${{ matrix.name }}" == "YoloDemo" ] || [ "${{ matrix.name }}" == "WhisperDemo" ] || [ "${{ matrix.name }}" == "ParakeetDemo" ]); then
@@ -74,6 +77,7 @@ jobs:
           fi
 
       - name: Rename APKs with demo name
+        if: ${{ !matrix.require_aar || inputs.local_aar }}
         working-directory: ${{ matrix.path }}/app/build/outputs/apk/
         run: |
           find . -name "*.apk" -type f -print0 | while IFS= read -r -d '' apk; do
@@ -85,6 +89,7 @@ jobs:
           done
 
       - name: Upload build artifacts
+        if: ${{ !matrix.require_aar || inputs.local_aar }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}-apk
