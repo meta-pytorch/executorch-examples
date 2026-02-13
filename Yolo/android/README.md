@@ -45,17 +45,31 @@ python convert_bird_classifier.py
 "
 ```
 
-### YOLO Detection Model
+##  Detection Model
 
-Install YOLOv8
+The app supports both v8 and v26 and automatically detects which version you're using based on the model output format.
+
+Install Ultralytics:
 
 ```
 pip install ultralytics
-Download YOLO model
+```
+
+### Download  model
+
+#### Option 1: v8 
 python -c "
-from ultralytics import YOLO
-model = YOLO('yolov8n.pt') # nano version for mobile
-print('YOLO model downloaded')
+from ultralytics import 
+model = ('v8n.pt') # nano version for mobile
+print('v8 model downloaded')
+"
+```
+
+#### Option 2: v26 (Recommended - Faster & More Accurate)
+python -c "
+from ultralytics import 
+model = ('26n.pt')  # nano version for mobile
+print('v26 model downloaded')
 "
 ```
 
@@ -93,6 +107,7 @@ print("Bird classifier converted to bird_classifier.pte")
 ### Convert YOLO Model
 
 convert_yolo.py
+This script works for both YOLOv8 and YOLOv26 - just change the model filename.
 
 ```
 from ultralytics import YOLO
@@ -100,23 +115,29 @@ import torch
 from torch.export import export
 from executorch.exir import to_edge_transform_and_lower
 from executorch.backends.xnnpack.partition.xnnpack_partitioner import XnnpackPartitioner
-Load YOLO model
-yolo = YOLO('yolov8n.pt')
+
+# Load YOLO model
+# Use 'yolov8n.pt' for YOLOv8 OR 'yolo26n.pt' for YOLOv26
+yolo = YOLO('yolo26n.pt')  # Recommended: YOLOv26 for better performance
 pytorch_model = yolo.model
 pytorch_model.eval()
-Export to ExecuTorch
+
+# Export to ExecuTorch
 example_input = torch.randn(1, 3, 640, 640)
 exported_program = export(pytorch_model, (example_input,))
 edge_program = to_edge_transform_and_lower(
-exported_program,
-partitioner=[XnnpackPartitioner()]
+    exported_program,
+    partitioner=[XnnpackPartitioner()]
 )
 et_program = edge_program.to_executorch()
-Save as .pte file
+
+# Save as .pte file
 with open("yolo_detector.pte", "wb") as f:
-et_program.write_to_file(f)
+    et_program.write_to_file(f)
 print("YOLO model converted to yolo_detector.pte")
 ```
+
+#### Auto-Detection: The app automatically detects which YOLO version you're using (v8 or v26) based on the model's output format. No code changes needed when switching between versions!
 
 ### Generate Bird Species Names
 

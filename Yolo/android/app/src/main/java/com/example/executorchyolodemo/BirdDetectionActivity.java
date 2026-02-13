@@ -97,6 +97,41 @@ public class BirdDetectionActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        // Clean up the detection pipeline
+        if (birdPipeline != null) {
+            birdPipeline.close();
+            birdPipeline = null;
+        }
+
+        // Shutdown camera executor
+        if (cameraExecutor != null) {
+            cameraExecutor.shutdown();
+        }
+
+        // Clean up session manager
+        if (sessionManager != null) {
+            sessionManager.cleanup();
+        }
+
+        Log.d(TAG, "BirdDetectionActivity destroyed");
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        Log.d(TAG, "BirdDetectionActivity paused");
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        updateSessionUI();
+    }
+
     private void initializeViews() {
         previewView = findViewById(R.id.previewView);
         overlayImageView = findViewById(R.id.overlayImageView);
@@ -413,23 +448,5 @@ public class BirdDetectionActivity extends AppCompatActivity {
                 finish();
             }
         }
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        cameraExecutor.shutdown();
-        if (birdPipeline != null) {
-            birdPipeline.cleanup();
-        }
-        if (sessionManager != null) {
-            sessionManager.cleanup();
-        }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        updateSessionUI();
     }
 }
