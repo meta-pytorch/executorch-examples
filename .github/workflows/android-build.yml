@@ -7,6 +7,7 @@
 name: Android Build
 
 on:
+  pull_request:
   schedule:
     # Run nightly at midnight UTC
     - cron: '0 0 * * *'
@@ -35,38 +36,49 @@ jobs:
             path: mv3/android/MV3Demo
           - name: YoloDemo
             path: Yolo/android
+          - name: WhisperDemo
+            path: whisper/android/WhisperApp
+            require_aar: true
+          - name: ParakeetDemo
+            path: parakeet/android/ParakeetApp
+            require_aar: true
 
 
     name: Build ${{ matrix.name }}
     steps:
       - name: Checkout repository
+        if: ${{ !matrix.require_aar || inputs.local_aar }}
         uses: actions/checkout@v4
 
       - name: Set up JDK 17
+        if: ${{ !matrix.require_aar || inputs.local_aar }}
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
       - name: Setup Gradle
+        if: ${{ !matrix.require_aar || inputs.local_aar }}
         uses: gradle/actions/setup-gradle@v4
 
       - name: Download local AAR
-        if: ${{ inputs.local_aar && (matrix.name == 'LlamaDemo' || matrix.name == 'YoloDemo') }}
+        if: ${{ inputs.local_aar && (matrix.name == 'LlamaDemo' || matrix.name == 'YoloDemo' || matrix.name == 'WhisperDemo' || matrix.name == 'ParakeetDemo') }}
         run: |
           mkdir -p ${{ matrix.path }}/app/libs
           curl -fL -o ${{ matrix.path }}/app/libs/executorch.aar "${{ inputs.local_aar }}"
 
       - name: Build with Gradle
+        if: ${{ !matrix.require_aar || inputs.local_aar }}
         working-directory: ${{ matrix.path }}
         run: |
-          if [ -n "${{ inputs.local_aar }}" ] && ([ "${{ matrix.name }}" == "LlamaDemo" ] || [ "${{ matrix.name }}" == "YoloDemo" ]); then
+          if [ -n "${{ inputs.local_aar }}" ] && ([ "${{ matrix.name }}" == "LlamaDemo" ] || [ "${{ matrix.name }}" == "YoloDemo" ] || [ "${{ matrix.name }}" == "WhisperDemo" ] || [ "${{ matrix.name }}" == "ParakeetDemo" ]); then
             ./gradlew build --no-daemon -PuseLocalAar=true
           else
             ./gradlew build --no-daemon
           fi
 
       - name: Rename APKs with demo name
+        if: ${{ !matrix.require_aar || inputs.local_aar }}
         working-directory: ${{ matrix.path }}/app/build/outputs/apk/
         run: |
           find . -name "*.apk" -type f -print0 | while IFS= read -r -d '' apk; do
@@ -78,6 +90,7 @@ jobs:
           done
 
       - name: Upload build artifacts
+        if: ${{ !matrix.require_aar || inputs.local_aar }}
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}-apk
