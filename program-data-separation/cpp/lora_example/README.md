@@ -29,12 +29,10 @@ If you want to train your own LoRA adapters, [Unsloth](https://unsloth.ai/) prov
 
 ## Install ExecuTorch
 
-Install from a recent nightly build (recommended for LoRA export features):
+Install executorch>=1.1.0:
 ```bash
-pip install executorch==1.1.0.devYYYYMMDD --extra-index-url https://download.pytorch.org/whl/nightly/cpu
+pip install executorch>=1.1.0
 ```
-
-Use a recent nightly, as some LoRA export features are not available in executorch==1.0.0.
 
 Alternatively, [install from source](https://docs.pytorch.org/executorch/stable/using-executorch-building-from-source.html#install-executorch-pip-package-from-source):
 
