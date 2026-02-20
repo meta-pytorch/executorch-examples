@@ -1,0 +1,23 @@
+# Model files
+models/
+*.pte
+*.bin
+*.onnx
+*.pt
+*.pth
+*.safetensors
+
+# Output files
+output.jpg
+output*.jpg
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# OS
+.DS_Store
