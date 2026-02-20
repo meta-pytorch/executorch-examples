@@ -420,7 +420,7 @@ class MainActivity : ComponentActivity() {
             }
 
             val bmpSegmentation = Bitmap.createScaledBitmap(inputBitmap, width, height, true)
-            val outputBitmap = bmpSegmentation.copy(bmpSegmentation.config, true)
+            val outputBitmap = bmpSegmentation.copy(bmpSegmentation.config ?: Bitmap.Config.ARGB_8888, true)
             outputBitmap.setPixels(intValues, 0, width, 0, 0, width, height)
             val transferredBitmap = Bitmap.createScaledBitmap(
                 outputBitmap,
