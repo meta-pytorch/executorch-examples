@@ -22,7 +22,7 @@ from executorch.exir import (
     to_edge_transform_and_lower,
 )
 from executorch.exir.passes.external_constants_pass import (
-    delegate_external_constants_pass,
+    delegate_external_constants_pass_unlifted,
 )
 from executorch.exir.program import ExecutorchProgramManager
 from torch.export import export
@@ -78,7 +78,7 @@ def main() -> None:
         )
 
         partial_function = partial(
-            delegate_external_constants_pass,
+            delegate_external_constants_pass_unlifted,
             ep=exported_program,
             gen_tag_fn=lambda x: model_name,
         )
