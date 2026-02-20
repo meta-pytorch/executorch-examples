@@ -152,7 +152,7 @@ fun ChatScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.smallTopAppBarColors(
+                colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = appColors.navBar,
                     titleContentColor = appColors.textOnNavBar
                 )
