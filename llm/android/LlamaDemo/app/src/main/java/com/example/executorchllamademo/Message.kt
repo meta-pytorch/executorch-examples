@@ -17,12 +17,16 @@ import java.util.Locale
  *
  * Note: This is not a data class because it has mutable state (text, tokensPerSecond, totalGenerationTime)
  * and custom initialization logic based on messageType.
+ *
+ * @param existingTimestamp Optional timestamp to preserve when copying a message.
+ *   When null (default), timestamp is computed automatically.
  */
 class Message(
     text: String,
     isSent: Boolean,
     val messageType: MessageType,
-    val promptID: Int
+    val promptID: Int,
+    existingTimestamp: Long? = null
 ) {
     // Use @JvmName to maintain Java compatibility - Java expects getIsSent()
     @get:JvmName("getIsSent")
@@ -33,7 +37,8 @@ class Message(
     var imagePath: String? = if (messageType == MessageType.IMAGE) text else null
         private set
 
-    val timestamp: Long = if (messageType != MessageType.SYSTEM) System.currentTimeMillis() else 0L
+    val timestamp: Long = existingTimestamp
+        ?: if (messageType != MessageType.SYSTEM) System.currentTimeMillis() else 0L
 
     var tokensPerSecond: Float = 0f
 
@@ -41,6 +46,20 @@ class Message(
 
     fun appendText(text: String) {
         this.text += text
+    }
+
+    /**
+     * Creates a new Message instance with the same state.
+     * Required for Compose strong skipping mode (default since Kotlin 2.0): composable functions
+     * compare unstable parameters by reference equality (===), so mutating an existing object and
+     * placing it back in a SnapshotStateList won't trigger recomposition. A new reference is needed.
+     */
+    fun copy(): Message {
+        val sourceText = if (messageType == MessageType.IMAGE) (imagePath ?: "") else text
+        return Message(sourceText, isSent, messageType, promptID, timestamp).also {
+            it.tokensPerSecond = tokensPerSecond
+            it.totalGenerationTime = totalGenerationTime
+        }
     }
 
     fun getFormattedTimestamp(): String {
