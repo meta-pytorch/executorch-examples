@@ -29,11 +29,18 @@ If you want to train your own LoRA adapters, [Unsloth](https://unsloth.ai/) prov
 
 ## Install ExecuTorch
 
-[Install from source](https://docs.pytorch.org/executorch/stable/using-executorch-building-from-source.html#install-executorch-pip-package-from-source):
+Install from a recent nightly build (recommended for LoRA export features):
+```bash
+pip install executorch==1.1.0.devYYYYMMDD --extra-index-url https://download.pytorch.org/whl/nightly/cpu
+```
+
+Use a recent nightly, as some LoRA export features are not available in executorch==1.0.0.
+
+Alternatively, [install from source](https://docs.pytorch.org/executorch/stable/using-executorch-building-from-source.html#install-executorch-pip-package-from-source):
 
 ```bash
 # Navigate to the executorch submodule
-cd ~/executorch-examples/program-data-separation/cpp/executorch
+cd ~/executorch-examples/third-party/executorch
 
 # Update submodules
 git submodule sync
@@ -42,13 +49,6 @@ git submodule update --init --recursive
 # Install ExecuTorch pip package
 ./install_executorch.sh --editable
 ```
-
-Alternatively, install from a recent nightly build:
-```bash
-pip install executorch==1.1.0.devYYYYMMDD --extra-index-url https://download.pytorch.org/whl/nightly/cpu
-```
-
-Use main or a recent nightly, as some features are not available in executorch==1.0.0.
 
 ## Export models
 
@@ -87,20 +87,19 @@ models/
 
 ## Install runtime dependencies
 
-The ExecuTorch repository is configured as a git submodule at `~/executorch-examples/program-data-separation/cpp/executorch`. To initialize it:
+The ExecuTorch repository is configured as a git submodule at `~/executorch-examples/third-party/executorch`, with `program-data-separation/cpp/executorch` being a symlink to it. To initialize:
 
 ```bash
 cd ~/executorch-examples/
 
 # Update submodules
-git submodule update --remote program-data-separation/cpp/executorch
 git submodule sync
 git submodule update --init --recursive
 ```
 
 Install dev requirements for ExecuTorch:
 ```bash
-cd ~/executorch-examples/program-data-separation/cpp/executorch
+cd ~/executorch-examples/third-party/executorch
 pip install -r requirements-dev.txt
 ```
 
