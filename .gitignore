@@ -19,20 +19,13 @@ xcuserdata/
 .swiftpm/
 *.xcworkspace/
 *.xcframework/
-*.iml
 
+# Android / IntelliJ
+*.iml
 .gradle
-/local.properties
-./idea
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
+.idea/
+local.properties
 /captures
 .externalNativeBuild
 .cxx
-local.properties
 *.aar
