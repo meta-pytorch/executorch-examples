@@ -1,8 +1,7 @@
-package com.example.parakeetapp
+package com.example.asr
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder

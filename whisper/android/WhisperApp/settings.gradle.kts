@@ -21,4 +21,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "Whisper App"
 include(":app")
+includeBuild("../../../asr/android/shared")
  

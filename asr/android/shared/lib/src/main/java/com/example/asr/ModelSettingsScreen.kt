@@ -1,4 +1,4 @@
-package com.example.whisperapp
+package com.example.asr
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -12,17 +12,23 @@ import androidx.compose.ui.unit.dp
 
 /**
  * Settings screen for selecting model files.
+ *
+ * @param showPreprocessor Whether to show the preprocessor file selection row.
+ *                         Set to true for Whisper, false for Parakeet.
  */
 @Composable
 fun ModelSettingsScreen(
     viewModel: ModelSettingsViewModel,
     onBackClick: () -> Unit,
-    onDownloadClick: () -> Unit
+    onDownloadClick: () -> Unit,
+    showPreprocessor: Boolean = false
 ) {
     var showModelDialog by remember { mutableStateOf(false) }
     var showTokenizerDialog by remember { mutableStateOf(false) }
     var showPreprocessorDialog by remember { mutableStateOf(false) }
     var showDataDialog by remember { mutableStateOf(false) }
+
+    val defaultDirectory = viewModel.defaultDirectory
 
     Column(
         modifier = Modifier
@@ -63,21 +69,23 @@ fun ModelSettingsScreen(
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        // Preprocessor file selection (optional)
-        FileSelectionRow(
-            label = "Preprocessor (.pte) - Optional",
-            selectedPath = viewModel.modelSettings.preprocessorPath,
-            required = false,
-            onClick = {
-                viewModel.refreshFileLists()
-                showPreprocessorDialog = true
-            },
-            onClear = if (viewModel.modelSettings.hasPreprocessor()) {
-                { viewModel.clearPreprocessor() }
-            } else null
-        )
+        // Preprocessor file selection (optional, Whisper only)
+        if (showPreprocessor) {
+            FileSelectionRow(
+                label = "Preprocessor (.pte) - Optional",
+                selectedPath = viewModel.modelSettings.preprocessorPath,
+                required = false,
+                onClick = {
+                    viewModel.refreshFileLists()
+                    showPreprocessorDialog = true
+                },
+                onClear = if (viewModel.modelSettings.hasPreprocessor()) {
+                    { viewModel.clearPreprocessor() }
+                } else null
+            )
 
-        Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+        }
 
         // Data file selection (optional)
         FileSelectionRow(
@@ -108,13 +116,13 @@ fun ModelSettingsScreen(
         // Status indicator
         if (viewModel.isReadyForInference()) {
             Text(
-                text = "✓ Ready for inference",
+                text = "\u2713 Ready for inference",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary
             )
         } else {
             Text(
-                text = "⚠ Model and Tokenizer are required",
+                text = "\u26A0 Model and Tokenizer are required",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.error
             )
@@ -133,25 +141,27 @@ fun ModelSettingsScreen(
         // Info text
         Spacer(modifier = Modifier.height(16.dp))
         Text(
-            text = "Scanning: ${ModelSettings.DEFAULT_DIRECTORY} and app storage",
+            text = "Scanning: $defaultDirectory and app storage",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
-        if (viewModel.modelSettings.hasPreprocessor()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "Preprocessor will convert WAV to mel-spectrogram",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        } else {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = "No preprocessor: WAV audio will be used directly",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        if (showPreprocessor) {
+            if (viewModel.modelSettings.hasPreprocessor()) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Preprocessor will convert WAV to mel-spectrogram",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "No preprocessor: WAV audio will be used directly",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 
@@ -161,6 +171,7 @@ fun ModelSettingsScreen(
             title = "Select Model File",
             files = viewModel.availableModels,
             currentSelection = viewModel.modelSettings.modelPath,
+            defaultDirectory = defaultDirectory,
             onDismiss = { showModelDialog = false },
             onSelect = {
                 viewModel.selectModel(it)
@@ -174,6 +185,7 @@ fun ModelSettingsScreen(
             title = "Select Tokenizer File",
             files = viewModel.availableTokenizers,
             currentSelection = viewModel.modelSettings.tokenizerPath,
+            defaultDirectory = defaultDirectory,
             onDismiss = { showTokenizerDialog = false },
             onSelect = {
                 viewModel.selectTokenizer(it)
@@ -182,11 +194,12 @@ fun ModelSettingsScreen(
         )
     }
 
-    if (showPreprocessorDialog) {
+    if (showPreprocessor && showPreprocessorDialog) {
         FileSelectionDialog(
             title = "Select Preprocessor (Optional)",
             files = viewModel.availablePreprocessors,
             currentSelection = viewModel.modelSettings.preprocessorPath,
+            defaultDirectory = defaultDirectory,
             onDismiss = { showPreprocessorDialog = false },
             onSelect = {
                 viewModel.selectPreprocessor(it)
@@ -201,6 +214,7 @@ fun ModelSettingsScreen(
             title = "Select Data File (Optional)",
             files = viewModel.availableDataFiles,
             currentSelection = viewModel.modelSettings.dataPath,
+            defaultDirectory = defaultDirectory,
             onDismiss = { showDataDialog = false },
             onSelect = {
                 viewModel.selectDataFile(it)
@@ -278,6 +292,7 @@ fun FileSelectionDialog(
     title: String,
     files: List<String>,
     currentSelection: String,
+    defaultDirectory: String,
     onDismiss: () -> Unit,
     onSelect: (String) -> Unit,
     allowNone: Boolean = false
@@ -288,10 +303,10 @@ fun FileSelectionDialog(
         text = {
             if (files.isEmpty()) {
                 Column {
-                    Text("No files found. Download from the setup screen or use adb push to ${ModelSettings.DEFAULT_DIRECTORY}")
+                    Text("No files found. Download from the setup screen or use adb push to $defaultDirectory")
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Use adb to push files:\nadb push <file> ${ModelSettings.DEFAULT_DIRECTORY}/",
+                        text = "Use adb to push files:\nadb push <file> $defaultDirectory/",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

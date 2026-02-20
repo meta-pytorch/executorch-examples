@@ -19,6 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Parakeet App"
-include(":app")
-includeBuild("../../../asr/android/shared")
+rootProject.name = "asr-shared"
+include(":lib")

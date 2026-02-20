@@ -1,10 +1,10 @@
-package com.example.whisperapp
+package com.example.asr
 
 /**
- * Data class representing the model file settings for Whisper inference.
+ * Data class representing the model file settings for ASR inference.
  *
- * @param modelPath Path to the main Whisper model (.pte file)
- * @param tokenizerPath Path to the tokenizer file (.json or .bin file)
+ * @param modelPath Path to the main model (.pte file)
+ * @param tokenizerPath Path to the tokenizer file (.json, .bin, or .model file)
  * @param preprocessorPath Optional path to the preprocessor model (.pte file).
  *                         If empty, raw WAV audio will be used directly.
  * @param dataPath Optional path to external data file (.ptd file)
@@ -32,7 +32,6 @@ data class ModelSettings(
     }
 
     companion object {
-        const val DEFAULT_DIRECTORY = "/data/local/tmp/whisper"
         val MODEL_EXTENSIONS = arrayOf(".pte")
         val TOKENIZER_EXTENSIONS = arrayOf(".json", ".bin", ".model")
         val DATA_EXTENSIONS = arrayOf(".ptd")

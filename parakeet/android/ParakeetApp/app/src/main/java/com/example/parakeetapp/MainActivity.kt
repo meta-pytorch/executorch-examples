@@ -45,7 +45,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
-import com.example.parakeetapp.ui.theme.ParakeetAppTheme
+import com.example.asr.ModelSettings
+import com.example.asr.ModelSettingsScreen
+import com.example.asr.ModelSettingsViewModel
+import com.example.asr.ui.theme.AsrTheme
 import org.pytorch.executorch.extension.parakeet.ParakeetModule
 import java.io.File
 import java.io.FileOutputStream
@@ -100,8 +103,8 @@ class MainActivity : ComponentActivity() {
 
         // Initialize view models
         viewModel = ViewModelProvider(this)[ModelSettingsViewModel::class.java]
-        viewModel.setAppStorageDirectory(filesDir.absolutePath)
-        viewModel.initialize()
+        viewModel.setAppStorageDirectory("${filesDir.absolutePath}/parakeet")
+        viewModel.initialize("/data/local/tmp/parakeet")
 
         downloadViewModel = ViewModelProvider(this)[ModelDownloadViewModel::class.java]
         downloadViewModel.initialize(filesDir.absolutePath)
@@ -120,7 +123,7 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            ParakeetAppTheme {
+            AsrTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -146,6 +149,7 @@ class MainActivity : ComponentActivity() {
                                 statusText = statusText,
                                 transcriptionResult = transcriptionOutput,
                                 modelSettings = viewModel.modelSettings,
+                                defaultDirectory = viewModel.defaultDirectory,
                                 availableWavFiles = viewModel.availableWavFiles,
                                 showWavFileDialog = showWavFileDialog,
                                 onRecordStart = { startRecording() },
@@ -488,6 +492,7 @@ fun ParakeetScreen(
     statusText: String,
     transcriptionResult: String,
     modelSettings: ModelSettings,
+    defaultDirectory: String,
     availableWavFiles: List<String>,
     showWavFileDialog: Boolean,
     onRecordStart: () -> Unit,
@@ -659,6 +664,7 @@ fun ParakeetScreen(
     if (showWavFileDialog) {
         WavFileSelectionDialog(
             files = availableWavFiles,
+            defaultDirectory = defaultDirectory,
             onDismiss = onWavDialogDismiss,
             onSelect = onWavFileSelected
         )
@@ -668,6 +674,7 @@ fun ParakeetScreen(
 @Composable
 fun WavFileSelectionDialog(
     files: List<String>,
+    defaultDirectory: String,
     onDismiss: () -> Unit,
     onSelect: (String) -> Unit
 ) {
@@ -679,10 +686,10 @@ fun WavFileSelectionDialog(
         text = {
             if (files.isEmpty()) {
                 Column {
-                    Text("No WAV files found in ${ModelSettings.DEFAULT_DIRECTORY}")
+                    Text("No WAV files found in $defaultDirectory")
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Use adb to push WAV files:\nadb push audio.wav ${ModelSettings.DEFAULT_DIRECTORY}/",
+                        text = "Use adb to push WAV files:\nadb push audio.wav $defaultDirectory/",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

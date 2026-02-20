@@ -1,4 +1,4 @@
-package com.example.whisperapp
+package com.example.asr
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,20 +33,33 @@ class ModelSettingsViewModel : ViewModel() {
     var errorMessage by mutableStateOf<String?>(null)
         private set
 
+    var defaultDirectory: String = ""
+        private set
+
+    private var supportsPreprocessor: Boolean = false
     private var appStorageDirectory: String? = null
 
     /**
-     * Initialize the ViewModel by scanning for available files.
+     * Initialize the ViewModel with app-specific configuration.
+     *
+     * @param defaultDirectory The default directory to scan for model files
+     *                         (e.g., "/data/local/tmp/whisper" or "/data/local/tmp/parakeet")
+     * @param supportsPreprocessor Whether the app supports preprocessor file selection
      */
-    fun initialize() {
+    fun initialize(defaultDirectory: String, supportsPreprocessor: Boolean = false) {
+        this.defaultDirectory = defaultDirectory
+        this.supportsPreprocessor = supportsPreprocessor
         refreshFileLists()
     }
 
     /**
-     * Set the app-internal storage directory (filesDir/whisper) so we can scan it too.
+     * Set the app-internal storage directory so we can scan it too.
+     *
+     * @param dir The full path to the app storage directory
+     *            (e.g., "${filesDir}/whisper" or "${filesDir}/parakeet")
      */
-    fun setAppStorageDirectory(filesDir: String) {
-        appStorageDirectory = "$filesDir/whisper"
+    fun setAppStorageDirectory(dir: String) {
+        appStorageDirectory = dir
         refreshFileLists()
     }
 
@@ -55,13 +68,15 @@ class ModelSettingsViewModel : ViewModel() {
      */
     fun refreshFileLists() {
         val directories = buildList {
-            add(ModelSettings.DEFAULT_DIRECTORY)
+            if (defaultDirectory.isNotEmpty()) add(defaultDirectory)
             appStorageDirectory?.let { add(it) }
         }
 
         availableModels = listLocalFilesFromDirs(directories, ModelSettings.MODEL_EXTENSIONS)
         availableTokenizers = listLocalFilesFromDirs(directories, ModelSettings.TOKENIZER_EXTENSIONS)
-        availablePreprocessors = listLocalFilesFromDirs(directories, ModelSettings.MODEL_EXTENSIONS)
+        if (supportsPreprocessor) {
+            availablePreprocessors = listLocalFilesFromDirs(directories, ModelSettings.MODEL_EXTENSIONS)
+        }
         availableDataFiles = listLocalFilesFromDirs(directories, ModelSettings.DATA_EXTENSIONS)
         availableWavFiles = listLocalFilesFromDirs(directories, WAV_EXTENSIONS)
 

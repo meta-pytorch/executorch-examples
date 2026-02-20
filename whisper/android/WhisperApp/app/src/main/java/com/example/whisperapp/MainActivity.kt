@@ -43,7 +43,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
-import com.example.whisperapp.ui.theme.WhisperAppTheme
+import com.example.asr.ModelSettings
+import com.example.asr.ModelSettingsScreen
+import com.example.asr.ModelSettingsViewModel
+import com.example.asr.ui.theme.AsrTheme
 import org.pytorch.executorch.extension.asr.AsrCallback
 import org.pytorch.executorch.extension.asr.AsrModule
 import java.io.File
@@ -106,8 +109,8 @@ class MainActivity : ComponentActivity(), AsrCallback {
 
         // Initialize view models
         viewModel = ViewModelProvider(this)[ModelSettingsViewModel::class.java]
-        viewModel.setAppStorageDirectory(filesDir.absolutePath)
-        viewModel.initialize()
+        viewModel.setAppStorageDirectory("${filesDir.absolutePath}/whisper")
+        viewModel.initialize("/data/local/tmp/whisper", supportsPreprocessor = true)
 
         downloadViewModel = ViewModelProvider(this)[ModelDownloadViewModel::class.java]
         downloadViewModel.initialize(filesDir.absolutePath)
@@ -126,7 +129,7 @@ class MainActivity : ComponentActivity(), AsrCallback {
         }
 
         setContent {
-            WhisperAppTheme {
+            AsrTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -152,6 +155,7 @@ class MainActivity : ComponentActivity(), AsrCallback {
                                 statusText = statusText,
                                 transcriptionResult = transcriptionOutput,
                                 modelSettings = viewModel.modelSettings,
+                                defaultDirectory = viewModel.defaultDirectory,
                                 availableWavFiles = viewModel.availableWavFiles,
                                 showWavFileDialog = showWavFileDialog,
                                 onRecordClick = { onRecordButtonClick() },
@@ -174,7 +178,8 @@ class MainActivity : ComponentActivity(), AsrCallback {
                             ModelSettingsScreen(
                                 viewModel = viewModel,
                                 onBackClick = { currentScreen = Screen.MAIN },
-                                onDownloadClick = { currentScreen = Screen.DOWNLOAD }
+                                onDownloadClick = { currentScreen = Screen.DOWNLOAD },
+                                showPreprocessor = true
                             )
                         }
                     }
@@ -527,6 +532,7 @@ fun WhisperScreen(
     statusText: String,
     transcriptionResult: String,
     modelSettings: ModelSettings,
+    defaultDirectory: String,
     availableWavFiles: List<String>,
     showWavFileDialog: Boolean,
     onRecordClick: () -> Unit,
@@ -680,6 +686,7 @@ fun WhisperScreen(
     if (showWavFileDialog) {
         WavFileSelectionDialog(
             files = availableWavFiles,
+            defaultDirectory = defaultDirectory,
             onDismiss = onWavDialogDismiss,
             onSelect = onWavFileSelected
         )
@@ -689,6 +696,7 @@ fun WhisperScreen(
 @Composable
 fun WavFileSelectionDialog(
     files: List<String>,
+    defaultDirectory: String,
     onDismiss: () -> Unit,
     onSelect: (String) -> Unit
 ) {
@@ -700,10 +708,10 @@ fun WavFileSelectionDialog(
         text = {
             if (files.isEmpty()) {
                 Column {
-                    Text("No WAV files found in ${ModelSettings.DEFAULT_DIRECTORY}")
+                    Text("No WAV files found in $defaultDirectory")
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Use adb to push WAV files:\nadb push audio.wav ${ModelSettings.DEFAULT_DIRECTORY}/",
+                        text = "Use adb to push WAV files:\nadb push audio.wav $defaultDirectory/",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

@@ -1,4 +1,4 @@
-package com.example.whisperapp
+package com.example.asr
 
 import org.junit.Assert.*
 import org.junit.Test
@@ -12,7 +12,7 @@ class ModelSettingsTest {
     fun `isValid returns false when model path is empty`() {
         val settings = ModelSettings(
             modelPath = "",
-            tokenizerPath = "/data/local/tmp/whisper/tokenizer.json"
+            tokenizerPath = "/data/local/tmp/asr/tokenizer.json"
         )
         assertFalse(settings.isValid())
     }
@@ -20,7 +20,7 @@ class ModelSettingsTest {
     @Test
     fun `isValid returns false when tokenizer path is empty`() {
         val settings = ModelSettings(
-            modelPath = "/data/local/tmp/whisper/model.pte",
+            modelPath = "/data/local/tmp/asr/model.pte",
             tokenizerPath = ""
         )
         assertFalse(settings.isValid())
@@ -35,8 +35,8 @@ class ModelSettingsTest {
     @Test
     fun `isValid returns true when model and tokenizer are set`() {
         val settings = ModelSettings(
-            modelPath = "/data/local/tmp/whisper/model.pte",
-            tokenizerPath = "/data/local/tmp/whisper/tokenizer.json"
+            modelPath = "/data/local/tmp/asr/model.pte",
+            tokenizerPath = "/data/local/tmp/asr/tokenizer.json"
         )
         assertTrue(settings.isValid())
     }
@@ -44,9 +44,19 @@ class ModelSettingsTest {
     @Test
     fun `isValid returns true even without preprocessor`() {
         val settings = ModelSettings(
-            modelPath = "/data/local/tmp/whisper/model.pte",
-            tokenizerPath = "/data/local/tmp/whisper/tokenizer.json",
+            modelPath = "/data/local/tmp/asr/model.pte",
+            tokenizerPath = "/data/local/tmp/asr/tokenizer.json",
             preprocessorPath = ""
+        )
+        assertTrue(settings.isValid())
+    }
+
+    @Test
+    fun `isValid returns true with data path`() {
+        val settings = ModelSettings(
+            modelPath = "/data/local/tmp/asr/model.pte",
+            tokenizerPath = "/data/local/tmp/asr/tokenizer.model",
+            dataPath = "/data/local/tmp/asr/data.ptd"
         )
         assertTrue(settings.isValid())
     }
@@ -54,8 +64,8 @@ class ModelSettingsTest {
     @Test
     fun `hasPreprocessor returns false when preprocessor is empty`() {
         val settings = ModelSettings(
-            modelPath = "/data/local/tmp/whisper/model.pte",
-            tokenizerPath = "/data/local/tmp/whisper/tokenizer.json",
+            modelPath = "/data/local/tmp/asr/model.pte",
+            tokenizerPath = "/data/local/tmp/asr/tokenizer.json",
             preprocessorPath = ""
         )
         assertFalse(settings.hasPreprocessor())
@@ -64,8 +74,8 @@ class ModelSettingsTest {
     @Test
     fun `hasPreprocessor returns false when preprocessor is blank`() {
         val settings = ModelSettings(
-            modelPath = "/data/local/tmp/whisper/model.pte",
-            tokenizerPath = "/data/local/tmp/whisper/tokenizer.json",
+            modelPath = "/data/local/tmp/asr/model.pte",
+            tokenizerPath = "/data/local/tmp/asr/tokenizer.json",
             preprocessorPath = "   "
         )
         assertFalse(settings.hasPreprocessor())
@@ -74,16 +84,11 @@ class ModelSettingsTest {
     @Test
     fun `hasPreprocessor returns true when preprocessor is set`() {
         val settings = ModelSettings(
-            modelPath = "/data/local/tmp/whisper/model.pte",
-            tokenizerPath = "/data/local/tmp/whisper/tokenizer.json",
-            preprocessorPath = "/data/local/tmp/whisper/preprocess.pte"
+            modelPath = "/data/local/tmp/asr/model.pte",
+            tokenizerPath = "/data/local/tmp/asr/tokenizer.json",
+            preprocessorPath = "/data/local/tmp/asr/preprocess.pte"
         )
         assertTrue(settings.hasPreprocessor())
-    }
-
-    @Test
-    fun `default directory constant is correct`() {
-        assertEquals("/data/local/tmp/whisper", ModelSettings.DEFAULT_DIRECTORY)
     }
 
     @Test
