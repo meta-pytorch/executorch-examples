@@ -78,6 +78,7 @@ class ETImage(
                     rgbValues[(y * width + x) + 2 * height * width] = blue.toByte()
                 }
             }
+            bitmap.recycle()
             return rgbValues
         } catch (e: FileNotFoundException) {
             throw RuntimeException(e)
