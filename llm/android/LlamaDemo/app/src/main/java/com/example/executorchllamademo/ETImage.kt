@@ -87,15 +87,21 @@ class ETImage(
     private fun resizeImage(uri: Uri, sideSize: Int): Bitmap? {
         val inputStream = contentResolver.openInputStream(uri)
         if (inputStream == null) {
-            ETLogging.getInstance().log("Unable to resize image, input streams is null")
+            ETLogging.getInstance().log("Unable to resize image, input stream is null")
             return null
         }
-        val bitmap = BitmapFactory.decodeStream(inputStream)
+        val bitmap = inputStream.use {
+            BitmapFactory.decodeStream(it)
+        }
         if (bitmap == null) {
             ETLogging.getInstance().log("Unable to resize image, bitmap during decode stream is null")
             return null
         }
-
-        return Bitmap.createScaledBitmap(bitmap, sideSize, sideSize, false)
+        val scaled = Bitmap.createScaledBitmap(bitmap, sideSize, sideSize, true)  // ← bilinear
+        if (scaled !== bitmap) {
+            bitmap.recycle()
+        }
+        return scaled
     }
+
 }
