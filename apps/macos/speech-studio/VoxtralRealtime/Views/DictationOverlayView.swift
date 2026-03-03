@@ -3,6 +3,26 @@ import SwiftUI
 struct DictationOverlayView: View {
     var store: TranscriptStore
 
+    private var lineCount: Int {
+        let text = store.dictationText
+        guard !text.isEmpty else { return 0 }
+        let width: CGFloat = 268 // 300 - 32 padding
+        let font = NSFont.preferredFont(forTextStyle: .callout)
+        let attrs: [NSAttributedString.Key: Any] = [.font: font]
+        let size = (text as NSString).boundingRect(
+            with: CGSize(width: width, height: .greatestFiniteMagnitude),
+            options: [.usesLineFragmentOrigin, .usesFontLeading],
+            attributes: attrs
+        )
+        return max(1, Int(ceil(size.height / font.pointSize)))
+    }
+
+    private var textHeight: CGFloat {
+        let lines = lineCount
+        if lines <= 2 { return 40 }
+        return min(CGFloat(lines) * 18, 200)
+    }
+
     var body: some View {
         VStack(spacing: 10) {
             AudioLevelView(level: store.audioLevel, barCount: 20)
@@ -20,9 +40,11 @@ struct DictationOverlayView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                         Color.clear.frame(height: 1).id("end")
                     }
-                    .frame(maxHeight: 60)
+                    .frame(height: textHeight)
                     .onChange(of: store.dictationText) {
-                        proxy.scrollTo("end", anchor: .bottom)
+                        withAnimation(.easeOut(duration: 0.15)) {
+                            proxy.scrollTo("end", anchor: .bottom)
+                        }
                     }
                 }
             }
@@ -33,6 +55,7 @@ struct DictationOverlayView: View {
         }
         .padding(16)
         .frame(width: 300)
+        .animation(.easeInOut(duration: 0.2), value: textHeight)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
         .overlay(
             RoundedRectangle(cornerRadius: 14)
