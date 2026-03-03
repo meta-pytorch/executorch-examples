@@ -25,6 +25,9 @@ final class TranscriptStore {
     var audioLevel: Float = 0
     var statusMessage = ""
 
+    var dictationText = ""
+    var isDictating = false
+
     var hasActiveSession: Bool { sessionState != .idle }
     var isTranscribing: Bool { sessionState == .transcribing }
     var isPaused: Bool { sessionState == .paused }
@@ -189,7 +192,9 @@ final class TranscriptStore {
             await withTaskGroup(of: Void.self) { group in
                 group.addTask { @MainActor [weak self] in
                     for await token in streams.tokens {
-                        if self?.hasActiveSession == true {
+                        if self?.isDictating == true {
+                            self?.dictationText += token
+                        } else if self?.hasActiveSession == true {
                             self?.liveTranscript += token
                         }
                     }
@@ -233,6 +238,40 @@ final class TranscriptStore {
                 }
             }
         }
+    }
+
+    // MARK: - Dictation
+
+    func startDictation() async {
+        guard !isDictating else { return }
+
+        if modelState != .ready {
+            await ensureRunnerLaunched()
+            while modelState == .loading {
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+            guard modelState == .ready else { return }
+        }
+
+        isDictating = true
+        dictationText = ""
+        audioLevel = 0
+
+        do {
+            try await runner.startAudioCapture()
+        } catch {
+            isDictating = false
+        }
+    }
+
+    func stopDictation() async -> String {
+        guard isDictating else { return "" }
+        await runner.stopAudioCapture()
+        isDictating = false
+        audioLevel = 0
+        let result = dictationText
+        dictationText = ""
+        return result
     }
 
     // MARK: - Session Management
