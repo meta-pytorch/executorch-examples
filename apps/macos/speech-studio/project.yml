@@ -22,8 +22,6 @@ targets:
         excludes:
           - "Resources/**"
       - path: VoxtralRealtime/Resources/Assets.xcassets
-        type: folder
-        buildPhase: resources
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.younghan.VoxtralRealtime
