@@ -14,11 +14,18 @@ final class Preferences {
         didSet { UserDefaults.standard.set(audioDeviceID, forKey: "audioDeviceID") }
     }
 
+    var silenceThreshold: Double {
+        didSet { UserDefaults.standard.set(silenceThreshold, forKey: "silenceThreshold") }
+    }
+
+    var silenceTimeout: Double {
+        didSet { UserDefaults.standard.set(silenceTimeout, forKey: "silenceTimeout") }
+    }
+
     var modelPath: String { "\(modelDirectory)/model-metal-int4.pte" }
     var tokenizerPath: String { "\(modelDirectory)/tekken.json" }
     var preprocessorPath: String { "\(modelDirectory)/preprocessor.pte" }
 
-    /// True when all paths resolve to the app bundle (self-contained distribution).
     var usingBundledResources: Bool {
         runnerPath.hasPrefix(Bundle.main.bundlePath)
             && modelDirectory.hasPrefix(Bundle.main.bundlePath)
@@ -30,14 +37,27 @@ final class Preferences {
         let bundleResources = Bundle.main.resourcePath ?? ""
 
         let bundledRunner = "\(bundleResources)/voxtral_realtime_runner"
+        let bundledModel = "\(bundleResources)/model-metal-int4.pte"
         let buildRunner = "\(home)/project/executorch/cmake-out/examples/models/voxtral_realtime/voxtral_realtime_runner"
 
-        self.runnerPath = defaults.string(forKey: "runnerPath")
-            ?? (FileManager.default.isExecutableFile(atPath: bundledRunner) ? bundledRunner : nil)
-            ?? buildRunner
-        self.modelDirectory = defaults.string(forKey: "modelDirectory")
-            ?? (FileManager.default.fileExists(atPath: "\(bundleResources)/model-metal-int4.pte") ? bundleResources : nil)
-            ?? "\(home)/voxtral_realtime_quant_metal"
+        let hasBundledRunner = FileManager.default.isExecutableFile(atPath: bundledRunner)
+        let hasBundledModel = FileManager.default.fileExists(atPath: bundledModel)
+
+        if hasBundledRunner {
+            self.runnerPath = bundledRunner
+        } else {
+            self.runnerPath = defaults.string(forKey: "runnerPath") ?? buildRunner
+        }
+
+        if hasBundledModel {
+            self.modelDirectory = bundleResources
+        } else {
+            self.modelDirectory = defaults.string(forKey: "modelDirectory")
+                ?? "\(home)/voxtral_realtime_quant_metal"
+        }
+
         self.audioDeviceID = defaults.string(forKey: "audioDeviceID")
+        self.silenceThreshold = defaults.object(forKey: "silenceThreshold") as? Double ?? 0.02
+        self.silenceTimeout = defaults.object(forKey: "silenceTimeout") as? Double ?? 2.0
     }
 }

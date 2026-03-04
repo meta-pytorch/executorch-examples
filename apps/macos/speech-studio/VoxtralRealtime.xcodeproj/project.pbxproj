@@ -54,7 +54,7 @@
 		D1FF01EEFDD18E056509CEB0 /* VoxtralRealtimeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VoxtralRealtimeApp.swift; sourceTree = "<group>"; };
 		D2245F740610F505B2D2905E /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		E0D0245890DF77D480572858 /* Session.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Session.swift; sourceTree = "<group>"; };
-		E4B018A732C7D539547855A3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder; name = Assets.xcassets; path = VoxtralRealtime/Resources/Assets.xcassets; sourceTree = SOURCE_ROOT; };
+		E4B018A732C7D539547855A3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */

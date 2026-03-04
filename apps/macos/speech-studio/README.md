@@ -71,6 +71,14 @@ open VoxtralRealtime.xcodeproj
 
 Build and run from Xcode (Cmd+R). The build script automatically bundles the runner binary, `libomp.dylib`, and model files into the app.
 
+### 6. Create a DMG with drag-to-Applications UI
+
+```bash
+./scripts/create_dmg.sh "./build/Build/Products/Release/Voxtral Realtime.app" "./VoxtralRealtime.dmg"
+```
+
+The script creates a DMG window that shows the app next to an Applications shortcut for drag-and-drop install. If prompted, allow Finder automation for `osascript`.
+
 ## Usage
 
 ### In-app transcription

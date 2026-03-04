@@ -14,10 +14,8 @@ final class DictationManager {
     private(set) var state: State = .idle
     var isListening: Bool { state == .listening }
 
-    private static let silenceTimeout: TimeInterval = 2.0
-    private static let silenceThreshold: Float = 0.02
-
     private let store: TranscriptStore
+    private let preferences: Preferences
     private var panel: DictationPanel?
     private var hotKeyRef: EventHotKeyRef?
     private var eventHandlerRef: EventHandlerRef?
@@ -25,8 +23,9 @@ final class DictationManager {
     private var lastVoiceTime: Date = .now
     private var targetApp: NSRunningApplication?
 
-    init(store: TranscriptStore) {
+    init(store: TranscriptStore, preferences: Preferences) {
         self.store = store
+        self.preferences = preferences
     }
 
     nonisolated func cleanup() {
@@ -160,14 +159,14 @@ final class DictationManager {
 
                 let level = self.store.audioLevel
 
-                if level > Self.silenceThreshold {
+                if level > Float(self.preferences.silenceThreshold) {
                     self.lastVoiceTime = .now
                 }
 
                 let silenceDuration = Date.now.timeIntervalSince(self.lastVoiceTime)
                 let hasText = !self.store.dictationText.isEmpty
 
-                if hasText && silenceDuration >= Self.silenceTimeout {
+                if hasText && silenceDuration >= self.preferences.silenceTimeout {
                     log.info("Auto-stop: \(String(format: "%.1f", silenceDuration))s silence (level: \(String(format: "%.4f", level)))")
                     await self.stopAndPaste()
                     break

@@ -1,3 +1,4 @@
+import AVFoundation
 import SwiftUI
 
 @main
@@ -11,7 +12,7 @@ struct VoxtralRealtimeApp: App {
         let s = TranscriptStore(preferences: prefs)
         _preferences = State(initialValue: prefs)
         _store = State(initialValue: s)
-        _dictation = State(initialValue: DictationManager(store: s))
+        _dictation = State(initialValue: DictationManager(store: s, preferences: prefs))
     }
 
     var body: some Scene {
@@ -20,10 +21,11 @@ struct VoxtralRealtimeApp: App {
                 .environment(store)
                 .environment(preferences)
                 .frame(minWidth: 600, minHeight: 400)
-                .onAppear {
+                .task {
                     if !DictationManager.checkAccessibility(prompt: false) {
                         _ = DictationManager.checkAccessibility(prompt: true)
                     }
+                    _ = await AVCaptureDevice.requestAccess(for: .audio)
                     dictation.registerHotKey()
                 }
         }
