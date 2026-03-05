@@ -12,9 +12,9 @@ A native macOS showcase app for [Voxtral-Mini-4B-Realtime](https://huggingface.c
 - **Silence detection** — dictation auto-stops after 2 seconds of silence
 - **Self-contained DMG** — runner binary, model weights, and runtime libraries all bundled
 
-## For End Users
+## Download
 
-Download the DMG, drag to Applications, and run. Everything is bundled — no model downloads, no terminal commands, no Python required.
+**End users**: download the latest DMG from [GitHub Releases](https://github.com/seyeong-han/executorch-examples/releases). The DMG is self-contained — runner binary, model weights (~6.2 GB), and runtime libraries are all bundled. No terminal, no Python, no model downloads required.
 
 ### Requirements
 
@@ -22,9 +22,9 @@ Download the DMG, drag to Applications, and run. Everything is bundled — no mo
 - Apple Silicon (M1/M2/M3/M4)
 - ~7 GB disk space
 
-### Usage
+## Usage
 
-#### In-app transcription
+### In-app transcription
 
 1. Click **Load Model** on the welcome screen (takes ~30s on first load)
 2. Click **Start Transcription** (or `Cmd+Shift+R`)
@@ -32,7 +32,7 @@ Download the DMG, drag to Applications, and run. Everything is bundled — no mo
 4. **Pause** (`Cmd+.`) / **Resume** (`Cmd+Shift+R`) within the same session
 5. **Done** (`Cmd+Return`) to save the session to history
 
-#### System-wide dictation
+### System-wide dictation
 
 1. Make sure the model is loaded
 2. Focus any text field in any app (Notes, Slack, browser, etc.)
@@ -41,7 +41,7 @@ Download the DMG, drag to Applications, and run. Everything is bundled — no mo
 5. Press **`Ctrl+Space`** again to stop, or wait for 2 seconds of silence
 6. The transcribed text is automatically pasted into the focused text field
 
-#### Keyboard shortcuts
+### Keyboard shortcuts
 
 | Shortcut | Action |
 |---|---|
@@ -55,18 +55,37 @@ Download the DMG, drag to Applications, and run. Everything is bundled — no mo
 
 ---
 
-## For Developers
+## Build from Source
 
-Build from source to develop or customize the app.
+Model files (~6.2 GB) are not included in the git repo. Developers must download them before building. The build script bundles everything into the `.app` so the resulting DMG is self-contained.
 
-### Prerequisites
+### Quick build (one command)
+
+If you already have ExecuTorch built and model files downloaded:
+
+```bash
+cd apps/macos/VoxtralRealtimeApp
+./scripts/build.sh
+```
+
+Or to download models and build in one step:
+
+```bash
+./scripts/build.sh --download-models
+```
+
+This validates all prerequisites, builds the app, and creates a DMG with all models bundled.
+
+### Step-by-step setup
+
+#### Prerequisites
 
 - macOS 14.0+ (Sonoma)
 - Apple Silicon (M1/M2/M3/M4)
 - Xcode 16+
 - [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
 
-### 1. Install ExecuTorch with Metal backend
+#### 1. Install ExecuTorch with Metal backend
 
 ```bash
 export EXECUTORCH_PATH="$HOME/executorch"
@@ -77,7 +96,7 @@ EXECUTORCH_BUILD_KERNELS_TORCHAO=1 TORCHAO_BUILD_EXPERIMENTAL_MPS=1 ./install_ex
 
 > We recommend installing in a new conda or venv environment. If you run into any installation problems, open an issue or have a look at the official [Voxtral Realtime installation guide](https://github.com/pytorch/executorch/tree/main/examples/models/voxtral_realtime).
 
-### 2. Build the voxtral realtime runner
+#### 2. Build the voxtral realtime runner
 
 ```bash
 cd ${EXECUTORCH_PATH}
@@ -89,7 +108,7 @@ The runner binary will be at:
 ${EXECUTORCH_PATH}/cmake-out/examples/models/voxtral_realtime/voxtral_realtime_runner
 ```
 
-### 3. Install runtime dependencies
+#### 3. Install runtime dependencies
 
 ```bash
 brew install libomp
@@ -101,7 +120,7 @@ Also install `sounddevice` for the CLI mic streaming script:
 pip install sounddevice
 ```
 
-### 4. Download model artifacts
+#### 4. Download model artifacts
 
 ```bash
 pip install huggingface_hub
@@ -116,7 +135,7 @@ This downloads three files (~6.2 GB total):
 
 HuggingFace repo: [`mistralai/Voxtral-Mini-4B-Realtime-2602-ExecuTorch`](https://huggingface.co/mistral-labs/Voxtral-Mini-4B-Realtime-2602-ExecuTorch)
 
-### 5. Test with CLI (optional)
+#### 5. Test with CLI (optional)
 
 Verify the runner works before building the app:
 
@@ -133,7 +152,7 @@ cd ${LOCAL_FOLDER} && chmod +x stream_audio.py
     --mic
 ```
 
-### 6. Build the app
+#### 6. Build the app
 
 ```bash
 cd apps/macos/VoxtralRealtimeApp
@@ -143,13 +162,15 @@ open VoxtralRealtime.xcodeproj
 
 Build and run from Xcode (`Cmd+R`). The post-compile build script automatically bundles the runner binary, `libomp.dylib`, and all model files into the `.app/Contents/Resources/`.
 
-### 7. Create a DMG
+#### 7. Create a DMG
 
 ```bash
 ./scripts/create_dmg.sh "./build/Build/Products/Release/Voxtral Realtime.app" "./VoxtralRealtime.dmg"
 ```
 
-The DMG includes the app with all model weights bundled — end users just drag to Applications.
+The script validates that all required files (runner, libomp, model weights, tokenizer) are present in the `.app` bundle before creating the DMG. If anything is missing, it will tell you exactly what's needed.
+
+The resulting DMG is self-contained — end users just drag to Applications and run.
 
 ---
 
