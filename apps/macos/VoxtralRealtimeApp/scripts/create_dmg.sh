@@ -11,10 +11,48 @@ if [[ -z "${APP_PATH}" || -z "${DMG_PATH}" ]]; then
 fi
 
 if [[ ! -d "${APP_PATH}" ]]; then
-  echo "App not found: ${APP_PATH}" >&2
+  echo "Error: App not found: ${APP_PATH}" >&2
   exit 1
 fi
 
+# ---------------------------------------------------------------------------
+# Validate bundled resources — refuse to create a DMG with missing files
+# ---------------------------------------------------------------------------
+RESOURCES="${APP_PATH}/Contents/Resources"
+REQUIRED_FILES=(
+  "voxtral_realtime_runner"
+  "libomp.dylib"
+  "model-metal-int4.pte"
+  "preprocessor.pte"
+  "tekken.json"
+)
+
+MISSING=()
+for f in "${REQUIRED_FILES[@]}"; do
+  if [[ ! -f "${RESOURCES}/${f}" ]]; then
+    MISSING+=("${f}")
+  fi
+done
+
+if [[ ${#MISSING[@]} -gt 0 ]]; then
+  echo "Error: The following required files are missing from ${RESOURCES}:" >&2
+  for f in "${MISSING[@]}"; do
+    echo "  - ${f}" >&2
+  done
+  echo "" >&2
+  echo "The DMG must be self-contained. Make sure you:" >&2
+  echo "  1. Downloaded model files:  hf download mistralai/Voxtral-Mini-4B-Realtime-2602-Executorch --local-dir ~/voxtral_realtime_quant_metal" >&2
+  echo "  2. Built the runner:        cd ~/executorch && make voxtral_realtime-metal" >&2
+  echo "  3. Installed libomp:        brew install libomp" >&2
+  echo "  4. Built in Release mode:   xcodebuild -scheme VoxtralRealtime -configuration Release" >&2
+  exit 1
+fi
+
+echo "✓ All required files present in app bundle"
+
+# ---------------------------------------------------------------------------
+# Create DMG with drag-to-Applications layout
+# ---------------------------------------------------------------------------
 APP_NAME="$(basename "${APP_PATH}")"
 WORK_DIR="$(mktemp -d)"
 STAGING_DIR="${WORK_DIR}/staging"
@@ -51,4 +89,5 @@ hdiutil detach "${DEVICE}" >/dev/null
 hdiutil convert "${DMG_RW}" -format UDZO -o "${DMG_PATH}" >/dev/null
 rm -rf "${WORK_DIR}"
 
-echo "Created ${DMG_PATH}"
+DMG_SIZE=$(du -sh "${DMG_PATH}" | cut -f1)
+echo "✓ Created ${DMG_PATH} (${DMG_SIZE})"

@@ -79,6 +79,9 @@ All three are injected into the SwiftUI environment via `.environment()`. Views 
 | 11 | Bundled runner + libomp + models via build script | Post-compile script in `project.yml` copies runner binary, patches `install_name_tool` for libomp, copies model files into .app Resources | Pre-project | active |
 | 12 | Bundle models in .app via build script, DMG ships self-contained | Non-technical users should not need to download models separately | Pre-project | active |
 | 13 | Preferences backed by UserDefaults with `didSet` writes | Simple, no framework dependency, auto-persists | Pre-project | active |
+| 14 | Distribute via GitHub Releases DMG (not git-bundled models) | Model files are ~6.2 GB, too large for git. Developer builds DMG with models bundled, uploads to Releases. End users download DMG. | 2026-03-05 | active |
+| 15 | `create_dmg.sh` validates bundled files before creating DMG | Prevents shipping an incomplete DMG missing model weights | 2026-03-05 | active |
+| 16 | `scripts/build.sh` automates full pipeline | One command: check prereqs → xcodegen → xcodebuild → create DMG. Supports `--download-models` flag. | 2026-03-05 | active |
 
 <!-- Status: active | superseded | revisiting -->
 
@@ -88,7 +91,7 @@ All three are injected into the SwiftUI environment via `.environment()`. Views 
 
 - Runner binary is a pre-built C++ executable (`voxtral_realtime_runner`) from ExecuTorch
 - Audio format: 16kHz mono f32le PCM piped to runner's stdin (no WAV header, raw bytes)
-- Model artifacts are ~6.2 GB total — bundled into .app Resources via post-compile build script
+- Model artifacts are ~6.2 GB total — not in git; developer downloads from HF, build script bundles into .app, DMG ships self-contained
 - Must use Hardened Runtime + sandbox for notarization (entitlements file currently empty)
 - macOS 14+ minimum (for `@Observable`, modern SwiftUI APIs)
 - Apple Silicon only (Metal backend requires M1+)
@@ -133,6 +136,8 @@ Things confirmed working — don't re-investigate these:
 - Health check: validates runner binary, model files, mic permission on startup
 - DMG creation: `scripts/create_dmg.sh` with drag-to-Applications layout
 - Build script: bundles runner binary, libomp.dylib, model files into .app Resources via post-compile script
+- Full build pipeline: `scripts/build.sh` validates prereqs, builds app, creates DMG in one command
+- DMG validation: `create_dmg.sh` refuses to create DMG if runner/models/libomp are missing from .app bundle
 - Runner stdout parsing: detects "Listening" for model ready, filters PyTorchObserver stats, strips ANSI escapes
 - Runner stderr parsing: extracts status messages for UI (Loading model, Loading tokenizer, Warming up, etc.)
 - Error flow: runner crash → RunnerError → ErrorBannerView with dismiss
@@ -239,6 +244,7 @@ When adding new features, follow these existing patterns:
 | Info.plist | `VoxtralRealtime/Info.plist` |
 | App icon assets | `VoxtralRealtime/Resources/Assets.xcassets/` |
 | DMG build script | `scripts/create_dmg.sh` |
+| Full build pipeline | `scripts/build.sh` |
 
 ### External dependencies
 
