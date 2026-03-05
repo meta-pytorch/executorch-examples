@@ -243,7 +243,18 @@ The app requests microphone access on first use. If denied:
 
 1. Open **System Settings → Privacy & Security → Microphone**
 2. Enable `Voxtral Realtime`
-3. Relaunch the app
+3. **Quit and relaunch** the app — macOS caches permission grants per process lifetime
+
+### Permission prompts don't appear (stale TCC entries)
+
+If you've built or installed the app multiple times (Debug builds, Release builds, DMG installs), macOS may have accumulated multiple permission entries for the same bundle ID. Reset them to get a clean slate:
+
+```bash
+tccutil reset Microphone com.younghan.VoxtralRealtime
+tccutil reset Accessibility com.younghan.VoxtralRealtime
+```
+
+Then quit and relaunch the app. You should see fresh permission prompts.
 
 ### No transcription output (waveform animates but no text)
 
