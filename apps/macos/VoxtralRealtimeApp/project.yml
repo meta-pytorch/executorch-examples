@@ -1,0 +1,85 @@
+name: VoxtralRealtime
+options:
+  bundleIdPrefix: org.pytorch.executorch
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "16.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    ENABLE_HARDENED_RUNTIME: YES
+
+targets:
+  VoxtralRealtime:
+    type: application
+    platform: macOS
+    sources:
+      - path: VoxtralRealtime
+        excludes:
+          - "Resources/**"
+      - path: VoxtralRealtime/Resources/Assets.xcassets
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.pytorch.executorch.VoxtralRealtime
+        PRODUCT_NAME: Voxtral Realtime
+        INFOPLIST_FILE: VoxtralRealtime/Info.plist
+        CODE_SIGN_ENTITLEMENTS: VoxtralRealtime/VoxtralRealtime.entitlements
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: "Voxtral Realtime needs microphone access to capture audio for on-device speech transcription."
+        COMBINE_HIDPI_IMAGES: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    entitlements:
+      path: VoxtralRealtime/VoxtralRealtime.entitlements
+      properties:
+        com.apple.security.cs.disable-library-validation: true
+        com.apple.security.device.audio-input: true
+    postCompileScripts:
+      - script: |
+          set -euo pipefail
+
+          ET_PATH="${EXECUTORCH_PATH:-${HOME}/executorch}"
+          RUNNER_SRC="${ET_PATH}/cmake-out/examples/models/voxtral_realtime/voxtral_realtime_runner"
+          MODEL_DIR="${MODEL_DIR:-${HOME}/voxtral_realtime_quant_metal}"
+          LIBOMP_SRC="/opt/homebrew/opt/libomp/lib/libomp.dylib"
+          DEST="${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources"
+
+          mkdir -p "${DEST}"
+
+          copy_if_newer() {
+            local src="$1" dst="$2"
+            if [ ! -f "${src}" ]; then
+              echo "warning: Not found: ${src}"
+              return
+            fi
+            if [ ! -f "${dst}" ] || [ "${src}" -nt "${dst}" ]; then
+              cp -fL "${src}" "${dst}"
+              echo "✓ Bundled $(basename "${dst}")"
+            else
+              echo "· $(basename "${dst}") up to date"
+            fi
+          }
+
+          # Runner binary
+          copy_if_newer "${RUNNER_SRC}" "${DEST}/voxtral_realtime_runner"
+          chmod +x "${DEST}/voxtral_realtime_runner" 2>/dev/null || true
+
+          # libomp (runner dependency)
+          copy_if_newer "${LIBOMP_SRC}" "${DEST}/libomp.dylib"
+
+          # Patch runner to find libomp via @executable_path (SIP strips DYLD_LIBRARY_PATH)
+          if [ -f "${DEST}/voxtral_realtime_runner" ] && [ -f "${DEST}/libomp.dylib" ]; then
+            install_name_tool -change /opt/llvm-openmp/lib/libomp.dylib @executable_path/libomp.dylib "${DEST}/voxtral_realtime_runner" 2>/dev/null || true
+            echo "✓ Patched runner rpath for libomp"
+          fi
+
+          # Model artifacts
+          copy_if_newer "${MODEL_DIR}/model-metal-int4.pte" "${DEST}/model-metal-int4.pte"
+          copy_if_newer "${MODEL_DIR}/preprocessor.pte" "${DEST}/preprocessor.pte"
+          copy_if_newer "${MODEL_DIR}/tekken.json" "${DEST}/tekken.json"
+        name: Bundle Runner & Model Artifacts
+        basedOnDependencyAnalysis: false
