@@ -18,7 +18,7 @@ actor AudioEngine {
         log.info("Hardware audio format: \(hwFormat.sampleRate)Hz, \(hwFormat.channelCount)ch")
 
         guard hwFormat.sampleRate > 0, hwFormat.channelCount > 0 else {
-            throw RunnerError.launchFailed(description: "No audio input device available (hw format: \(hwFormat))")
+            throw RunnerError.microphoneNotAvailable
         }
 
         let targetFormat = AVAudioFormat(

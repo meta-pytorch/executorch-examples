@@ -65,14 +65,8 @@ final class TranscriptStore {
     func startTranscription() async {
         guard sessionState == .idle else { return }
 
-        if healthResult?.micPermission == .notDetermined {
-            _ = await HealthCheck.requestMicrophoneAccess()
-            await runHealthCheck()
-        }
-        guard healthResult?.micPermission == .authorized else {
-            currentError = .microphonePermissionDenied
-            return
-        }
+        let micOK = await checkMicPermissionLive()
+        guard micOK else { return }
 
         if modelState != .ready {
             await ensureRunnerLaunched()
@@ -98,6 +92,9 @@ final class TranscriptStore {
 
     func resumeTranscription() async {
         guard sessionState == .paused else { return }
+
+        let micOK = await checkMicPermissionLive()
+        guard micOK else { return }
 
         if modelState != .ready {
             await ensureRunnerLaunched()
@@ -245,6 +242,9 @@ final class TranscriptStore {
     func startDictation() async {
         guard !isDictating else { return }
 
+        let micOK = await checkMicPermissionLive()
+        guard micOK else { return }
+
         if modelState != .ready {
             await ensureRunnerLaunched()
             while modelState == .loading {
@@ -303,6 +303,24 @@ final class TranscriptStore {
             tokenizerPath: preferences.tokenizerPath,
             preprocessorPath: preferences.preprocessorPath
         )
+    }
+
+    private func checkMicPermissionLive() async -> Bool {
+        let permission = await HealthCheck.liveMicPermission()
+
+        if permission == .notDetermined {
+            let granted = await HealthCheck.requestMicrophoneAccess()
+            if granted {
+                await runHealthCheck()
+                return true
+            }
+        }
+
+        if permission == .authorized { return true }
+
+        currentError = .microphonePermissionDenied
+        await runHealthCheck()
+        return false
     }
 
     // MARK: - Persistence

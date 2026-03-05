@@ -105,6 +105,16 @@ final class DictationManager {
     private func startListening() async {
         guard store.isModelReady || store.modelState == .unloaded else { return }
 
+        let micStatus = await HealthCheck.liveMicPermission()
+        if micStatus == .notDetermined {
+            _ = await HealthCheck.requestMicrophoneAccess()
+        }
+        guard await HealthCheck.liveMicPermission() == .authorized else {
+            log.error("Microphone permission not granted — cannot start dictation")
+            store.currentError = .microphonePermissionDenied
+            return
+        }
+
         if !store.isModelReady {
             await store.preloadModel()
             while store.modelState == .loading {
@@ -139,13 +149,22 @@ final class DictationManager {
 
         guard !text.isEmpty else { return }
 
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+
         if let app = targetApp {
             app.activate()
             log.info("Re-activated: \(app.localizedName ?? "?")")
         }
 
         try? await Task.sleep(for: .milliseconds(300))
-        pasteText(text)
+
+        if Self.checkAccessibility(prompt: false) {
+            pasteViaKeyEvent()
+        } else {
+            log.warning("Accessibility permission lost — text is on clipboard, prompting user to re-grant")
+            _ = Self.checkAccessibility(prompt: true)
+        }
     }
 
     // MARK: - Silence Detection
@@ -190,21 +209,23 @@ final class DictationManager {
 
     // MARK: - Paste
 
-    private func pasteText(_ text: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
+    private func pasteViaKeyEvent() {
+        guard let keyDown = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_ANSI_V), keyDown: true),
+              let keyUp = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_ANSI_V), keyDown: false)
+        else {
+            log.error("CGEvent creation failed — Accessibility permission is not granted for this binary. Remove the app from Accessibility settings, re-add it, and restart.")
+            return
+        }
 
-        let keyDown = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_ANSI_V), keyDown: true)
-        keyDown?.flags = .maskCommand
-        keyDown?.post(tap: .cgSessionEventTap)
+        keyDown.flags = .maskCommand
+        keyDown.post(tap: .cgSessionEventTap)
 
         usleep(50_000)
 
-        let keyUp = CGEvent(keyboardEventSource: nil, virtualKey: CGKeyCode(kVK_ANSI_V), keyDown: false)
-        keyUp?.flags = .maskCommand
-        keyUp?.post(tap: .cgSessionEventTap)
+        keyUp.flags = .maskCommand
+        keyUp.post(tap: .cgSessionEventTap)
 
-        log.info("Pasted \(text.count) chars via Cmd+V (clipboard set as fallback)")
+        log.info("Auto-pasted via Cmd+V")
     }
 
     // MARK: - Accessibility
