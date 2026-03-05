@@ -14,7 +14,7 @@ A native macOS showcase app for [Voxtral-Mini-4B-Realtime](https://huggingface.c
 
 ## Download
 
-**End users**: download the latest DMG from [GitHub Releases](https://github.com/seyeong-han/executorch-examples/releases). The DMG is self-contained — runner binary, model weights (~6.2 GB), and runtime libraries are all bundled. No terminal, no Python, no model downloads required.
+**End users**: download the latest DMG from [GitHub Releases](https://github.com/pytorch/executorch-examples/releases). The DMG is self-contained — runner binary, model weights (~6.2 GB), and runtime libraries are all bundled. No terminal, no Python, no model downloads required.
 
 ### Requirements
 
@@ -64,6 +64,7 @@ Model files (~6.2 GB) are not included in the git repo. The entire build chain �
 If you already have the conda env set up, ExecuTorch built, and models downloaded:
 
 ```bash
+conda create -n et-metal python=3.12 -y
 conda activate et-metal
 cd apps/macos/VoxtralRealtimeApp
 ./scripts/build.sh
@@ -72,6 +73,7 @@ cd apps/macos/VoxtralRealtimeApp
 Or to download models and build in one step:
 
 ```bash
+conda create -n et-metal python=3.12 -y
 conda activate et-metal
 ./scripts/build.sh --download-models
 ```
@@ -250,8 +252,8 @@ The app requests microphone access on first use. If denied:
 If you've built or installed the app multiple times (Debug builds, Release builds, DMG installs), macOS may have accumulated multiple permission entries for the same bundle ID. Reset them to get a clean slate:
 
 ```bash
-tccutil reset Microphone com.younghan.VoxtralRealtime
-tccutil reset Accessibility com.younghan.VoxtralRealtime
+tccutil reset Microphone org.pytorch.executorch.VoxtralRealtime
+tccutil reset Accessibility org.pytorch.executorch.VoxtralRealtime
 ```
 
 Then quit and relaunch the app. You should see fresh permission prompts.
@@ -263,7 +265,3 @@ This means audio is captured but the runner isn't producing tokens. Check:
 1. Console.app for `"Audio written: N bytes"` — confirms data flows to the runner
 2. Console.app for `"Pipe write failed"` — indicates broken pipe
 3. The runner may need a few seconds of speech before producing the first token
-
-## License
-
-Apache 2.0

@@ -13,6 +13,10 @@ build/
 *.pte
 *.ptd
 
+# DMG files (should be distributed via GitHub Releases)
+*.dmg
+*.dmg.*
+
 # Xcode
 xcuserdata/
 .build/
@@ -29,3 +33,7 @@ local.properties
 .externalNativeBuild
 .cxx
 *.aar
+
+node_modules/
+__pycache__/
+.cursor/
