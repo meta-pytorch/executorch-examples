@@ -21,8 +21,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 
-EXECUTORCH_PATH="${EXECUTORCH_PATH:-${HOME}/executorch}"
-MODEL_DIR="${MODEL_DIR:-${HOME}/voxtral_realtime_quant_metal}"
+export EXECUTORCH_PATH="${EXECUTORCH_PATH:-${HOME}/executorch}"
+export MODEL_DIR="${MODEL_DIR:-${HOME}/voxtral_realtime_quant_metal}"
 RUNNER_PATH="${EXECUTORCH_PATH}/cmake-out/examples/models/voxtral_realtime/voxtral_realtime_runner"
 LIBOMP_PATH="/opt/homebrew/opt/libomp/lib/libomp.dylib"
 EXPECTED_CONDA_ENV="et-metal"

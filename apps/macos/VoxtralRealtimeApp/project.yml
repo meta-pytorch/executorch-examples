@@ -28,7 +28,6 @@ targets:
         PRODUCT_NAME: Voxtral Realtime
         INFOPLIST_FILE: VoxtralRealtime/Info.plist
         CODE_SIGN_ENTITLEMENTS: VoxtralRealtime/VoxtralRealtime.entitlements
-        CODE_SIGN_ALLOW_ENTITLEMENTS_MODIFICATION: YES
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_NSMicrophoneUsageDescription: "Voxtral Realtime needs microphone access to capture audio for on-device speech transcription."
         COMBINE_HIDPI_IMAGES: YES
@@ -36,6 +35,9 @@ targets:
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
     entitlements:
       path: VoxtralRealtime/VoxtralRealtime.entitlements
+      properties:
+        com.apple.security.cs.disable-library-validation: true
+        com.apple.security.device.audio-input: true
     postCompileScripts:
       - script: |
           set -euo pipefail
