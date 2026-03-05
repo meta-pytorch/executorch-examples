@@ -57,13 +57,14 @@ A native macOS showcase app for [Voxtral-Mini-4B-Realtime](https://huggingface.c
 
 ## Build from Source
 
-Model files (~6.2 GB) are not included in the git repo. Developers must download them before building. The build script bundles everything into the `.app` so the resulting DMG is self-contained.
+Model files (~6.2 GB) are not included in the git repo. The entire build chain — ExecuTorch installation, runner compilation, model downloading — runs inside a conda environment with Metal (MPS) backend support. The build script bundles everything into the `.app` so the resulting DMG is self-contained.
 
-### Quick build (one command)
+### Quick build
 
-If you already have ExecuTorch built and model files downloaded:
+If you already have the conda env set up, ExecuTorch built, and models downloaded:
 
 ```bash
+conda activate et-metal
 cd apps/macos/VoxtralRealtimeApp
 ./scripts/build.sh
 ```
@@ -71,21 +72,37 @@ cd apps/macos/VoxtralRealtimeApp
 Or to download models and build in one step:
 
 ```bash
+conda activate et-metal
 ./scripts/build.sh --download-models
 ```
 
-This validates all prerequisites, builds the app, and creates a DMG with all models bundled.
+The script checks that you're in a conda env, validates all prerequisites, builds the app, and creates a DMG with all models bundled. Run `./scripts/build.sh --help` for all options.
 
-### Step-by-step setup
+### Full setup (from scratch)
 
 #### Prerequisites
 
 - macOS 14.0+ (Sonoma)
 - Apple Silicon (M1/M2/M3/M4)
 - Xcode 16+
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
+- [Conda](https://docs.conda.io/en/latest/miniconda.html) (Miniconda or Anaconda)
 
-#### 1. Install ExecuTorch with Metal backend
+```bash
+brew install xcodegen libomp
+```
+
+#### 1. Create and activate the conda environment
+
+All subsequent steps must run inside this environment. The conda env isolates the Python packages and C++ build artifacts that ExecuTorch needs.
+
+```bash
+conda create -n et-metal python=3.10 -y
+conda activate et-metal
+```
+
+> You must run `conda activate et-metal` in every new terminal session before building or running the runner.
+
+#### 2. Install ExecuTorch with Metal backend
 
 ```bash
 export EXECUTORCH_PATH="$HOME/executorch"
@@ -94,9 +111,9 @@ cd ${EXECUTORCH_PATH}
 EXECUTORCH_BUILD_KERNELS_TORCHAO=1 TORCHAO_BUILD_EXPERIMENTAL_MPS=1 ./install_executorch.sh
 ```
 
-> We recommend installing in a new conda or venv environment. If you run into any installation problems, open an issue or have a look at the official [Voxtral Realtime installation guide](https://github.com/pytorch/executorch/tree/main/examples/models/voxtral_realtime).
+This installs ExecuTorch with the Metal (MPS) backend enabled, which is required for Apple Silicon GPU acceleration. If you run into installation problems, see the official [Voxtral Realtime installation guide](https://github.com/pytorch/executorch/tree/main/examples/models/voxtral_realtime).
 
-#### 2. Build the voxtral realtime runner
+#### 3. Build the voxtral realtime runner
 
 ```bash
 cd ${EXECUTORCH_PATH}
@@ -108,22 +125,18 @@ The runner binary will be at:
 ${EXECUTORCH_PATH}/cmake-out/examples/models/voxtral_realtime/voxtral_realtime_runner
 ```
 
-#### 3. Install runtime dependencies
+#### 4. Install Python packages
 
 ```bash
-brew install libomp
-export DYLD_LIBRARY_PATH=/usr/lib:$(brew --prefix libomp)/lib
+pip install huggingface_hub sounddevice
 ```
 
-Also install `sounddevice` for the CLI mic streaming script:
-```bash
-pip install sounddevice
-```
+- `huggingface_hub` — to download model artifacts from HuggingFace
+- `sounddevice` — for the CLI mic streaming test script
 
-#### 4. Download model artifacts
+#### 5. Download model artifacts
 
 ```bash
-pip install huggingface_hub
 export LOCAL_FOLDER="$HOME/voxtral_realtime_quant_metal"
 hf download mistralai/Voxtral-Mini-4B-Realtime-2602-Executorch --local-dir ${LOCAL_FOLDER}
 ```
@@ -135,11 +148,12 @@ This downloads three files (~6.2 GB total):
 
 HuggingFace repo: [`mistralai/Voxtral-Mini-4B-Realtime-2602-ExecuTorch`](https://huggingface.co/mistral-labs/Voxtral-Mini-4B-Realtime-2602-ExecuTorch)
 
-#### 5. Test with CLI (optional)
+#### 6. Test with CLI (optional)
 
 Verify the runner works before building the app:
 
 ```bash
+export DYLD_LIBRARY_PATH=/usr/lib:$(brew --prefix libomp)/lib
 export CMAKE_RUNNER="${EXECUTORCH_PATH}/cmake-out/examples/models/voxtral_realtime/voxtral_realtime_runner"
 export LOCAL_FOLDER="$HOME/voxtral_realtime_quant_metal"
 
@@ -152,23 +166,22 @@ cd ${LOCAL_FOLDER} && chmod +x stream_audio.py
     --mic
 ```
 
-#### 6. Build the app
+#### 7. Build the app and create DMG
 
 ```bash
 cd apps/macos/VoxtralRealtimeApp
-xcodegen generate
-open VoxtralRealtime.xcodeproj
+./scripts/build.sh
 ```
 
-Build and run from Xcode (`Cmd+R`). The post-compile build script automatically bundles the runner binary, `libomp.dylib`, and all model files into the `.app/Contents/Resources/`.
-
-#### 7. Create a DMG
+Or build manually:
 
 ```bash
+xcodegen generate
+xcodebuild -project VoxtralRealtime.xcodeproj -scheme VoxtralRealtime -configuration Release -derivedDataPath build build
 ./scripts/create_dmg.sh "./build/Build/Products/Release/Voxtral Realtime.app" "./VoxtralRealtime.dmg"
 ```
 
-The script validates that all required files (runner, libomp, model weights, tokenizer) are present in the `.app` bundle before creating the DMG. If anything is missing, it will tell you exactly what's needed.
+The post-compile build script automatically bundles the runner binary, `libomp.dylib`, and all model files into `.app/Contents/Resources/`. The `create_dmg.sh` script validates that all required files are present before creating the DMG.
 
 The resulting DMG is self-contained — end users just drag to Applications and run.
 
