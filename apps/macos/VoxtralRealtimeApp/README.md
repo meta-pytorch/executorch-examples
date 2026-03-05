@@ -2,6 +2,8 @@
 
 A native macOS showcase app for [Voxtral-Mini-4B-Realtime](https://huggingface.co/mistral-labs/Voxtral-Mini-4B-Realtime-2602-ExecuTorch) — Mistral's on-device real-time speech transcription model. All inference runs locally on Apple Silicon via [ExecuTorch](https://github.com/pytorch/executorch) with Metal acceleration. No cloud, no network required.
 
+<video src="docs/demo.mov" width="100%" autoplay loop muted></video>
+
 ## Features
 
 - **Live transcription** — real-time token streaming with audio waveform visualization
