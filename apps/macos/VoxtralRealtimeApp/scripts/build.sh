@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 #
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+#
 # Build a self-contained Voxtral Realtime DMG with all model files bundled.
 #
 # Prerequisites:
@@ -45,7 +51,7 @@ for arg in "$@"; do
       echo "Before running this script, set up the et-metal conda environment:"
       echo ""
       echo "  # One-time setup"
-      echo "  conda create -n et-metal python=3.10 -y"
+      echo "  conda create -n et-metal python=3.12 -y"
       echo "  conda activate et-metal"
       echo "  git clone https://github.com/pytorch/executorch/ ~/executorch"
       echo "  cd ~/executorch"

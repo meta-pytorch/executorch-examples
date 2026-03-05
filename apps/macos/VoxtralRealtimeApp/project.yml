@@ -1,6 +1,6 @@
 name: VoxtralRealtime
 options:
-  bundleIdPrefix: com.younghan
+  bundleIdPrefix: org.pytorch.executorch
   deploymentTarget:
     macOS: "14.0"
   xcodeVersion: "16.0"
@@ -24,7 +24,7 @@ targets:
       - path: VoxtralRealtime/Resources/Assets.xcassets
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.younghan.VoxtralRealtime
+        PRODUCT_BUNDLE_IDENTIFIER: org.pytorch.executorch.VoxtralRealtime
         PRODUCT_NAME: Voxtral Realtime
         INFOPLIST_FILE: VoxtralRealtime/Info.plist
         CODE_SIGN_ENTITLEMENTS: VoxtralRealtime/VoxtralRealtime.entitlements

@@ -1,8 +1,16 @@
+/*
+ * Copyright (c) Meta Platforms, Inc. and affiliates.
+ * All rights reserved.
+ *
+ * This source code is licensed under the BSD-style license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
 import AppKit
 import Carbon.HIToolbox
 import os
 
-private let log = Logger(subsystem: "com.younghan.VoxtralRealtime", category: "Dictation")
+private let log = Logger(subsystem: "org.pytorch.executorch.VoxtralRealtime", category: "Dictation")
 
 @MainActor @Observable
 final class DictationManager {
