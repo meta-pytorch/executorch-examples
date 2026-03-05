@@ -39,8 +39,9 @@ targets:
       - script: |
           set -euo pipefail
 
-          RUNNER_SRC="${HOME}/project/executorch/cmake-out/examples/models/voxtral_realtime/voxtral_realtime_runner"
-          MODEL_DIR="${HOME}/voxtral_realtime_quant_metal"
+          ET_PATH="${EXECUTORCH_PATH:-${HOME}/executorch}"
+          RUNNER_SRC="${ET_PATH}/cmake-out/examples/models/voxtral_realtime/voxtral_realtime_runner"
+          MODEL_DIR="${MODEL_DIR:-${HOME}/voxtral_realtime_quant_metal}"
           LIBOMP_SRC="/opt/homebrew/opt/libomp/lib/libomp.dylib"
           DEST="${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources"
 

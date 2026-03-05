@@ -38,7 +38,7 @@ final class Preferences {
 
         let bundledRunner = "\(bundleResources)/voxtral_realtime_runner"
         let bundledModel = "\(bundleResources)/model-metal-int4.pte"
-        let buildRunner = "\(home)/project/executorch/cmake-out/examples/models/voxtral_realtime/voxtral_realtime_runner"
+        let buildRunner = "\(home)/executorch/cmake-out/examples/models/voxtral_realtime/voxtral_realtime_runner"
 
         let hasBundledRunner = FileManager.default.isExecutableFile(atPath: bundledRunner)
         let hasBundledModel = FileManager.default.fileExists(atPath: bundledModel)
