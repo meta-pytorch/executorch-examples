@@ -3,7 +3,7 @@ set -euo pipefail
 
 APP_PATH="${1:-}"
 DMG_PATH="${2:-}"
-VOLUME_NAME="${3:-Speech Studio}"
+VOLUME_NAME="${3:-Voxtral Realtime}"
 
 if [[ -z "${APP_PATH}" || -z "${DMG_PATH}" ]]; then
   echo "Usage: $(basename "$0") /path/to/App.app /path/to/output.dmg [Volume Name]" >&2
