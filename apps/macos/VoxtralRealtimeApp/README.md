@@ -1,6 +1,6 @@
-# Speech Studio
+# Voxtral Realtime
 
-A native macOS app for on-device speech transcription powered by [ExecuTorch](https://github.com/pytorch/executorch). Runs Mistral's [Voxtral-Mini-4B-Realtime](https://huggingface.co/mistral-labs/Voxtral-Mini-4B-Realtime-2602-Executorch) locally on Apple Silicon with Metal acceleration — no cloud, no network required.
+A native macOS showcase app for [Voxtral-Mini-4B-Realtime](https://huggingface.co/mistral-labs/Voxtral-Mini-4B-Realtime-2602-ExecuTorch) — Mistral's on-device real-time speech transcription model. All inference runs locally on Apple Silicon via [ExecuTorch](https://github.com/pytorch/executorch) with Metal acceleration. No cloud, no network required.
 
 ## Features
 
@@ -10,16 +10,61 @@ A native macOS app for on-device speech transcription powered by [ExecuTorch](ht
 - **Pause / resume** — pause and resume within the same session without losing context
 - **Session history** — searchable history with rename, copy, and delete
 - **Silence detection** — dictation auto-stops after 2 seconds of silence
+- **Self-contained DMG** — runner binary, model weights, and runtime libraries all bundled
 
-## Requirements
+## For End Users
+
+Download the DMG, drag to Applications, and run. Everything is bundled — no model downloads, no terminal commands, no Python required.
+
+### Requirements
 
 - macOS 14.0+ (Sonoma)
 - Apple Silicon (M1/M2/M3/M4)
-- [ExecuTorch](https://github.com/pytorch/executorch) built with Metal backend
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
-- ~7 GB disk space for model artifacts
+- ~7 GB disk space
 
-## Setup
+### Usage
+
+#### In-app transcription
+
+1. Click **Load Model** on the welcome screen (takes ~30s on first load)
+2. Click **Start Transcription** (or `Cmd+Shift+R`)
+3. Speak — text appears in real time
+4. **Pause** (`Cmd+.`) / **Resume** (`Cmd+Shift+R`) within the same session
+5. **Done** (`Cmd+Return`) to save the session to history
+
+#### System-wide dictation
+
+1. Make sure the model is loaded
+2. Focus any text field in any app (Notes, Slack, browser, etc.)
+3. Press **`Ctrl+Space`** — a floating overlay appears with a waveform
+4. Speak — live transcribed text appears in the overlay
+5. Press **`Ctrl+Space`** again to stop, or wait for 2 seconds of silence
+6. The transcribed text is automatically pasted into the focused text field
+
+#### Keyboard shortcuts
+
+| Shortcut | Action |
+|---|---|
+| `Cmd+Shift+R` | Start / Resume transcription |
+| `Cmd+.` | Pause transcription |
+| `Cmd+Return` | End session and save |
+| `Cmd+Shift+C` | Copy transcript |
+| `Cmd+Shift+U` | Unload model |
+| `Ctrl+Space` | Toggle system-wide dictation |
+| `Cmd+,` | Settings |
+
+---
+
+## For Developers
+
+Build from source to develop or customize the app.
+
+### Prerequisites
+
+- macOS 14.0+ (Sonoma)
+- Apple Silicon (M1/M2/M3/M4)
+- Xcode 16+
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`)
 
 ### 1. Install ExecuTorch with Metal backend
 
@@ -29,6 +74,8 @@ git clone https://github.com/pytorch/executorch/ ${EXECUTORCH_PATH}
 cd ${EXECUTORCH_PATH}
 EXECUTORCH_BUILD_KERNELS_TORCHAO=1 TORCHAO_BUILD_EXPERIMENTAL_MPS=1 ./install_executorch.sh
 ```
+
+> We recommend installing in a new conda or venv environment. If you run into any installation problems, open an issue or have a look at the official [Voxtral Realtime installation guide](https://github.com/pytorch/executorch/tree/main/examples/models/voxtral_realtime).
 
 ### 2. Build the voxtral realtime runner
 
@@ -46,14 +93,20 @@ ${EXECUTORCH_PATH}/cmake-out/examples/models/voxtral_realtime/voxtral_realtime_r
 
 ```bash
 brew install libomp
+export DYLD_LIBRARY_PATH=/usr/lib:$(brew --prefix libomp)/lib
+```
+
+Also install `sounddevice` for the CLI mic streaming script:
+```bash
+pip install sounddevice
 ```
 
 ### 4. Download model artifacts
 
 ```bash
 pip install huggingface_hub
-huggingface-cli download mistralai/Voxtral-Mini-4B-Realtime-2602-Executorch \
-  --local-dir ~/voxtral_realtime_quant_metal
+export LOCAL_FOLDER="$HOME/voxtral_realtime_quant_metal"
+hf download mistralai/Voxtral-Mini-4B-Realtime-2602-Executorch --local-dir ${LOCAL_FOLDER}
 ```
 
 This downloads three files (~6.2 GB total):
@@ -61,54 +114,44 @@ This downloads three files (~6.2 GB total):
 - `preprocessor.pte` — audio-to-mel spectrogram
 - `tekken.json` — tokenizer
 
-### 5. Build the app
+HuggingFace repo: [`mistralai/Voxtral-Mini-4B-Realtime-2602-ExecuTorch`](https://huggingface.co/mistral-labs/Voxtral-Mini-4B-Realtime-2602-ExecuTorch)
+
+### 5. Test with CLI (optional)
+
+Verify the runner works before building the app:
 
 ```bash
-cd apps/macos/speech-studio
+export CMAKE_RUNNER="${EXECUTORCH_PATH}/cmake-out/examples/models/voxtral_realtime/voxtral_realtime_runner"
+export LOCAL_FOLDER="$HOME/voxtral_realtime_quant_metal"
+
+cd ${LOCAL_FOLDER} && chmod +x stream_audio.py
+./stream_audio.py | \
+   ${CMAKE_RUNNER} \
+    --model_path ./model-metal-int4.pte \
+    --tokenizer_path ./tekken.json \
+    --preprocessor_path ./preprocessor.pte \
+    --mic
+```
+
+### 6. Build the app
+
+```bash
+cd apps/macos/VoxtralRealtimeApp
 xcodegen generate
 open VoxtralRealtime.xcodeproj
 ```
 
-Build and run from Xcode (Cmd+R). The build script automatically bundles the runner binary, `libomp.dylib`, and model files into the app.
+Build and run from Xcode (`Cmd+R`). The post-compile build script automatically bundles the runner binary, `libomp.dylib`, and all model files into the `.app/Contents/Resources/`.
 
-### 6. Create a DMG with drag-to-Applications UI
+### 7. Create a DMG
 
 ```bash
 ./scripts/create_dmg.sh "./build/Build/Products/Release/Voxtral Realtime.app" "./VoxtralRealtime.dmg"
 ```
 
-The script creates a DMG window that shows the app next to an Applications shortcut for drag-and-drop install. If prompted, allow Finder automation for `osascript`.
+The DMG includes the app with all model weights bundled — end users just drag to Applications.
 
-## Usage
-
-### In-app transcription
-
-1. Click **Load Model** on the welcome screen (takes ~30s on first load)
-2. Click **Start Transcription** (or `Cmd+Shift+R`)
-3. Speak — text appears in real time
-4. **Pause** (`Cmd+.`) / **Resume** (`Cmd+Shift+R`) within the same session
-5. **Done** (`Cmd+Return`) to save the session to history
-
-### System-wide dictation
-
-1. Make sure the model is loaded
-2. Focus any text field in any app (Notes, Slack, browser, etc.)
-3. Press **`Ctrl+Space`** — a floating overlay appears with a waveform
-4. Speak — live transcribed text appears in the overlay
-5. Press **`Ctrl+Space`** again to stop, or wait for 2 seconds of silence
-6. The transcribed text is automatically pasted into the focused text field
-
-### Keyboard shortcuts
-
-| Shortcut | Action |
-|---|---|
-| `Cmd+Shift+R` | Start / Resume transcription |
-| `Cmd+.` | Pause transcription |
-| `Cmd+Return` | End session and save |
-| `Cmd+Shift+C` | Copy transcript |
-| `Cmd+Shift+U` | Unload model |
-| `Ctrl+Space` | Toggle system-wide dictation |
-| `Cmd+,` | Settings |
+---
 
 ## Architecture
 
@@ -156,7 +199,7 @@ Check Console.app (filter by `VoxtralRealtime`) for diagnostics:
 - `"Runner exited with code N"` — non-zero exit indicates a crash
 
 Common causes:
-- **Missing model files** — verify `~/voxtral_realtime_quant_metal/` contains all three files
+- **Missing model files** — verify `~/voxtral_realtime_quant_metal/` contains all three files (or check app bundle Resources)
 - **libomp not found** — run `brew install libomp` and rebuild
 - **Runner not built** — run `make voxtral_realtime-metal` in the ExecuTorch directory
 
