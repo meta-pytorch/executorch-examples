@@ -42,7 +42,7 @@ if [[ ${#MISSING[@]} -gt 0 ]]; then
   echo "" >&2
   echo "The DMG must be self-contained. Make sure you:" >&2
   echo "  1. Downloaded model files:  hf download mistralai/Voxtral-Mini-4B-Realtime-2602-Executorch --local-dir ~/voxtral_realtime_quant_metal" >&2
-  echo "  2. Built the runner:        cd ~/executorch && make voxtral_realtime-metal" >&2
+  echo "  2. Built the runner:        conda activate et-metal && cd ~/executorch && make voxtral_realtime-metal" >&2
   echo "  3. Installed libomp:        brew install libomp" >&2
   echo "  4. Built in Release mode:   xcodebuild -scheme VoxtralRealtime -configuration Release" >&2
   exit 1
@@ -66,7 +66,7 @@ hdiutil create -volname "${VOLUME_NAME}" -srcfolder "${STAGING_DIR}" -ov -format
 
 DEVICE="$(hdiutil attach -readwrite -noverify -noautoopen "${DMG_RW}" | awk 'NR==1{print $1}')"
 
-osascript <<EOF
+osascript <<EOF 2>/dev/null && echo "✓ DMG window layout configured" || echo "· Skipped DMG window layout (Finder not available in this context)"
 tell application "Finder"
   tell disk "${VOLUME_NAME}"
     open
@@ -85,7 +85,7 @@ tell application "Finder"
 end tell
 EOF
 
-hdiutil detach "${DEVICE}" >/dev/null
+hdiutil detach "${DEVICE}" >/dev/null 2>&1 || true
 hdiutil convert "${DMG_RW}" -format UDZO -o "${DMG_PATH}" >/dev/null
 rm -rf "${WORK_DIR}"
 

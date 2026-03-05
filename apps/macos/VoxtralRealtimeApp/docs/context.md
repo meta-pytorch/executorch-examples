@@ -89,7 +89,7 @@ All three are injected into the SwiftUI environment via `.environment()`. Views 
 
 ## Constraints
 
-- Building requires `conda activate et-metal` — a conda env with ExecuTorch installed (Metal/MPS backend). Runner build, model download, and CLI testing all depend on it.
+- Building requires `conda activate et-metal` — a dedicated conda env with ExecuTorch installed from a fresh `git clone` to `~/executorch` (Metal/MPS backend). Runner build, model download, and CLI testing all depend on it.
 - Runner binary is a pre-built C++ executable (`voxtral_realtime_runner`) from ExecuTorch
 - Audio format: 16kHz mono f32le PCM piped to runner's stdin (no WAV header, raw bytes)
 - Model artifacts are ~6.2 GB total — not in git; developer downloads from HF, build script bundles into .app, DMG ships self-contained
@@ -253,8 +253,8 @@ When adding new features, follow these existing patterns:
 |---|---|
 | Plan | `docs/plan.md` |
 | Progress log | `docs/progress.md` |
-| Runner source | `/Users/younghan/project/executorch/examples/models/voxtral_realtime` |
-| Runner binary | `/Users/younghan/project/executorch/cmake-out/examples/models/voxtral_realtime/voxtral_realtime_runner` |
+| Runner source | `~/executorch/examples/models/voxtral_realtime` |
+| Runner binary | `~/executorch/cmake-out/examples/models/voxtral_realtime/voxtral_realtime_runner` |
 | Model dir (HF) | `~/voxtral_realtime_quant_metal` |
 | Model (Metal int4) | `~/voxtral_realtime_quant_metal/model-metal-int4.pte` |
 | Preprocessor | `~/voxtral_realtime_quant_metal/preprocessor.pte` |
@@ -267,8 +267,8 @@ When adding new features, follow these existing patterns:
 | Requirement | How to install |
 |---|---|
 | libomp | `brew install libomp` |
-| ExecuTorch (Metal) | `cd ~/executorch && EXECUTORCH_BUILD_KERNELS_TORCHAO=1 TORCHAO_BUILD_EXPERIMENTAL_MPS=1 ./install_executorch.sh` |
-| Runner binary | `cd ~/executorch && make voxtral_realtime-metal` |
+| ExecuTorch (Metal) | `conda activate et-metal && cd ~/executorch && EXECUTORCH_BUILD_KERNELS_TORCHAO=1 TORCHAO_BUILD_EXPERIMENTAL_MPS=1 ./install_executorch.sh` |
+| Runner binary | `conda activate et-metal && cd ~/executorch && make voxtral_realtime-metal` |
 | Model artifacts | `hf download mistralai/Voxtral-Mini-4B-Realtime-2602-Executorch --local-dir ~/voxtral_realtime_quant_metal` |
 | XcodeGen | `brew install xcodegen` |
 

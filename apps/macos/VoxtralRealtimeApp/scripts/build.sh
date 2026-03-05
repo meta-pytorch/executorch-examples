@@ -3,7 +3,7 @@
 # Build a self-contained Voxtral Realtime DMG with all model files bundled.
 #
 # Prerequisites:
-#   - Activate the conda env with ExecuTorch + Metal backend installed
+#   - Create and activate the et-metal conda env with ExecuTorch + Metal backend
 #   - Build the voxtral_realtime_runner binary
 #   - Download model files from HuggingFace (or pass --download-models)
 #
@@ -15,7 +15,6 @@
 # Environment variables (override defaults):
 #   EXECUTORCH_PATH   path to executorch repo     (default: ~/executorch)
 #   MODEL_DIR         path to model artifacts     (default: ~/voxtral_realtime_quant_metal)
-#   CONDA_ENV         expected conda env name     (default: et-metal)
 #
 set -euo pipefail
 
@@ -26,7 +25,7 @@ EXECUTORCH_PATH="${EXECUTORCH_PATH:-${HOME}/executorch}"
 MODEL_DIR="${MODEL_DIR:-${HOME}/voxtral_realtime_quant_metal}"
 RUNNER_PATH="${EXECUTORCH_PATH}/cmake-out/examples/models/voxtral_realtime/voxtral_realtime_runner"
 LIBOMP_PATH="/opt/homebrew/opt/libomp/lib/libomp.dylib"
-EXPECTED_CONDA_ENV="${CONDA_ENV:-et-metal}"
+EXPECTED_CONDA_ENV="et-metal"
 
 BUILD_DIR="${PROJECT_DIR}/build"
 SCHEME="VoxtralRealtime"
@@ -43,12 +42,21 @@ for arg in "$@"; do
       echo ""
       echo "Builds a self-contained DMG with all model files bundled."
       echo ""
-      echo "Before running this script:"
-      echo "  1. conda activate ${EXPECTED_CONDA_ENV}"
-      echo "  2. Build ExecuTorch runner (if not already done):"
-      echo "     cd ${EXECUTORCH_PATH} && make voxtral_realtime-metal"
-      echo "  3. Download models (or pass --download-models):"
-      echo "     hf download mistralai/Voxtral-Mini-4B-Realtime-2602-Executorch --local-dir ${MODEL_DIR}"
+      echo "Before running this script, set up the et-metal conda environment:"
+      echo ""
+      echo "  # One-time setup"
+      echo "  conda create -n et-metal python=3.10 -y"
+      echo "  conda activate et-metal"
+      echo "  git clone https://github.com/pytorch/executorch/ ~/executorch"
+      echo "  cd ~/executorch"
+      echo "  EXECUTORCH_BUILD_KERNELS_TORCHAO=1 TORCHAO_BUILD_EXPERIMENTAL_MPS=1 ./install_executorch.sh"
+      echo "  make voxtral_realtime-metal"
+      echo "  brew install libomp xcodegen"
+      echo "  pip install huggingface_hub"
+      echo ""
+      echo "  # Then build"
+      echo "  conda activate et-metal"
+      echo "  ./scripts/build.sh --download-models"
       echo ""
       echo "Options:"
       echo "  --download-models   Download model artifacts from HuggingFace before building"
@@ -57,7 +65,6 @@ for arg in "$@"; do
       echo "Environment variables:"
       echo "  EXECUTORCH_PATH     Path to executorch repo (default: ~/executorch)"
       echo "  MODEL_DIR           Path to model artifacts (default: ~/voxtral_realtime_quant_metal)"
-      echo "  CONDA_ENV           Expected conda env name (default: et-metal)"
       exit 0
       ;;
     *) echo "Unknown argument: ${arg}. Use --help for usage." >&2; exit 1 ;;
@@ -74,40 +81,54 @@ echo ""
 # ---------------------------------------------------------------------------
 echo "--- Step 0: Checking conda environment ---"
 
-if [[ -z "${CONDA_DEFAULT_ENV:-}" ]]; then
+if [[ -z "${CONDA_DEFAULT_ENV:-}" || "${CONDA_DEFAULT_ENV}" == "base" ]]; then
   echo ""
-  echo "ERROR: No conda environment is active." >&2
+  echo "ERROR: The et-metal conda environment is not active." >&2
   echo "" >&2
-  echo "This build requires a conda env with ExecuTorch installed (Metal backend)." >&2
-  echo "The runner binary and model download tools depend on it." >&2
+  echo "This build requires a dedicated conda env with ExecuTorch installed" >&2
+  echo "(Metal/MPS backend). All steps below must run inside this env." >&2
   echo "" >&2
-  echo "If you haven't set up the environment yet:" >&2
+
+  if [[ -z "${CONDA_DEFAULT_ENV:-}" ]]; then
+    echo "No conda environment is active." >&2
+  else
+    echo "You are in the 'base' env — ExecuTorch should not be installed in base." >&2
+  fi
+
   echo "" >&2
-  echo "  # Create and activate the conda environment" >&2
-  echo "  conda create -n ${EXPECTED_CONDA_ENV} python=3.10 -y" >&2
-  echo "  conda activate ${EXPECTED_CONDA_ENV}" >&2
+  echo "=== One-time setup ===" >&2
   echo "" >&2
-  echo "  # Install ExecuTorch with Metal (MPS) backend" >&2
-  echo "  cd ${EXECUTORCH_PATH}" >&2
+  echo "  # 1. Create the et-metal conda environment" >&2
+  echo "  conda create -n et-metal python=3.10 -y" >&2
+  echo "  conda activate et-metal" >&2
+  echo "" >&2
+  echo "  # 2. Clone and install ExecuTorch with Metal (MPS) backend" >&2
+  echo "  git clone https://github.com/pytorch/executorch/ ~/executorch" >&2
+  echo "  cd ~/executorch" >&2
   echo "  EXECUTORCH_BUILD_KERNELS_TORCHAO=1 TORCHAO_BUILD_EXPERIMENTAL_MPS=1 ./install_executorch.sh" >&2
   echo "" >&2
-  echo "  # Build the voxtral realtime runner" >&2
+  echo "  # 3. Build the voxtral realtime runner" >&2
   echo "  make voxtral_realtime-metal" >&2
   echo "" >&2
-  echo "  # Install model download tool" >&2
+  echo "  # 4. Install tools" >&2
+  echo "  brew install libomp xcodegen" >&2
   echo "  pip install huggingface_hub" >&2
   echo "" >&2
-  echo "If you already have the environment, activate it and re-run:" >&2
-  echo "  conda activate ${EXPECTED_CONDA_ENV}" >&2
-  echo "  ./scripts/build.sh" >&2
+  echo "=== Then build ===" >&2
+  echo "" >&2
+  echo "  conda activate et-metal" >&2
+  echo "  cd $(pwd)" >&2
+  echo "  ./scripts/build.sh --download-models" >&2
   exit 1
 fi
 
-echo "✓ Conda environment active: ${CONDA_DEFAULT_ENV}"
-
 if [[ "${CONDA_DEFAULT_ENV}" != "${EXPECTED_CONDA_ENV}" ]]; then
-  echo "  (expected '${EXPECTED_CONDA_ENV}' — set CONDA_ENV to suppress this warning)"
+  echo "WARNING: Active conda env is '${CONDA_DEFAULT_ENV}', expected '${EXPECTED_CONDA_ENV}'." >&2
+  echo "  Continuing, but make sure ExecuTorch with Metal backend is installed in this env." >&2
+  echo ""
 fi
+
+echo "✓ Conda environment active: ${CONDA_DEFAULT_ENV}"
 echo ""
 
 # ---------------------------------------------------------------------------
@@ -116,22 +137,28 @@ echo ""
 echo "--- Step 1: Checking prerequisites ---"
 
 ERRORS=()
-WARNINGS=()
 
 # Build tools
 if ! command -v xcodegen &>/dev/null; then
-  ERRORS+=("xcodegen not found. Install with: brew install xcodegen")
+  ERRORS+=("xcodegen not found — install with: brew install xcodegen")
 fi
 
 if ! command -v xcodebuild &>/dev/null; then
-  ERRORS+=("xcodebuild not found. Install Xcode from the App Store.")
+  ERRORS+=("xcodebuild not found — install Xcode from the App Store")
+fi
+
+# ExecuTorch repo
+if [[ ! -d "${EXECUTORCH_PATH}" ]]; then
+  ERRORS+=("ExecuTorch repo not found at: ${EXECUTORCH_PATH}")
+  ERRORS+=("  Clone it:  git clone https://github.com/pytorch/executorch/ ${EXECUTORCH_PATH}")
+  ERRORS+=("  Or set:    EXECUTORCH_PATH=/your/path ./scripts/build.sh")
 fi
 
 # Runner binary (built from ExecuTorch with Metal backend)
 if [[ ! -f "${RUNNER_PATH}" ]]; then
   ERRORS+=("Runner binary not found at: ${RUNNER_PATH}")
-  ERRORS+=("  You need to build it inside the conda env:")
-  ERRORS+=("    conda activate ${EXPECTED_CONDA_ENV}")
+  ERRORS+=("  Build it (inside conda env):")
+  ERRORS+=("    conda activate et-metal")
   ERRORS+=("    cd ${EXECUTORCH_PATH}")
   ERRORS+=("    EXECUTORCH_BUILD_KERNELS_TORCHAO=1 TORCHAO_BUILD_EXPERIMENTAL_MPS=1 ./install_executorch.sh")
   ERRORS+=("    make voxtral_realtime-metal")
@@ -140,14 +167,14 @@ fi
 # libomp (runner runtime dependency)
 if [[ ! -f "${LIBOMP_PATH}" ]]; then
   ERRORS+=("libomp not found at: ${LIBOMP_PATH}")
-  ERRORS+=("  Install it: brew install libomp")
+  ERRORS+=("  Install:   brew install libomp")
 fi
 
 # Download models if requested
 if [[ "${DOWNLOAD_MODELS}" == true ]]; then
-  echo "Downloading models from HuggingFace..."
+  echo "Downloading models from HuggingFace (~6.2 GB)..."
   if ! command -v hf &>/dev/null && ! command -v huggingface-cli &>/dev/null; then
-    ERRORS+=("huggingface-cli not found. Install with: pip install huggingface_hub")
+    ERRORS+=("Neither 'hf' nor 'huggingface-cli' found — install with: pip install huggingface_hub")
   else
     HF_CMD="hf"
     if ! command -v hf &>/dev/null; then
@@ -172,33 +199,26 @@ if [[ ${#MISSING_MODELS[@]} -gt 0 ]]; then
   for f in "${MISSING_MODELS[@]}"; do
     ERRORS+=("  - ${f}")
   done
-  ERRORS+=("  Download with: hf download mistralai/Voxtral-Mini-4B-Realtime-2602-Executorch --local-dir ${MODEL_DIR}")
-  ERRORS+=("  Or run: ./scripts/build.sh --download-models")
+  ERRORS+=("  Download: hf download mistralai/Voxtral-Mini-4B-Realtime-2602-Executorch --local-dir ${MODEL_DIR}")
+  ERRORS+=("  Or run:   ./scripts/build.sh --download-models")
 fi
 
-# Report
+# Report errors
 if [[ ${#ERRORS[@]} -gt 0 ]]; then
   echo ""
   echo "ERROR: Missing prerequisites:" >&2
   for e in "${ERRORS[@]}"; do
     echo "  ✗ ${e}" >&2
   done
-  echo "" >&2
-  echo "Full setup guide:" >&2
-  echo "  conda activate ${EXPECTED_CONDA_ENV}" >&2
-  echo "  cd ${EXECUTORCH_PATH} && EXECUTORCH_BUILD_KERNELS_TORCHAO=1 TORCHAO_BUILD_EXPERIMENTAL_MPS=1 ./install_executorch.sh" >&2
-  echo "  make voxtral_realtime-metal" >&2
-  echo "  brew install libomp xcodegen" >&2
-  echo "  pip install huggingface_hub" >&2
-  echo "  hf download mistralai/Voxtral-Mini-4B-Realtime-2602-Executorch --local-dir ${MODEL_DIR}" >&2
   exit 1
 fi
 
-echo "✓ xcodegen found"
-echo "✓ xcodebuild found"
-echo "✓ Runner binary found: ${RUNNER_PATH}"
-echo "✓ libomp found"
-echo "✓ All model files present in ${MODEL_DIR}"
+echo "✓ xcodegen: $(which xcodegen)"
+echo "✓ xcodebuild: $(which xcodebuild)"
+echo "✓ ExecuTorch: ${EXECUTORCH_PATH}"
+echo "✓ Runner binary: ${RUNNER_PATH}"
+echo "✓ libomp: ${LIBOMP_PATH}"
+echo "✓ Model files: ${MODEL_DIR}"
 echo ""
 
 # ---------------------------------------------------------------------------
@@ -214,20 +234,41 @@ echo ""
 # Step 3: Build the app (Release)
 # ---------------------------------------------------------------------------
 echo "--- Step 3: Building ${SCHEME} (${CONFIG}) ---"
+
+BUILD_LOG="${BUILD_DIR}/build.log"
+mkdir -p "${BUILD_DIR}"
+
+set +e
 xcodebuild \
   -project VoxtralRealtime.xcodeproj \
   -scheme "${SCHEME}" \
   -configuration "${CONFIG}" \
   -derivedDataPath "${BUILD_DIR}" \
   build \
-  2>&1 | tail -5
+  > "${BUILD_LOG}" 2>&1
+BUILD_EXIT=$?
+set -e
+
+if [[ ${BUILD_EXIT} -ne 0 ]]; then
+  echo ""
+  echo "ERROR: xcodebuild failed (exit code ${BUILD_EXIT})." >&2
+  echo "Last 20 lines of build log:" >&2
+  echo "" >&2
+  tail -20 "${BUILD_LOG}" >&2
+  echo "" >&2
+  echo "Full log: ${BUILD_LOG}" >&2
+  exit 1
+fi
+
+tail -3 "${BUILD_LOG}"
 
 APP_PATH="${BUILD_DIR}/Build/Products/${CONFIG}/${APP_NAME}.app"
 if [[ ! -d "${APP_PATH}" ]]; then
   echo "ERROR: Build succeeded but app not found at: ${APP_PATH}" >&2
+  echo "Full log: ${BUILD_LOG}" >&2
   exit 1
 fi
-echo "✓ App built at: ${APP_PATH}"
+echo "✓ App built: ${APP_PATH}"
 echo ""
 
 # ---------------------------------------------------------------------------
@@ -243,9 +284,10 @@ echo ""
 # ---------------------------------------------------------------------------
 echo "=== Build Complete ==="
 echo ""
-echo "  DMG:         ${DMG_OUTPUT}"
-echo "  App:         ${APP_PATH}"
-echo "  Conda env:   ${CONDA_DEFAULT_ENV}"
+echo "  DMG:       ${DMG_OUTPUT}"
+echo "  App:       ${APP_PATH}"
+echo "  Conda env: ${CONDA_DEFAULT_ENV}"
+echo "  Build log: ${BUILD_LOG}"
 echo ""
 echo "To distribute: upload the DMG to GitHub Releases."
 echo ""
