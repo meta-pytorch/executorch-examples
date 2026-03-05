@@ -22,11 +22,11 @@ struct VoxtralRealtimeApp: App {
                 .environment(preferences)
                 .frame(minWidth: 600, minHeight: 400)
                 .task {
-                    if !DictationManager.checkAccessibility(prompt: false) {
-                        _ = DictationManager.checkAccessibility(prompt: true)
-                    }
                     _ = await AVCaptureDevice.requestAccess(for: .audio)
                     dictation.registerHotKey()
+                }
+                .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                    Task { await store.runHealthCheck() }
                 }
         }
         .defaultSize(width: 900, height: 600)

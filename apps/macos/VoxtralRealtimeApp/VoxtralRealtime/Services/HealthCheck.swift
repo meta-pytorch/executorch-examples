@@ -48,6 +48,10 @@ struct HealthCheck: Sendable {
         await AVCaptureDevice.requestAccess(for: .audio)
     }
 
+    static func liveMicPermission() async -> MicPermission {
+        await microphonePermission()
+    }
+
     private static func microphonePermission() async -> MicPermission {
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .authorized: .authorized
