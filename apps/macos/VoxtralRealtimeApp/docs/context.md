@@ -89,6 +89,7 @@ All three are injected into the SwiftUI environment via `.environment()`. Views 
 
 ## Constraints
 
+- Building requires `conda activate et-metal` — a conda env with ExecuTorch installed (Metal/MPS backend). Runner build, model download, and CLI testing all depend on it.
 - Runner binary is a pre-built C++ executable (`voxtral_realtime_runner`) from ExecuTorch
 - Audio format: 16kHz mono f32le PCM piped to runner's stdin (no WAV header, raw bytes)
 - Model artifacts are ~6.2 GB total — not in git; developer downloads from HF, build script bundles into .app, DMG ships self-contained
