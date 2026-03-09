@@ -36,11 +36,8 @@ jobs:
             path: mv3/android/MV3Demo
           - name: YoloDemo
             path: Yolo/android
-          - name: WhisperDemo
-            path: whisper/android/WhisperApp
-            require_aar: true
-          - name: ParakeetDemo
-            path: parakeet/android/ParakeetApp
+          - name: AsrDemo
+            path: asr/android/AsrApp
             require_aar: true
 
 
@@ -62,7 +59,7 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Download local AAR
-        if: ${{ inputs.local_aar && (matrix.name == 'LlamaDemo' || matrix.name == 'YoloDemo' || matrix.name == 'WhisperDemo' || matrix.name == 'ParakeetDemo') }}
+        if: ${{ inputs.local_aar && (matrix.name == 'LlamaDemo' || matrix.name == 'YoloDemo' || matrix.name == 'AsrDemo') }}
         run: |
           mkdir -p ${{ matrix.path }}/app/libs
           curl -fL -o ${{ matrix.path }}/app/libs/executorch.aar "${{ inputs.local_aar }}"
@@ -71,7 +68,7 @@ jobs:
         if: ${{ !matrix.require_aar || inputs.local_aar }}
         working-directory: ${{ matrix.path }}
         run: |
-          if [ -n "${{ inputs.local_aar }}" ] && ([ "${{ matrix.name }}" == "LlamaDemo" ] || [ "${{ matrix.name }}" == "YoloDemo" ] || [ "${{ matrix.name }}" == "WhisperDemo" ] || [ "${{ matrix.name }}" == "ParakeetDemo" ]); then
+          if [ -n "${{ inputs.local_aar }}" ] && ([ "${{ matrix.name }}" == "LlamaDemo" ] || [ "${{ matrix.name }}" == "YoloDemo" ] || [ "${{ matrix.name }}" == "AsrDemo" ]); then
             ./gradlew build --no-daemon -PuseLocalAar=true
           else
             ./gradlew build --no-daemon
