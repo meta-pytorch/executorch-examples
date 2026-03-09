@@ -213,7 +213,7 @@ When adding new features, follow these existing patterns:
 
 ### Source code
 
-| What | Path (relative to `apps/macos/VoxtralRealtimeApp/`) |
+| What | Path (relative to `voxtral_realtime/macos/`) |
 |---|---|
 | App entry point | `VoxtralRealtime/VoxtralRealtimeApp.swift` |
 | Central state machine | `VoxtralRealtime/Models/TranscriptStore.swift` |
