@@ -68,7 +68,7 @@ If you already have the conda env set up, ExecuTorch built, and models downloade
 ```bash
 conda create -n et-metal python=3.12 -y
 conda activate et-metal
-cd apps/macos/VoxtralRealtimeApp
+cd voxtral_realtime/macos
 ./scripts/build.sh
 ```
 
@@ -173,7 +173,7 @@ cd ${LOCAL_FOLDER} && chmod +x stream_audio.py
 #### 7. Build the app and create DMG
 
 ```bash
-cd apps/macos/VoxtralRealtimeApp
+cd voxtral_realtime/macos
 ./scripts/build.sh
 ```
 
