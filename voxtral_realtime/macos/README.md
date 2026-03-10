@@ -16,7 +16,7 @@ https://github.com/user-attachments/assets/0ce4fb05-76b2-47e4-85e2-6f49b4e9e34e
 
 ## Download
 
-**End users**: download the latest DMG from [GitHub Releases](https://github.com/pytorch/executorch-examples/releases). The DMG is self-contained — runner binary, model weights (~6.2 GB), and runtime libraries are all bundled. No terminal, no Python, no model downloads required.
+**End users**: download the latest DMG from [GitHub Releases](https://github.com/meta-pytorch/executorch-examples/releases/tag/voxtral_realtime-v1.0.0). The DMG is self-contained — runner binary, model weights (~6.2 GB), and runtime libraries are all bundled. No terminal, no Python, no model downloads required.
 
 ### Requirements
 
