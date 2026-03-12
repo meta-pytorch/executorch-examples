@@ -11,6 +11,12 @@ mkdir -p app/libs
 curl -L -o app/libs/executorch.aar https://gha-artifacts.s3.amazonaws.com/pytorch/executorch/21934561658/artifacts/executorch.aar
 ```
 
+## Demo
+
+
+https://github.com/user-attachments/assets/9793d2d0-0d23-4627-a8dc-4334b97b07ab
+
+
 ## Export Model Files
 
 Export the model `.pte` and tokenizer files following the instructions at:
