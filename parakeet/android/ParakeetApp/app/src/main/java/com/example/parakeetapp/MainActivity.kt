@@ -231,19 +231,38 @@ class MainActivity : ComponentActivity() {
             return parakeetModule!!
         }
 
-        // Settings changed or first load — close the old module and create a new one.
-        parakeetModule?.close()
+        // Settings changed or first load — construct the new module first,
+        // then swap it in and close the old one only after successful creation.
+        val oldModule = parakeetModule
+
+        // Clear cached module and paths so a failed load never returns a closed or stale module.
+        parakeetModule = null
+        loadedModelPath = null
+        loadedTokenizerPath = null
+        loadedDataPath = null
+
         Log.v(TAG, "Loading model: ${settings.modelPath}")
-        val module = ParakeetModule(
-            modelPath = settings.modelPath,
-            tokenizerPath = settings.tokenizerPath,
-            dataPath = dataPath
-        )
-        parakeetModule = module
+        val newModule = try {
+            ParakeetModule(
+                modelPath = settings.modelPath,
+                tokenizerPath = settings.tokenizerPath,
+                dataPath = dataPath
+            )
+        } catch (e: Exception) {
+            // Leave cache cleared; do not close the old module here since it may still be in use.
+            throw e
+        }
+
+        // Successfully created the new module; now it is safe to close the old one
+        // and update the cached references and paths.
+        oldModule?.close()
+
+        parakeetModule = newModule
         loadedModelPath = settings.modelPath
         loadedTokenizerPath = settings.tokenizerPath
         loadedDataPath = dataPath
-        return module
+
+        return newModule
     }
 
     /**
