@@ -516,8 +516,6 @@ class MainActivity : ComponentActivity() {
         if (isRecording) {
             stopRecording()
         }
-        parakeetModule?.close()
-        parakeetModule = null
     }
 
     private val requestPermissionLauncher = registerForActivityResult(
