@@ -82,6 +82,12 @@ class MainActivity : ComponentActivity() {
     private lateinit var viewModel: ModelSettingsViewModel
     private lateinit var downloadViewModel: ModelDownloadViewModel
 
+    // Cached ParakeetModule: loaded once and reused across transcription calls.
+    private var parakeetModule: ParakeetModule? = null
+    private var loadedModelPath: String = ""
+    private var loadedTokenizerPath: String = ""
+    private var loadedDataPath: String? = null
+
     enum class Screen {
         DOWNLOAD,
         MAIN,
@@ -212,6 +218,54 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
+     * Returns the cached ParakeetModule, creating or recreating it only if
+     * the model settings have changed since the last load.
+     */
+    private fun getOrCreateModule(settings: ModelSettings): ParakeetModule {
+        val dataPath = settings.dataPath.ifBlank { null }
+        if (parakeetModule != null &&
+            loadedModelPath == settings.modelPath &&
+            loadedTokenizerPath == settings.tokenizerPath &&
+            loadedDataPath == dataPath
+        ) {
+            return parakeetModule!!
+        }
+
+        // Settings changed or first load — construct the new module first,
+        // then swap it in and close the old one only after successful creation.
+        val oldModule = parakeetModule
+
+        // Clear cached module and paths so a failed load never returns a closed or stale module.
+        parakeetModule = null
+        loadedModelPath = null
+        loadedTokenizerPath = null
+        loadedDataPath = null
+
+        Log.v(TAG, "Loading model: ${settings.modelPath}")
+        val newModule = try {
+            ParakeetModule(
+                modelPath = settings.modelPath,
+                tokenizerPath = settings.tokenizerPath,
+                dataPath = dataPath
+            )
+        } catch (e: Exception) {
+            // Leave cache cleared; do not close the old module here since it may still be in use.
+            throw e
+        }
+
+        // Successfully created the new module; now it is safe to close the old one
+        // and update the cached references and paths.
+        oldModule?.close()
+
+        parakeetModule = newModule
+        loadedModelPath = settings.modelPath
+        loadedTokenizerPath = settings.tokenizerPath
+        loadedDataPath = dataPath
+
+        return newModule
+    }
+
+    /**
      * Common method to run Parakeet on a WAV file path.
      */
     private fun runParakeetOnWavFile(wavFilePath: String) {
@@ -232,23 +286,17 @@ class MainActivity : ComponentActivity() {
             buttonEnabled = false
         }
 
-        val parakeetModule = ParakeetModule(
-            modelPath = settings.modelPath,
-            tokenizerPath = settings.tokenizerPath,
-            dataPath = settings.dataPath.ifBlank { null }
-        )
+        val module = getOrCreateModule(settings)
 
         Log.v(TAG, "Starting transcribe for: $wavFilePath")
         runOnUiThread {
             statusText = "Transcribing..."
         }
         val startTime = System.currentTimeMillis()
-        val result = parakeetModule.transcribe(wavFilePath)
+        val result = module.transcribe(wavFilePath)
         val elapsedTime = System.currentTimeMillis() - startTime
         val elapsedSeconds = elapsedTime / 1000.0
         Log.v(TAG, "Finished transcribe in ${elapsedSeconds}s")
-
-        parakeetModule.close()
 
         runOnUiThread {
             transcriptionOutput = result
