@@ -29,6 +29,7 @@ RESOURCES="${APP_PATH}/Contents/Resources"
 REQUIRED_FILES=(
   "voxtral_realtime_runner"
   "libomp.dylib"
+  "libc++.1.dylib"
   "model-metal-int4.pte"
   "preprocessor.pte"
   "tekken.json"

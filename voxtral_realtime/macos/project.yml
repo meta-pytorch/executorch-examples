@@ -46,6 +46,7 @@ targets:
           RUNNER_SRC="${ET_PATH}/cmake-out/examples/models/voxtral_realtime/voxtral_realtime_runner"
           MODEL_DIR="${MODEL_DIR:-${HOME}/voxtral_realtime_quant_metal}"
           LIBOMP_SRC="/opt/homebrew/opt/libomp/lib/libomp.dylib"
+          LIBCXX_SRC="/usr/lib/libc++.1.dylib"
           DEST="${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources"
 
           mkdir -p "${DEST}"
@@ -71,10 +72,20 @@ targets:
           # libomp (runner dependency)
           copy_if_newer "${LIBOMP_SRC}" "${DEST}/libomp.dylib"
 
+          # libc++ (required by Metal blob dylib loaded at runtime)
+          copy_if_newer "${LIBCXX_SRC}" "${DEST}/libc++.1.dylib"
+
           # Patch runner to find libomp via @executable_path (SIP strips DYLD_LIBRARY_PATH)
           if [ -f "${DEST}/voxtral_realtime_runner" ] && [ -f "${DEST}/libomp.dylib" ]; then
             install_name_tool -change /opt/llvm-openmp/lib/libomp.dylib @executable_path/libomp.dylib "${DEST}/voxtral_realtime_runner" 2>/dev/null || true
             echo "✓ Patched runner rpath for libomp"
+          fi
+
+          # Ensure @rpath can resolve libc++ for runtime-generated Metal dylibs
+          if [ -f "${DEST}/voxtral_realtime_runner" ]; then
+            install_name_tool -add_rpath @executable_path "${DEST}/voxtral_realtime_runner" 2>/dev/null || true
+            install_name_tool -add_rpath /usr/lib "${DEST}/voxtral_realtime_runner" 2>/dev/null || true
+            echo "✓ Added rpaths for libc++"
           fi
 
           # Model artifacts
