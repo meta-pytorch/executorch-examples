@@ -109,6 +109,18 @@ struct VoxtralRealtimeApp: App {
                     Task { await dictation.toggle() }
                 }
                 .disabled(!store.isModelReady && store.modelState != .unloaded)
+
+                Divider()
+
+                Button(preferences.enableSileroVAD ? "Disable Voice Wake" : "Enable Voice Wake") {
+                    preferences.enableSileroVAD.toggle()
+                    if preferences.enableSileroVAD {
+                        Task { await dictation.restartWakeListening() }
+                    } else {
+                        Task { await dictation.stopWakeListening() }
+                    }
+                }
+                .keyboardShortcut("W", modifiers: [.control, .shift])
             }
         }
 

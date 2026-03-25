@@ -56,6 +56,10 @@ struct ContentView: View {
             SnippetManagementView()
                 .padding()
                 .navigationTitle("Snippets")
+        case .wake:
+            WakeSettingsView()
+                .padding()
+                .navigationTitle("Wake")
         case .home:
             homeContent
         case .session(let id):

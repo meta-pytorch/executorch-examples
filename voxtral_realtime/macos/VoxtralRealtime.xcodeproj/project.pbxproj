@@ -27,6 +27,7 @@
 		710AF905B60EB23C212AAC30 /* HealthCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CAB3C82C8E7393E06E6EE6E /* HealthCheck.swift */; };
 		75FD2E801951086DFE9E28E3 /* AudioLevelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5282DE2DFDC7D992AC7D81D /* AudioLevelView.swift */; };
 		7CF7B1783B1948A4CA22BBB9 /* SessionCompatibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5521AE4951FF78020CF91D18 /* SessionCompatibilityTests.swift */; };
+		7E6D25D0306CA07BAE482CD4 /* WakeSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E559087816AF48C30A5FD6B5 /* WakeSettingsView.swift */; };
 		7F4D25A854D63B9F528C56A0 /* ReplacementEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF25A732CF8FA1A7A982A8D8 /* ReplacementEntry.swift */; };
 		83C2211EB3926FCE3AE55BA8 /* TranscriptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9539C4044A50A585F04687CA /* TranscriptView.swift */; };
 		8E1D5D4563D1FEA413FD49C6 /* PersistencePaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB52D50C17A7A729A04F559D /* PersistencePaths.swift */; };
@@ -89,6 +90,7 @@
 		D2245F740610F505B2D2905E /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		E0D0245890DF77D480572858 /* Session.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Session.swift; sourceTree = "<group>"; };
 		E4B018A732C7D539547855A3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		E559087816AF48C30A5FD6B5 /* WakeSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WakeSettingsView.swift; sourceTree = "<group>"; };
 		FF25A732CF8FA1A7A982A8D8 /* ReplacementEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReplacementEntry.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -142,6 +144,7 @@
 				68D216F7ED4F81E147F2CFEE /* SidebarView.swift */,
 				A16CFDDF3005489D5CEFD58B /* SnippetManagementView.swift */,
 				9539C4044A50A585F04687CA /* TranscriptView.swift */,
+				E559087816AF48C30A5FD6B5 /* WakeSettingsView.swift */,
 				D2245F740610F505B2D2905E /* WelcomeView.swift */,
 			);
 			path = Views;
@@ -355,6 +358,7 @@
 				83C2211EB3926FCE3AE55BA8 /* TranscriptView.swift in Sources */,
 				B5A4C34832F186322489706E /* VadService.swift in Sources */,
 				B4086DFD7477802852F31D0E /* VoxtralRealtimeApp.swift in Sources */,
+				7E6D25D0306CA07BAE482CD4 /* WakeSettingsView.swift in Sources */,
 				EE2CF6B261CC691736E9BBDE /* WakeState.swift in Sources */,
 				2C0D9096EB59C859E877427A /* WelcomeView.swift in Sources */,
 			);
