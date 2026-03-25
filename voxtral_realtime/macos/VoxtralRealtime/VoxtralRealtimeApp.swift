@@ -12,13 +12,20 @@ import SwiftUI
 @main
 struct VoxtralRealtimeApp: App {
     @State private var preferences = Preferences()
+    @State private var replacementStore: ReplacementStore
+    @State private var snippetStore: SnippetStore
     @State private var store: TranscriptStore
     @State private var dictation: DictationManager
 
     init() {
         let prefs = Preferences()
-        let s = TranscriptStore(preferences: prefs)
+        let replacements = ReplacementStore()
+        let snippets = SnippetStore()
+        let pipeline = TextPipeline(replacementStore: replacements, snippetStore: snippets)
+        let s = TranscriptStore(preferences: prefs, textPipeline: pipeline)
         _preferences = State(initialValue: prefs)
+        _replacementStore = State(initialValue: replacements)
+        _snippetStore = State(initialValue: snippets)
         _store = State(initialValue: s)
         _dictation = State(initialValue: DictationManager(store: s, preferences: prefs))
     }
@@ -28,6 +35,8 @@ struct VoxtralRealtimeApp: App {
             ContentView()
                 .environment(store)
                 .environment(preferences)
+                .environment(replacementStore)
+                .environment(snippetStore)
                 .frame(minWidth: 600, minHeight: 400)
                 .task {
                     _ = await AVCaptureDevice.requestAccess(for: .audio)

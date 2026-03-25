@@ -11,12 +11,11 @@ import SwiftUI
 struct ContentView: View {
     @Environment(TranscriptStore.self) private var store
     @State private var columnVisibility: NavigationSplitViewVisibility = .doubleColumn
+    @State private var activePage: SidebarPage = .home
 
     var body: some View {
-        @Bindable var store = store
-
         NavigationSplitView(columnVisibility: $columnVisibility) {
-            SidebarView()
+            SidebarView(activePage: $activePage)
                 .navigationSplitViewColumnWidth(min: 180, ideal: 220, max: 320)
         } detail: {
             detailContent
@@ -31,6 +30,16 @@ struct ContentView: View {
             }
         }
         .animation(.easeInOut(duration: 0.25), value: store.currentError != nil)
+        .onChange(of: activePage) { _, newPage in
+            if case .session(let id) = newPage {
+                store.selectedSessionID = id
+            }
+        }
+        .onChange(of: store.selectedSessionID) { _, newID in
+            if let newID {
+                activePage = .session(newID)
+            }
+        }
         .task {
             await store.runHealthCheck()
         }
@@ -38,6 +47,29 @@ struct ContentView: View {
 
     @ViewBuilder
     private var detailContent: some View {
+        switch activePage {
+        case .replacements:
+            ReplacementManagementView()
+                .padding()
+                .navigationTitle("Replacements")
+        case .snippets:
+            SnippetManagementView()
+                .padding()
+                .navigationTitle("Snippets")
+        case .home:
+            homeContent
+        case .session(let id):
+            if let session = store.sessions.first(where: { $0.id == id }) {
+                TranscriptView(text: session.transcript, isLive: false)
+                    .navigationTitle(session.displayTitle)
+            } else {
+                homeContent
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var homeContent: some View {
         if store.healthResult?.allGood == false && !store.hasActiveSession && store.modelState == .unloaded {
             SetupGuideView()
         } else if store.hasActiveSession {
@@ -48,10 +80,6 @@ struct ContentView: View {
                 audioLevel: store.audioLevel,
                 statusMessage: store.statusMessage
             )
-        } else if let id = store.selectedSessionID,
-                  let session = store.sessions.first(where: { $0.id == id }) {
-            TranscriptView(text: session.transcript, isLive: false)
-                .navigationTitle(session.displayTitle)
         } else {
             WelcomeView()
         }

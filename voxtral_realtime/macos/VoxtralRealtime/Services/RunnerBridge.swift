@@ -202,6 +202,17 @@ actor RunnerBridge {
         }
     }
 
+    func primeAudioSamples(_ samples: [Float]) throws {
+        guard !samples.isEmpty else { return }
+        guard let handle = stdinPipe?.fileHandleForWriting else {
+            throw RunnerError.launchFailed(description: "Runner stdin not available")
+        }
+        let data = samples.withUnsafeBufferPointer {
+            Data(buffer: $0)
+        }
+        try handle.write(contentsOf: data)
+    }
+
     func stopAudioCapture() async {
         await audioEngine.stopCapture()
         levelContinuation?.yield(0)

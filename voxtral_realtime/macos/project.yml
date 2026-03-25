@@ -13,6 +13,17 @@ settings:
     MACOSX_DEPLOYMENT_TARGET: "14.0"
     ENABLE_HARDENED_RUNTIME: YES
 
+schemes:
+  VoxtralRealtime:
+    build:
+      targets:
+        VoxtralRealtime: all
+        VoxtralRealtimeTests: [test]
+    test:
+      gatherCoverageData: true
+      targets:
+        - VoxtralRealtimeTests
+
 targets:
   VoxtralRealtime:
     type: application
@@ -44,6 +55,7 @@ targets:
 
           ET_PATH="${EXECUTORCH_PATH:-${HOME}/executorch}"
           RUNNER_SRC="${ET_PATH}/cmake-out/examples/models/voxtral_realtime/voxtral_realtime_runner"
+          VAD_RUNNER_SRC="${ET_PATH}/cmake-out/examples/models/silero_vad/silero_vad_stream_runner"
           MODEL_DIR="${MODEL_DIR:-${HOME}/voxtral_realtime_quant_metal}"
           LIBOMP_SRC="/opt/homebrew/opt/libomp/lib/libomp.dylib"
           LIBCXX_SRC="/usr/lib/libc++.1.dylib"
@@ -92,5 +104,27 @@ targets:
           copy_if_newer "${MODEL_DIR}/model-metal-int4.pte" "${DEST}/model-metal-int4.pte"
           copy_if_newer "${MODEL_DIR}/preprocessor.pte" "${DEST}/preprocessor.pte"
           copy_if_newer "${MODEL_DIR}/tekken.json" "${DEST}/tekken.json"
+          copy_if_newer "${MODEL_DIR}/silero_vad.pte" "${DEST}/silero_vad.pte"
+
+          # Optional Silero VAD helper
+          copy_if_newer "${VAD_RUNNER_SRC}" "${DEST}/silero_vad_stream_runner"
+          chmod +x "${DEST}/silero_vad_stream_runner" 2>/dev/null || true
         name: Bundle Runner & Model Artifacts
         basedOnDependencyAnalysis: false
+  VoxtralRealtimeTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: VoxtralRealtime/Models/ReplacementEntry.swift
+      - path: VoxtralRealtime/Models/Session.swift
+      - path: VoxtralRealtime/Models/Snippet.swift
+      - path: VoxtralRealtime/Utilities/PersistencePaths.swift
+      - path: VoxtralRealtime/Utilities/SessionExportFormat.swift
+      - path: VoxtralRealtime/Services/ReplacementStore.swift
+      - path: VoxtralRealtime/Services/SnippetStore.swift
+      - path: VoxtralRealtime/Services/TextPipeline.swift
+      - path: VoxtralRealtimeTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.pytorch.executorch.VoxtralRealtimeTests
+        GENERATE_INFOPLIST_FILE: YES

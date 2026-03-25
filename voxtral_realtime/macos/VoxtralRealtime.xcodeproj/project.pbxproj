@@ -8,9 +8,13 @@
 
 /* Begin PBXBuildFile section */
 		00C95410EB7173CB8EC29546 /* DictationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 085054419A1BAA91DC852C48 /* DictationManager.swift */; };
+		0902FE224C2886A2B01C53FC /* ReplacementStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23662220D8DC0A9E945AE589 /* ReplacementStore.swift */; };
+		0F53A5D1181652FA4510B10C /* PersistencePaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB52D50C17A7A729A04F559D /* PersistencePaths.swift */; };
 		1850513C3735A844666D0217 /* DictationOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 54933FCE568E7DC5C512B5D8 /* DictationOverlayView.swift */; };
+		1C4C9D6705E1843D518C5EC1 /* ReplacementEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF25A732CF8FA1A7A982A8D8 /* ReplacementEntry.swift */; };
 		2C0D9096EB59C859E877427A /* WelcomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2245F740610F505B2D2905E /* WelcomeView.swift */; };
 		2C387248936D9F2313B8E2FB /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = D14DCD3E95F36CEACCEF4335 /* AudioEngine.swift */; };
+		402BE72495113F445B8C693E /* TextPipelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF2BCF50209E617141188684 /* TextPipelineTests.swift */; };
 		437CDA8161D03BC53BF5ACAA /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B977C4A3EF8EE9770D939E98 /* SettingsView.swift */; };
 		4E3EFCC72CC492D94CC9494E /* Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0D0245890DF77D480572858 /* Session.swift */; };
 		4EDEB7964D71C06220AE2CE5 /* Preferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74547233C8BECECCBCAC2E8C /* Preferences.swift */; };
@@ -18,34 +22,64 @@
 		51009A5D18D14D7B19A77645 /* DictationPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97AF5A7A49BCC1D9F9404C02 /* DictationPanel.swift */; };
 		54B04C6AFEC0BEC16D5A427B /* RunnerBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65D90AECAFB4D759F980E25A /* RunnerBridge.swift */; };
 		5E5BEB5668CE4A42F6B67569 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9069BFAFAFDDBB137F34675E /* ContentView.swift */; };
+		6248A7B9E31EB5CBC9451656 /* Session.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0D0245890DF77D480572858 /* Session.swift */; };
 		6ABE5D7F989ACBF0E68BF8AD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E4B018A732C7D539547855A3 /* Assets.xcassets */; };
 		710AF905B60EB23C212AAC30 /* HealthCheck.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CAB3C82C8E7393E06E6EE6E /* HealthCheck.swift */; };
 		75FD2E801951086DFE9E28E3 /* AudioLevelView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B5282DE2DFDC7D992AC7D81D /* AudioLevelView.swift */; };
+		7CF7B1783B1948A4CA22BBB9 /* SessionCompatibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5521AE4951FF78020CF91D18 /* SessionCompatibilityTests.swift */; };
+		7F4D25A854D63B9F528C56A0 /* ReplacementEntry.swift in Sources */ = {isa = PBXBuildFile; fileRef = FF25A732CF8FA1A7A982A8D8 /* ReplacementEntry.swift */; };
 		83C2211EB3926FCE3AE55BA8 /* TranscriptView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9539C4044A50A585F04687CA /* TranscriptView.swift */; };
+		8E1D5D4563D1FEA413FD49C6 /* PersistencePaths.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB52D50C17A7A729A04F559D /* PersistencePaths.swift */; };
+		92C09998C9463D1BD392F8C0 /* ReplacementStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 23662220D8DC0A9E945AE589 /* ReplacementStore.swift */; };
+		980B7949F856A2C50A65C1AD /* Snippet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 592F5A369D8A7B187E7AC800 /* Snippet.swift */; };
 		9D0149A93C0234587B0A7655 /* RecordingControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE9D72CEB451260E46996613 /* RecordingControls.swift */; };
 		A23029B5977019EBC0CC217F /* SetupGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7DC59AEFE4416E91D2A001F /* SetupGuideView.swift */; };
 		B4086DFD7477802852F31D0E /* VoxtralRealtimeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1FF01EEFDD18E056509CEB0 /* VoxtralRealtimeApp.swift */; };
+		B4AF3290D7820297BA97100E /* TextPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31283A9DAEC7965B08CB6A55 /* TextPipeline.swift */; };
+		B5A4C34832F186322489706E /* VadService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62135A876AFC6B0DDCBF306F /* VadService.swift */; };
 		BA4D276D05BDEC9EE49C8979 /* RunnerError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 887F4BCA7C5EBE3951E6BB56 /* RunnerError.swift */; };
 		BDC0CBA04D99E79D5EBA5DC6 /* TranscriptStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26CC8EBA770C5AE5AE9FE5AF /* TranscriptStore.swift */; };
+		BFD3E022202BBB6E261C5530 /* SnippetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96482F9055320E605013E741 /* SnippetStore.swift */; };
+		CD94243BBE7525C8BBA1EA4B /* SessionExportFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12715E449A97150F1BE9A5E3 /* SessionExportFormat.swift */; };
+		D6C1940C018A1B7A21007749 /* SnippetManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A16CFDDF3005489D5CEFD58B /* SnippetManagementView.swift */; };
 		DB7FD45624EA9EECDA9DD799 /* ErrorBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CB74DFC873A590526E6138 /* ErrorBannerView.swift */; };
+		EA47EF0DBDDEB7A6B19125BB /* TextPipeline.swift in Sources */ = {isa = PBXBuildFile; fileRef = 31283A9DAEC7965B08CB6A55 /* TextPipeline.swift */; };
+		EE2CF6B261CC691736E9BBDE /* WakeState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CC6853F668DED1C9E00D31A /* WakeState.swift */; };
+		F012D0ADEAFFA55D329C9470 /* SnippetStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96482F9055320E605013E741 /* SnippetStore.swift */; };
+		F2871C888DE94A48AE31E175 /* SessionExportFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 12715E449A97150F1BE9A5E3 /* SessionExportFormat.swift */; };
+		F99C64CE2B73E3488A6943DB /* ReplacementManagementView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DA671728594173ABC914B67 /* ReplacementManagementView.swift */; };
+		FE02B324621EAC80BEADC1B5 /* Snippet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 592F5A369D8A7B187E7AC800 /* Snippet.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		085054419A1BAA91DC852C48 /* DictationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationManager.swift; sourceTree = "<group>"; };
+		12715E449A97150F1BE9A5E3 /* SessionExportFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionExportFormat.swift; sourceTree = "<group>"; };
 		1FB850226CD44666C82C7740 /* VoxtralRealtime.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = VoxtralRealtime.entitlements; sourceTree = "<group>"; };
+		23662220D8DC0A9E945AE589 /* ReplacementStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReplacementStore.swift; sourceTree = "<group>"; };
 		26CC8EBA770C5AE5AE9FE5AF /* TranscriptStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptStore.swift; sourceTree = "<group>"; };
 		26D5AB3AA91015848E6CC122 /* VoxtralRealtime.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VoxtralRealtime.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		31283A9DAEC7965B08CB6A55 /* TextPipeline.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextPipeline.swift; sourceTree = "<group>"; };
+		3DA671728594173ABC914B67 /* ReplacementManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReplacementManagementView.swift; sourceTree = "<group>"; };
+		408871360ABEA43A93E5BA1E /* VoxtralRealtimeTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = VoxtralRealtimeTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		54933FCE568E7DC5C512B5D8 /* DictationOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationOverlayView.swift; sourceTree = "<group>"; };
+		5521AE4951FF78020CF91D18 /* SessionCompatibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionCompatibilityTests.swift; sourceTree = "<group>"; };
+		592F5A369D8A7B187E7AC800 /* Snippet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Snippet.swift; sourceTree = "<group>"; };
+		62135A876AFC6B0DDCBF306F /* VadService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VadService.swift; sourceTree = "<group>"; };
 		65D90AECAFB4D759F980E25A /* RunnerBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerBridge.swift; sourceTree = "<group>"; };
 		68D216F7ED4F81E147F2CFEE /* SidebarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarView.swift; sourceTree = "<group>"; };
 		6CAB3C82C8E7393E06E6EE6E /* HealthCheck.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HealthCheck.swift; sourceTree = "<group>"; };
 		74547233C8BECECCBCAC2E8C /* Preferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Preferences.swift; sourceTree = "<group>"; };
 		887F4BCA7C5EBE3951E6BB56 /* RunnerError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerError.swift; sourceTree = "<group>"; };
+		8CC6853F668DED1C9E00D31A /* WakeState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WakeState.swift; sourceTree = "<group>"; };
 		9069BFAFAFDDBB137F34675E /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		9539C4044A50A585F04687CA /* TranscriptView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptView.swift; sourceTree = "<group>"; };
+		96482F9055320E605013E741 /* SnippetStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnippetStore.swift; sourceTree = "<group>"; };
 		97AF5A7A49BCC1D9F9404C02 /* DictationPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DictationPanel.swift; sourceTree = "<group>"; };
+		A16CFDDF3005489D5CEFD58B /* SnippetManagementView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SnippetManagementView.swift; sourceTree = "<group>"; };
 		A2CB74DFC873A590526E6138 /* ErrorBannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorBannerView.swift; sourceTree = "<group>"; };
 		A7DC59AEFE4416E91D2A001F /* SetupGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SetupGuideView.swift; sourceTree = "<group>"; };
+		AB52D50C17A7A729A04F559D /* PersistencePaths.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersistencePaths.swift; sourceTree = "<group>"; };
+		AF2BCF50209E617141188684 /* TextPipelineTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TextPipelineTests.swift; sourceTree = "<group>"; };
 		B5282DE2DFDC7D992AC7D81D /* AudioLevelView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioLevelView.swift; sourceTree = "<group>"; };
 		B977C4A3EF8EE9770D939E98 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		BE9D72CEB451260E46996613 /* RecordingControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordingControls.swift; sourceTree = "<group>"; };
@@ -55,13 +89,16 @@
 		D2245F740610F505B2D2905E /* WelcomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WelcomeView.swift; sourceTree = "<group>"; };
 		E0D0245890DF77D480572858 /* Session.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Session.swift; sourceTree = "<group>"; };
 		E4B018A732C7D539547855A3 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		FF25A732CF8FA1A7A982A8D8 /* ReplacementEntry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReplacementEntry.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
 		30572FD24E5528E224F7ED10 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				AB52D50C17A7A729A04F559D /* PersistencePaths.swift */,
 				887F4BCA7C5EBE3951E6BB56 /* RunnerError.swift */,
+				12715E449A97150F1BE9A5E3 /* SessionExportFormat.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -81,6 +118,15 @@
 			path = VoxtralRealtime;
 			sourceTree = "<group>";
 		};
+		BB65A4B67667E366A9A7B235 /* VoxtralRealtimeTests */ = {
+			isa = PBXGroup;
+			children = (
+				5521AE4951FF78020CF91D18 /* SessionCompatibilityTests.swift */,
+				AF2BCF50209E617141188684 /* TextPipelineTests.swift */,
+			);
+			path = VoxtralRealtimeTests;
+			sourceTree = "<group>";
+		};
 		C452E644F7EA840AFBDB43A4 /* Views */ = {
 			isa = PBXGroup;
 			children = (
@@ -90,9 +136,11 @@
 				97AF5A7A49BCC1D9F9404C02 /* DictationPanel.swift */,
 				A2CB74DFC873A590526E6138 /* ErrorBannerView.swift */,
 				BE9D72CEB451260E46996613 /* RecordingControls.swift */,
+				3DA671728594173ABC914B67 /* ReplacementManagementView.swift */,
 				B977C4A3EF8EE9770D939E98 /* SettingsView.swift */,
 				A7DC59AEFE4416E91D2A001F /* SetupGuideView.swift */,
 				68D216F7ED4F81E147F2CFEE /* SidebarView.swift */,
+				A16CFDDF3005489D5CEFD58B /* SnippetManagementView.swift */,
 				9539C4044A50A585F04687CA /* TranscriptView.swift */,
 				D2245F740610F505B2D2905E /* WelcomeView.swift */,
 			);
@@ -103,6 +151,7 @@
 			isa = PBXGroup;
 			children = (
 				26D5AB3AA91015848E6CC122 /* VoxtralRealtime.app */,
+				408871360ABEA43A93E5BA1E /* VoxtralRealtimeTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -113,7 +162,11 @@
 				D14DCD3E95F36CEACCEF4335 /* AudioEngine.swift */,
 				085054419A1BAA91DC852C48 /* DictationManager.swift */,
 				6CAB3C82C8E7393E06E6EE6E /* HealthCheck.swift */,
+				23662220D8DC0A9E945AE589 /* ReplacementStore.swift */,
 				65D90AECAFB4D759F980E25A /* RunnerBridge.swift */,
+				96482F9055320E605013E741 /* SnippetStore.swift */,
+				31283A9DAEC7965B08CB6A55 /* TextPipeline.swift */,
+				62135A876AFC6B0DDCBF306F /* VadService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -130,6 +183,7 @@
 			isa = PBXGroup;
 			children = (
 				34E1BE9EC8ACD121D7795352 /* VoxtralRealtime */,
+				BB65A4B67667E366A9A7B235 /* VoxtralRealtimeTests */,
 				C62DD9BE8818F70C8044D7FF /* Products */,
 			);
 			sourceTree = "<group>";
@@ -138,8 +192,11 @@
 			isa = PBXGroup;
 			children = (
 				74547233C8BECECCBCAC2E8C /* Preferences.swift */,
+				FF25A732CF8FA1A7A982A8D8 /* ReplacementEntry.swift */,
 				E0D0245890DF77D480572858 /* Session.swift */,
+				592F5A369D8A7B187E7AC800 /* Snippet.swift */,
 				26CC8EBA770C5AE5AE9FE5AF /* TranscriptStore.swift */,
+				8CC6853F668DED1C9E00D31A /* WakeState.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -165,6 +222,23 @@
 			productName = VoxtralRealtime;
 			productReference = 26D5AB3AA91015848E6CC122 /* VoxtralRealtime.app */;
 			productType = "com.apple.product-type.application";
+		};
+		C824B0DF381376921DE5A144 /* VoxtralRealtimeTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 196053E02BAA1A0CC976C1BA /* Build configuration list for PBXNativeTarget "VoxtralRealtimeTests" */;
+			buildPhases = (
+				2EA864A9F061F9F864C0A80A /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = VoxtralRealtimeTests;
+			packageProductDependencies = (
+			);
+			productName = VoxtralRealtimeTests;
+			productReference = 408871360ABEA43A93E5BA1E /* VoxtralRealtimeTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -192,6 +266,7 @@
 			projectRoot = "";
 			targets = (
 				B8C73BD33D08CD15C03EC05D /* VoxtralRealtime */,
+				C824B0DF381376921DE5A144 /* VoxtralRealtimeTests */,
 			);
 		};
 /* End PBXProject section */
@@ -225,11 +300,28 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -euo pipefail\n\nET_PATH=\"${EXECUTORCH_PATH:-${HOME}/executorch}\"\nRUNNER_SRC=\"${ET_PATH}/cmake-out/examples/models/voxtral_realtime/voxtral_realtime_runner\"\nMODEL_DIR=\"${MODEL_DIR:-${HOME}/voxtral_realtime_quant_metal}\"\nLIBOMP_SRC=\"/opt/homebrew/opt/libomp/lib/libomp.dylib\"\nLIBCXX_SRC=\"/usr/lib/libc++.1.dylib\"\nDEST=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources\"\n\nmkdir -p \"${DEST}\"\n\ncopy_if_newer() {\n  local src=\"$1\" dst=\"$2\"\n  if [ ! -f \"${src}\" ]; then\n    echo \"warning: Not found: ${src}\"\n    return\n  fi\n  if [ ! -f \"${dst}\" ] || [ \"${src}\" -nt \"${dst}\" ]; then\n    cp -fL \"${src}\" \"${dst}\"\n    echo \"✓ Bundled $(basename \"${dst}\")\"\n  else\n    echo \"· $(basename \"${dst}\") up to date\"\n  fi\n}\n\n# Runner binary\ncopy_if_newer \"${RUNNER_SRC}\" \"${DEST}/voxtral_realtime_runner\"\nchmod +x \"${DEST}/voxtral_realtime_runner\" 2>/dev/null || true\n\n# libomp (runner dependency)\ncopy_if_newer \"${LIBOMP_SRC}\" \"${DEST}/libomp.dylib\"\n\n# libc++ (required by Metal blob dylib loaded at runtime)\ncopy_if_newer \"${LIBCXX_SRC}\" \"${DEST}/libc++.1.dylib\"\n\n# Patch runner to find libomp via @executable_path (SIP strips DYLD_LIBRARY_PATH)\nif [ -f \"${DEST}/voxtral_realtime_runner\" ] && [ -f \"${DEST}/libomp.dylib\" ]; then\n  install_name_tool -change /opt/llvm-openmp/lib/libomp.dylib @executable_path/libomp.dylib \"${DEST}/voxtral_realtime_runner\" 2>/dev/null || true\n  echo \"✓ Patched runner rpath for libomp\"\nfi\n\n# Ensure @rpath can resolve libc++ for runtime-generated Metal dylibs\nif [ -f \"${DEST}/voxtral_realtime_runner\" ]; then\n  install_name_tool -add_rpath @executable_path \"${DEST}/voxtral_realtime_runner\" 2>/dev/null || true\n  install_name_tool -add_rpath /usr/lib \"${DEST}/voxtral_realtime_runner\" 2>/dev/null || true\n  echo \"✓ Added rpaths for libc++\"\nfi\n\n# Model artifacts\ncopy_if_newer \"${MODEL_DIR}/model-metal-int4.pte\" \"${DEST}/model-metal-int4.pte\"\ncopy_if_newer \"${MODEL_DIR}/preprocessor.pte\" \"${DEST}/preprocessor.pte\"\ncopy_if_newer \"${MODEL_DIR}/tekken.json\" \"${DEST}/tekken.json\"\n";
+			shellScript = "set -euo pipefail\n\nET_PATH=\"${EXECUTORCH_PATH:-${HOME}/executorch}\"\nRUNNER_SRC=\"${ET_PATH}/cmake-out/examples/models/voxtral_realtime/voxtral_realtime_runner\"\nVAD_RUNNER_SRC=\"${ET_PATH}/cmake-out/examples/models/silero_vad/silero_vad_stream_runner\"\nMODEL_DIR=\"${MODEL_DIR:-${HOME}/voxtral_realtime_quant_metal}\"\nLIBOMP_SRC=\"/opt/homebrew/opt/libomp/lib/libomp.dylib\"\nLIBCXX_SRC=\"/usr/lib/libc++.1.dylib\"\nDEST=\"${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources\"\n\nmkdir -p \"${DEST}\"\n\ncopy_if_newer() {\n  local src=\"$1\" dst=\"$2\"\n  if [ ! -f \"${src}\" ]; then\n    echo \"warning: Not found: ${src}\"\n    return\n  fi\n  if [ ! -f \"${dst}\" ] || [ \"${src}\" -nt \"${dst}\" ]; then\n    cp -fL \"${src}\" \"${dst}\"\n    echo \"✓ Bundled $(basename \"${dst}\")\"\n  else\n    echo \"· $(basename \"${dst}\") up to date\"\n  fi\n}\n\n# Runner binary\ncopy_if_newer \"${RUNNER_SRC}\" \"${DEST}/voxtral_realtime_runner\"\nchmod +x \"${DEST}/voxtral_realtime_runner\" 2>/dev/null || true\n\n# libomp (runner dependency)\ncopy_if_newer \"${LIBOMP_SRC}\" \"${DEST}/libomp.dylib\"\n\n# libc++ (required by Metal blob dylib loaded at runtime)\ncopy_if_newer \"${LIBCXX_SRC}\" \"${DEST}/libc++.1.dylib\"\n\n# Patch runner to find libomp via @executable_path (SIP strips DYLD_LIBRARY_PATH)\nif [ -f \"${DEST}/voxtral_realtime_runner\" ] && [ -f \"${DEST}/libomp.dylib\" ]; then\n  install_name_tool -change /opt/llvm-openmp/lib/libomp.dylib @executable_path/libomp.dylib \"${DEST}/voxtral_realtime_runner\" 2>/dev/null || true\n  echo \"✓ Patched runner rpath for libomp\"\nfi\n\n# Ensure @rpath can resolve libc++ for runtime-generated Metal dylibs\nif [ -f \"${DEST}/voxtral_realtime_runner\" ]; then\n  install_name_tool -add_rpath @executable_path \"${DEST}/voxtral_realtime_runner\" 2>/dev/null || true\n  install_name_tool -add_rpath /usr/lib \"${DEST}/voxtral_realtime_runner\" 2>/dev/null || true\n  echo \"✓ Added rpaths for libc++\"\nfi\n\n# Model artifacts\ncopy_if_newer \"${MODEL_DIR}/model-metal-int4.pte\" \"${DEST}/model-metal-int4.pte\"\ncopy_if_newer \"${MODEL_DIR}/preprocessor.pte\" \"${DEST}/preprocessor.pte\"\ncopy_if_newer \"${MODEL_DIR}/tekken.json\" \"${DEST}/tekken.json\"\ncopy_if_newer \"${MODEL_DIR}/silero_vad.pte\" \"${DEST}/silero_vad.pte\"\n\n# Optional Silero VAD helper\ncopy_if_newer \"${VAD_RUNNER_SRC}\" \"${DEST}/silero_vad_stream_runner\"\nchmod +x \"${DEST}/silero_vad_stream_runner\" 2>/dev/null || true\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		2EA864A9F061F9F864C0A80A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8E1D5D4563D1FEA413FD49C6 /* PersistencePaths.swift in Sources */,
+				1C4C9D6705E1843D518C5EC1 /* ReplacementEntry.swift in Sources */,
+				0902FE224C2886A2B01C53FC /* ReplacementStore.swift in Sources */,
+				6248A7B9E31EB5CBC9451656 /* Session.swift in Sources */,
+				7CF7B1783B1948A4CA22BBB9 /* SessionCompatibilityTests.swift in Sources */,
+				F2871C888DE94A48AE31E175 /* SessionExportFormat.swift in Sources */,
+				FE02B324621EAC80BEADC1B5 /* Snippet.swift in Sources */,
+				F012D0ADEAFFA55D329C9470 /* SnippetStore.swift in Sources */,
+				B4AF3290D7820297BA97100E /* TextPipeline.swift in Sources */,
+				402BE72495113F445B8C693E /* TextPipelineTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		590D6B292BC0BAAD0A99F381 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -242,17 +334,28 @@
 				51009A5D18D14D7B19A77645 /* DictationPanel.swift in Sources */,
 				DB7FD45624EA9EECDA9DD799 /* ErrorBannerView.swift in Sources */,
 				710AF905B60EB23C212AAC30 /* HealthCheck.swift in Sources */,
+				0F53A5D1181652FA4510B10C /* PersistencePaths.swift in Sources */,
 				4EDEB7964D71C06220AE2CE5 /* Preferences.swift in Sources */,
 				9D0149A93C0234587B0A7655 /* RecordingControls.swift in Sources */,
+				7F4D25A854D63B9F528C56A0 /* ReplacementEntry.swift in Sources */,
+				F99C64CE2B73E3488A6943DB /* ReplacementManagementView.swift in Sources */,
+				92C09998C9463D1BD392F8C0 /* ReplacementStore.swift in Sources */,
 				54B04C6AFEC0BEC16D5A427B /* RunnerBridge.swift in Sources */,
 				BA4D276D05BDEC9EE49C8979 /* RunnerError.swift in Sources */,
 				4E3EFCC72CC492D94CC9494E /* Session.swift in Sources */,
+				CD94243BBE7525C8BBA1EA4B /* SessionExportFormat.swift in Sources */,
 				437CDA8161D03BC53BF5ACAA /* SettingsView.swift in Sources */,
 				A23029B5977019EBC0CC217F /* SetupGuideView.swift in Sources */,
 				50B57C3652FDC3D30EE08D50 /* SidebarView.swift in Sources */,
+				980B7949F856A2C50A65C1AD /* Snippet.swift in Sources */,
+				D6C1940C018A1B7A21007749 /* SnippetManagementView.swift in Sources */,
+				BFD3E022202BBB6E261C5530 /* SnippetStore.swift in Sources */,
+				EA47EF0DBDDEB7A6B19125BB /* TextPipeline.swift in Sources */,
 				BDC0CBA04D99E79D5EBA5DC6 /* TranscriptStore.swift in Sources */,
 				83C2211EB3926FCE3AE55BA8 /* TranscriptView.swift in Sources */,
+				B5A4C34832F186322489706E /* VadService.swift in Sources */,
 				B4086DFD7477802852F31D0E /* VoxtralRealtimeApp.swift in Sources */,
+				EE2CF6B261CC691736E9BBDE /* WakeState.swift in Sources */,
 				2C0D9096EB59C859E877427A /* WelcomeView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -299,6 +402,22 @@
 				SDKROOT = macosx;
 			};
 			name = Release;
+		};
+		771FA134122860FF59C3CD77 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = org.pytorch.executorch.VoxtralRealtimeTests;
+				SDKROOT = macosx;
+			};
+			name = Debug;
 		};
 		824D2A17D67FC8808FAC2F63 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -354,6 +473,22 @@
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.10;
+			};
+			name = Release;
+		};
+		8ED466D22BF982493F9BE040 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				COMBINE_HIDPI_IMAGES = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@loader_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = org.pytorch.executorch.VoxtralRealtimeTests;
+				SDKROOT = macosx;
 			};
 			name = Release;
 		};
@@ -424,6 +559,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		196053E02BAA1A0CC976C1BA /* Build configuration list for PBXNativeTarget "VoxtralRealtimeTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				771FA134122860FF59C3CD77 /* Debug */,
+				8ED466D22BF982493F9BE040 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		6C9DE1DB881A58FAD15232B9 /* Build configuration list for PBXNativeTarget "VoxtralRealtime" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

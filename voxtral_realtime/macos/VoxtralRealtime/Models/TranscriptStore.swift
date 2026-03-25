@@ -6,6 +6,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+import AppKit
 import Foundation
 
 @MainActor @Observable
@@ -35,20 +36,29 @@ final class TranscriptStore {
 
     var dictationText = ""
     var isDictating = false
+    var wakeState: WakeState = .disabled
 
     var hasActiveSession: Bool { sessionState != .idle }
     var isTranscribing: Bool { sessionState == .transcribing }
     var isPaused: Bool { sessionState == .paused }
     var isLoading: Bool { sessionState == .loading }
     var isModelReady: Bool { modelState == .ready }
+    var recentDictationSessions: [Session] {
+        sessions.filter { $0.source == .dictation }.prefix(5).map { $0 }
+    }
 
     private let runner = RunnerBridge()
     private let preferences: Preferences
+    private let textPipeline: TextPipeline
     private var startDate: Date?
     private var streamTask: Task<Void, Never>?
 
-    init(preferences: Preferences) {
+    init(
+        preferences: Preferences,
+        textPipeline: TextPipeline
+    ) {
         self.preferences = preferences
+        self.textPipeline = textPipeline
         loadSessions()
     }
 
@@ -139,10 +149,15 @@ final class TranscriptStore {
         let duration = startDate.map { Date.now.timeIntervalSince($0) } ?? 0
 
         if !liveTranscript.isEmpty {
+            let processed = textPipeline.process(liveTranscript, context: .sessionSave)
             let session = Session(
                 date: startDate ?? .now,
-                transcript: liveTranscript,
-                duration: duration
+                transcript: processed.outputText,
+                duration: duration,
+                source: .transcription,
+                rawTranscript: processed.rawText == processed.outputText ? nil : processed.rawText,
+                tags: processed.tags,
+                usedSnippetIDs: processed.usedSnippetIDs
             )
             sessions.insert(session, at: 0)
             selectedSessionID = session.id
@@ -247,7 +262,7 @@ final class TranscriptStore {
 
     // MARK: - Dictation
 
-    func startDictation() async {
+    func startDictation(initialSamples: [Float] = []) async {
         guard !isDictating else { return }
 
         let micOK = await checkMicPermissionLive()
@@ -266,6 +281,7 @@ final class TranscriptStore {
         audioLevel = 0
 
         do {
+            try await runner.primeAudioSamples(initialSamples)
             try await runner.startAudioCapture()
         } catch {
             isDictating = false
@@ -296,6 +312,79 @@ final class TranscriptStore {
         guard let idx = sessions.firstIndex(where: { $0.id == session.id }) else { return }
         sessions[idx].title = newTitle
         saveSessions()
+    }
+
+    func togglePinned(_ session: Session) {
+        guard let index = sessions.firstIndex(where: { $0.id == session.id }) else { return }
+        sessions[index].pinned.toggle()
+        saveSessions()
+    }
+
+    func saveDictationSession(
+        result: TextProcessingResult,
+        duration: TimeInterval,
+        wakeTriggered: Bool
+    ) {
+        guard !result.outputText.isEmpty else { return }
+        let session = Session(
+            date: .now,
+            transcript: result.outputText,
+            duration: duration,
+            source: .dictation,
+            rawTranscript: result.rawText == result.outputText ? nil : result.rawText,
+            tags: result.tags,
+            wakeTriggered: wakeTriggered,
+            usedSnippetIDs: result.usedSnippetIDs
+        )
+        sessions.insert(session, at: 0)
+        selectedSessionID = session.id
+        saveSessions()
+    }
+
+    func processDictationText(_ rawText: String) -> TextProcessingResult {
+        textPipeline.process(rawText, context: .dictation)
+    }
+
+    func normalizeWakePhrase(_ text: String) -> String {
+        textPipeline.normalizeForWakePhrase(text)
+    }
+
+    func stripLeadingWakePhrase(_ wakePhrase: String) {
+        guard !dictationText.isEmpty, !wakePhrase.isEmpty else { return }
+
+        let words = wakePhrase.lowercased()
+            .components(separatedBy: .whitespacesAndNewlines)
+            .filter { !$0.isEmpty }
+
+        var farthestEnd = dictationText.startIndex
+        let searchLimit = dictationText.index(
+            dictationText.startIndex,
+            offsetBy: min(dictationText.count, max(wakePhrase.count + 20, 30))
+        )
+        let leadingSlice = String(dictationText[..<searchLimit])
+
+        for word in words {
+            if let range = leadingSlice.range(of: word, options: [.caseInsensitive]) {
+                if range.upperBound > farthestEnd {
+                    farthestEnd = range.upperBound
+                }
+            }
+        }
+
+        guard farthestEnd > dictationText.startIndex else { return }
+
+        let remainder = String(dictationText[farthestEnd...])
+            .trimmingCharacters(in: CharacterSet(charactersIn: " ,.:;-").union(.whitespacesAndNewlines))
+        dictationText = remainder
+    }
+
+    func exportSession(_ session: Session, format: SessionExportFormat) {
+        let panel = NSSavePanel()
+        panel.canCreateDirectories = true
+        panel.nameFieldStringValue = suggestedExportName(for: session, format: format)
+        panel.allowedContentTypes = [format.contentType]
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        try? format.render(session).write(to: url, atomically: true, encoding: .utf8)
     }
 
     func clearError() {
@@ -333,22 +422,21 @@ final class TranscriptStore {
 
     // MARK: - Persistence
 
-    private var sessionsURL: URL {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
-        let dir = appSupport.appendingPathComponent("VoxtralRealtime", isDirectory: true)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appendingPathComponent("sessions.json")
-    }
-
     private func saveSessions() {
         guard let data = try? JSONEncoder().encode(sessions) else { return }
-        try? data.write(to: sessionsURL, options: .atomic)
+        try? data.write(to: PersistencePaths.sessionsURL, options: .atomic)
     }
 
     private func loadSessions() {
-        guard let data = try? Data(contentsOf: sessionsURL),
+        guard let data = try? Data(contentsOf: PersistencePaths.sessionsURL),
               let decoded = try? JSONDecoder().decode([Session].self, from: data)
         else { return }
         sessions = decoded
+    }
+
+    private func suggestedExportName(for session: Session, format: SessionExportFormat) -> String {
+        let formatter = ISO8601DateFormatter()
+        let stamp = formatter.string(from: session.date).replacingOccurrences(of: ":", with: "-")
+        return "voxtral-\(session.source.rawValue)-\(stamp).\(format.fileExtension)"
     }
 }
