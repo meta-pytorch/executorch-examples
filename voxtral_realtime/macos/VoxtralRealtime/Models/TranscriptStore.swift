@@ -262,11 +262,13 @@ final class TranscriptStore {
 
     // MARK: - Dictation
 
-    func startDictation(initialSamples: [Float] = []) async {
+    func startDictation(initialSamples: [Float] = [], skipMicCheck: Bool = false) async {
         guard !isDictating else { return }
 
-        let micOK = await checkMicPermissionLive()
-        guard micOK else { return }
+        if !skipMicCheck {
+            let micOK = await checkMicPermissionLive()
+            guard micOK else { return }
+        }
 
         if modelState != .ready {
             await ensureRunnerLaunched()

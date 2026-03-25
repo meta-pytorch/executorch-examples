@@ -322,7 +322,7 @@ final class DictationManager {
         state = .listening
         store.wakeState = .checkingPhrase
 
-        await store.startDictation(initialSamples: preRollSamples)
+        await store.startDictation(initialSamples: preRollSamples, skipMicCheck: true)
 
         if !preferences.enableWakePhrase {
             store.wakeState = .active
