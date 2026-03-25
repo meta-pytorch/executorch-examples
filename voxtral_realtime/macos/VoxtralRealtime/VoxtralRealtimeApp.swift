@@ -124,10 +124,6 @@ struct VoxtralRealtimeApp: App {
             }
         }
 
-        Settings {
-            SettingsView()
-                .environment(preferences)
-        }
     }
 
     private var selectedSessionTranscript: String {

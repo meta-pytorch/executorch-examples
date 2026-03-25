@@ -60,6 +60,10 @@ struct ContentView: View {
             WakeSettingsView()
                 .padding()
                 .navigationTitle("Wake")
+        case .settings:
+            SettingsView()
+                .padding()
+                .navigationTitle("Settings")
         case .home:
             homeContent
         case .session(let id):
