@@ -105,6 +105,17 @@ final class DictationManager {
         )
     }
 
+    // MARK: - Wake Control
+
+    func restartWakeListening() async {
+        await startWakeListeningIfNeeded()
+    }
+
+    func stopWakeListening() async {
+        await vadService.stop()
+        store.wakeState = .disabled
+    }
+
     // MARK: - Toggle
 
     func toggle() async {

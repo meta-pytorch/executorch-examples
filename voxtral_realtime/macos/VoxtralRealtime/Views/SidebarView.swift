@@ -12,6 +12,7 @@ enum SidebarPage: Hashable {
     case home
     case replacements
     case snippets
+    case wake
     case session(UUID)
 }
 
@@ -31,6 +32,8 @@ struct SidebarView: View {
                     .tag(SidebarPage.replacements)
                 Label("Snippets", systemImage: "text.append")
                     .tag(SidebarPage.snippets)
+                Label("Wake", systemImage: "ear.and.waveform")
+                    .tag(SidebarPage.wake)
             }
 
             if store.hasActiveSession {
