@@ -24,12 +24,16 @@ final class DictationManager {
 
     private let store: TranscriptStore
     private let preferences: Preferences
+    private let vadService = VadService()
     private var panel: DictationPanel?
     private var hotKeyRef: EventHotKeyRef?
     private var eventHandlerRef: EventHandlerRef?
     private var silenceTimer: Task<Void, Never>?
+    private var wakeCheckTask: Task<Void, Never>?
     private var lastVoiceTime: Date = .now
     private var targetApp: NSRunningApplication?
+    private var dictationStartedAt: Date?
+    private var wakeTriggeredForCurrentSession = false
 
     init(store: TranscriptStore, preferences: Preferences) {
         self.store = store
@@ -39,6 +43,7 @@ final class DictationManager {
     nonisolated func cleanup() {
         MainActor.assumeIsolated {
             unregisterHotKey()
+            Task { await self.vadService.stop() }
         }
     }
 
@@ -63,6 +68,7 @@ final class DictationManager {
         }
 
         installEventHandler()
+        Task { await startWakeListeningIfNeeded() }
     }
 
     func unregisterHotKey() {
@@ -74,6 +80,8 @@ final class DictationManager {
             RemoveEventHandler(handler)
             eventHandlerRef = nil
         }
+        wakeCheckTask?.cancel()
+        Task { await vadService.stop() }
     }
 
     private func installEventHandler() {
@@ -111,6 +119,9 @@ final class DictationManager {
     // MARK: - Listening
 
     private func startListening() async {
+        await vadService.stop()
+        wakeCheckTask?.cancel()
+
         guard store.isModelReady || store.modelState == .unloaded else { return }
 
         let micStatus = await HealthCheck.liveMicPermission()
@@ -136,6 +147,9 @@ final class DictationManager {
 
         state = .listening
         lastVoiceTime = .now
+        dictationStartedAt = .now
+        wakeTriggeredForCurrentSession = false
+        store.wakeState = .active
         showPanel()
 
         await store.startDictation()
@@ -149,12 +163,18 @@ final class DictationManager {
         silenceTimer?.cancel()
         silenceTimer = nil
 
-        let text = await store.stopDictation()
+        let rawText = await store.stopDictation()
         state = .idle
+        let duration = dictationStartedAt.map { Date.now.timeIntervalSince($0) } ?? 0
+        dictationStartedAt = nil
 
         dismissPanel()
-        log.info("Dictation stopped, text length: \(text.count)")
+        log.info("Dictation stopped, text length: \(rawText.count)")
 
+        guard !rawText.isEmpty else { return }
+
+        let result = store.processDictationText(rawText)
+        let text = result.outputText
         guard !text.isEmpty else { return }
 
         NSPasteboard.general.clearContents()
@@ -173,33 +193,171 @@ final class DictationManager {
             log.warning("Accessibility permission lost — text is on clipboard, prompting user to re-grant")
             _ = Self.checkAccessibility(prompt: true)
         }
+
+        store.saveDictationSession(
+            result: result,
+            duration: duration,
+            wakeTriggered: wakeTriggeredForCurrentSession
+        )
+        store.wakeState = preferences.enableSileroVAD ? .listening : .disabled
+        await startWakeListeningIfNeeded()
     }
 
     // MARK: - Silence Detection
 
+    private var consecutiveSilencePolls = 0
+
     private func startSilenceMonitor() {
         silenceTimer?.cancel()
+        consecutiveSilencePolls = 0
         silenceTimer = Task { @MainActor [weak self] in
+            let pollIntervalMs = 250
             while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(250))
+                try? await Task.sleep(for: .milliseconds(pollIntervalMs))
                 guard let self, self.state == .listening else { break }
 
                 let level = self.store.audioLevel
 
                 if level > Float(self.preferences.silenceThreshold) {
                     self.lastVoiceTime = .now
+                    self.consecutiveSilencePolls = 0
+                } else {
+                    self.consecutiveSilencePolls += 1
                 }
 
-                let silenceDuration = Date.now.timeIntervalSince(self.lastVoiceTime)
-                let hasText = !self.store.dictationText.isEmpty
+                if self.store.wakeState == .checkingPhrase {
+                    continue
+                }
 
-                if hasText && silenceDuration >= self.preferences.silenceTimeout {
-                    log.info("Auto-stop: \(String(format: "%.1f", silenceDuration))s silence (level: \(String(format: "%.4f", level)))")
+                let hasText = !self.store.dictationText.isEmpty
+                let requiredPolls = max(1, Int(self.preferences.silenceTimeout * 1000) / pollIntervalMs)
+
+                if hasText && self.consecutiveSilencePolls >= requiredPolls {
+                    let silenceDuration = Date.now.timeIntervalSince(self.lastVoiceTime)
+                    log.info("Auto-stop: \(String(format: "%.1f", silenceDuration))s silence (\(self.consecutiveSilencePolls) consecutive polls, level: \(String(format: "%.4f", level)))")
                     await self.stopAndPaste()
                     break
                 }
             }
         }
+    }
+
+    private func startWakeListeningIfNeeded() async {
+        guard preferences.enableSileroVAD, state == .idle, !store.isDictating else {
+            store.wakeState = preferences.enableSileroVAD ? .listening : .disabled
+            return
+        }
+
+        guard await HealthCheck.liveMicPermission() == .authorized else {
+            store.wakeState = .disabled
+            return
+        }
+
+        if !FileManager.default.isExecutableFile(atPath: preferences.vadRunnerPath) ||
+            !FileManager.default.fileExists(atPath: preferences.vadModelPath) {
+            store.wakeState = .disabled
+            return
+        }
+
+        store.wakeState = .listening
+
+        do {
+            try await vadService.start(
+                runnerPath: preferences.vadRunnerPath,
+                modelPath: preferences.vadModelPath,
+                threshold: Float(preferences.vadThreshold),
+                hangoverMs: Int(preferences.vadHangoverMilliseconds)
+            ) { [weak self] event in
+                guard let self else { return }
+                Task { @MainActor in
+                    await self.handleVadEvent(event)
+                }
+            }
+        } catch {
+            log.error("Failed to start VAD: \(error.localizedDescription)")
+            store.wakeState = .disabled
+        }
+    }
+
+    private func handleVadEvent(_ event: VadService.Event) async {
+        switch event {
+        case .ready:
+            store.wakeState = .listening
+        case let .speechDetected(preRollSamples):
+            guard state == .idle else { return }
+            await beginWakePhraseCheck(preRollSamples: preRollSamples)
+        case .silenceDetected:
+            log.warning("VAD detected microphone silence — stopping wake listening")
+            await vadService.stop()
+            store.wakeState = .disabled
+            store.currentError = .microphoneSilent
+        case .stopped:
+            if state == .idle && preferences.enableSileroVAD {
+                store.wakeState = .listening
+            }
+        case let .error(message):
+            log.error("VAD error: \(message)")
+            store.wakeState = .disabled
+        }
+    }
+
+    private func beginWakePhraseCheck(preRollSamples: [Float]) async {
+        await vadService.stop()
+        wakeCheckTask?.cancel()
+
+        targetApp = NSWorkspace.shared.frontmostApplication
+        wakeTriggeredForCurrentSession = false
+        dictationStartedAt = .now
+        state = .listening
+        store.wakeState = .checkingPhrase
+
+        await store.startDictation(initialSamples: preRollSamples)
+
+        if !preferences.enableWakePhrase {
+            store.wakeState = .active
+            showPanel()
+            startSilenceMonitor()
+            return
+        }
+
+        let requiredPhrase = store.normalizeWakePhrase(preferences.wakePhrase)
+        let keywords = Self.wakeKeywords(from: requiredPhrase)
+        let checkDurationNs = UInt64(preferences.wakeCheckSeconds * 1_000_000_000)
+        let deadline = DispatchTime.now().uptimeNanoseconds + checkDurationNs
+
+        wakeCheckTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            while !Task.isCancelled && self.state == .listening {
+                let normalized = self.store.normalizeWakePhrase(self.store.dictationText)
+                if !keywords.isEmpty && keywords.allSatisfy({ normalized.contains($0) }) {
+                    self.wakeTriggeredForCurrentSession = true
+                    self.store.stripLeadingWakePhrase(self.preferences.wakePhrase)
+                    self.store.wakeState = .active
+                    self.showPanel()
+                    self.startSilenceMonitor()
+                    return
+                }
+                if DispatchTime.now().uptimeNanoseconds >= deadline {
+                    log.info("Wake phrase not matched within \(self.preferences.wakeCheckSeconds)s — returning to idle")
+                    _ = await self.store.stopDictation()
+                    self.state = .idle
+                    self.store.wakeState = .listening
+                    await self.startWakeListeningIfNeeded()
+                    return
+                }
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+        }
+    }
+
+    private static let fillerWords: Set<String> = [
+        "hey", "hi", "hello", "ok", "okay", "yo", "oh", "ah", "um", "uh",
+    ]
+
+    private static func wakeKeywords(from normalizedPhrase: String) -> [String] {
+        let words = normalizedPhrase.split(separator: " ").map(String.init)
+        let significant = words.filter { !fillerWords.contains($0) }
+        return significant.isEmpty ? words : significant
     }
 
     // MARK: - Panel

@@ -31,13 +31,26 @@ struct DictationOverlayView: View {
         return min(CGFloat(lines) * 18, 200)
     }
 
+    private var statusText: String {
+        switch store.wakeState {
+        case .disabled, .active:
+            return "Listening..."
+        case .listening:
+            return "Wake listening..."
+        case .speechDetected:
+            return "Speech detected..."
+        case .checkingPhrase:
+            return "Checking wake phrase..."
+        }
+    }
+
     var body: some View {
         VStack(spacing: 10) {
             AudioLevelView(level: store.audioLevel, barCount: 20)
                 .frame(height: 36)
 
             if store.dictationText.isEmpty {
-                Text("Listening...")
+                Text(statusText)
                     .font(.callout)
                     .foregroundStyle(.secondary)
             } else {
@@ -57,7 +70,7 @@ struct DictationOverlayView: View {
                 }
             }
 
-            Text("⌃Space to finish")
+            Text(store.wakeState == .checkingPhrase ? "Say your wake phrase to continue" : "⌃Space to finish")
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }

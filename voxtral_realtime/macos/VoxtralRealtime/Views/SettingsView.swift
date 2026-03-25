@@ -40,6 +40,7 @@ struct SettingsView: View {
                             fileStatus("model-metal-int4.pte", path: preferences.modelPath)
                             fileStatus("tekken.json", path: preferences.tokenizerPath)
                             fileStatus("preprocessor.pte", path: preferences.preprocessorPath)
+                            fileStatus("silero_vad.pte", path: preferences.vadModelPath)
                         }
                     }
                 }
@@ -85,12 +86,77 @@ struct SettingsView: View {
                             .background(.quaternary, in: RoundedRectangle(cornerRadius: 4))
                     }
                 }
+
+                Section("Wake") {
+                    Toggle("Enable Silero VAD", isOn: $prefs.enableSileroVAD)
+                    Toggle("Require wake phrase", isOn: $prefs.enableWakePhrase)
+                        .disabled(!prefs.enableSileroVAD)
+
+                    LabeledContent("VAD runner") {
+                        HStack {
+                            TextField("Path to silero_vad_stream_runner", text: $prefs.vadRunnerPath)
+                                .textFieldStyle(.roundedBorder)
+                            browseButton(for: $prefs.vadRunnerPath)
+                        }
+                    }
+
+                    LabeledContent("VAD model") {
+                        HStack {
+                            TextField("Path to silero_vad.pte", text: $prefs.vadModelPath)
+                                .textFieldStyle(.roundedBorder)
+                            browseButton(for: $prefs.vadModelPath)
+                        }
+                    }
+
+                    LabeledContent("Wake phrase") {
+                        HStack(spacing: 4) {
+                            Text("Hey")
+                                .foregroundStyle(.secondary)
+                            TextField("torch", text: $prefs.wakeKeyword)
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 140)
+                        }
+                    }
+
+                    LabeledContent("Speech threshold") {
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Slider(value: $prefs.vadThreshold, in: 0.3...0.9, step: 0.05)
+                                .frame(width: 200)
+                            Text(String(format: "%.2f probability", prefs.vadThreshold))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .monospacedDigit()
+                        }
+                    }
+
+                    LabeledContent("Hangover") {
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Slider(value: $prefs.vadHangoverMilliseconds, in: 160...800, step: 40)
+                                .frame(width: 200)
+                            Text("\(Int(prefs.vadHangoverMilliseconds)) ms")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .monospacedDigit()
+                        }
+                    }
+
+                    LabeledContent("Wake check window") {
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Slider(value: $prefs.wakeCheckSeconds, in: 1.0...4.0, step: 0.5)
+                                .frame(width: 200)
+                            Text(String(format: "%.1f s", prefs.wakeCheckSeconds))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .monospacedDigit()
+                        }
+                    }
+                }
             }
             .formStyle(.grouped)
             .padding()
             .tabItem { Label("Dictation", systemImage: "mic.badge.plus") }
         }
-        .frame(width: 500, height: 320)
+        .frame(width: 720, height: 520)
     }
 
     private func browseButton(for binding: Binding<String>, directory: Bool = false) -> some View {

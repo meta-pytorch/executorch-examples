@@ -13,6 +13,7 @@ enum RunnerError: Error, Sendable {
     case modelMissing(file: String)
     case microphonePermissionDenied
     case microphoneNotAvailable
+    case microphoneSilent
     case runnerCrashed(exitCode: Int32, stderr: String)
     case transcriptionInterrupted(partial: String)
     case launchFailed(description: String)
@@ -29,6 +30,8 @@ extension RunnerError: LocalizedError {
             "Microphone access denied. Enable it in System Settings → Privacy & Security → Microphone, then quit and relaunch the app."
         case .microphoneNotAvailable:
             "No audio input available. Check that your microphone is connected, enable it in System Settings → Privacy & Security → Microphone, then quit and relaunch the app."
+        case .microphoneSilent:
+            "Microphone is producing silence. Toggle the app's microphone permission off and on in System Settings → Privacy & Security → Microphone, then quit and relaunch the app."
         case .runnerCrashed(let code, let stderr):
             "Runner exited with code \(code): \(stderr)"
         case .transcriptionInterrupted:
