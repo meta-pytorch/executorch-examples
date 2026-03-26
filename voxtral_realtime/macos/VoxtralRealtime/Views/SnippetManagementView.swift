@@ -91,7 +91,7 @@ struct SnippetManagementView: View {
             }
         }
         .sheet(isPresented: $isPresentingEditor) {
-            SnippetEditor(snippet: editingSnippet) { snippet in
+            SnippetEditor(snippet: editingSnippet, isEditing: editingSnippetID != nil) { snippet in
                 if editingSnippetID == nil {
                     snippetStore.add(snippet)
                 } else {
@@ -101,8 +101,7 @@ struct SnippetManagementView: View {
             } onCancel: {
                 isPresentingEditor = false
             }
-            .padding(20)
-            .frame(width: 480, height: 420)
+            .frame(width: 480, height: 460)
         }
     }
 
@@ -130,12 +129,13 @@ struct SnippetManagementView: View {
 
 private struct SnippetEditor: View {
     @State var snippet: Snippet
+    let isEditing: Bool
     let onSave: (Snippet) -> Void
     let onCancel: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(snippet.name.isEmpty ? "Add Snippet" : "Edit Snippet")
+            Text(isEditing ? "Edit Snippet" : "Add Snippet")
                 .font(.headline)
 
             TextField("Display name", text: $snippet.name)
