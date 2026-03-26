@@ -17,7 +17,11 @@ struct HealthCheck: Sendable {
         var micPermission: MicPermission
 
         var allGood: Bool {
-            runnerAvailable && modelAvailable && preprocessorAvailable && tokenizerAvailable && micPermission == .authorized
+            filesReady && micPermission == .authorized
+        }
+
+        var filesReady: Bool {
+            runnerAvailable && modelAvailable && preprocessorAvailable && tokenizerAvailable
         }
 
         var missingFiles: [String] {
