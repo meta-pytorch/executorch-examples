@@ -43,9 +43,6 @@ final class TranscriptStore {
     var isPaused: Bool { sessionState == .paused }
     var isLoading: Bool { sessionState == .loading }
     var isModelReady: Bool { modelState == .ready }
-    var recentDictationSessions: [Session] {
-        sessions.filter { $0.source == .dictation }.prefix(5).map { $0 }
-    }
 
     private let runner = RunnerBridge()
     private let preferences: Preferences
@@ -357,6 +354,12 @@ final class TranscriptStore {
 
     func normalizeWakePhrase(_ text: String) -> String {
         textPipeline.normalizeForWakePhrase(text)
+    }
+
+    func stripLeadingPunctuation() {
+        dictationText = dictationText.drop(while: {
+            $0.isPunctuation || $0.isWhitespace || $0.isNewline
+        }).description
     }
 
     func stripLeadingWakePhrase(_ wakePhrase: String) {

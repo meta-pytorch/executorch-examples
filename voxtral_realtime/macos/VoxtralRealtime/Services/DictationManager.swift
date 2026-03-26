@@ -357,6 +357,8 @@ final class DictationManager {
                     self.dictationStartedAt = .now
                     self.state = .listening
                     self.store.stripLeadingWakePhrase(self.preferences.wakePhrase)
+                    try? await Task.sleep(for: .milliseconds(200))
+                    self.store.stripLeadingPunctuation()
                     self.store.wakeState = .active
                     self.showPanel()
                     self.startSilenceMonitor()

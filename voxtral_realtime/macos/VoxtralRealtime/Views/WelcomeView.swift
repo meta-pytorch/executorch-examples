@@ -41,10 +41,6 @@ struct WelcomeView: View {
             }
 
             shortcutHints
-
-            if !store.recentDictationSessions.isEmpty {
-                recentDictationsSection
-            }
         }
         .padding(40)
         .frame(maxWidth: 560)
@@ -103,28 +99,6 @@ struct WelcomeView: View {
             shortcutBadge("⌘↩", label: "Done")
         }
         .padding(.top, 8)
-    }
-
-    private var recentDictationsSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Divider()
-            Text("Recent Dictations")
-                .font(.headline)
-            ForEach(store.recentDictationSessions.prefix(3)) { session in
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(session.displayTitle)
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                    Text(session.previewText.prefix(120).description)
-                        .font(.callout)
-                        .lineLimit(2)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(12)
-                .background(.background.secondary, in: RoundedRectangle(cornerRadius: 12))
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func shortcutBadge(_ shortcut: String, label: String) -> some View {

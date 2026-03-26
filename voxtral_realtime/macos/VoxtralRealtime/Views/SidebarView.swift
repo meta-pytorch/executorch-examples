@@ -53,16 +53,6 @@ struct SidebarView: View {
                 }
             }
 
-            if !recentDictations.isEmpty {
-                Section("Recent Dictations") {
-                    ForEach(recentDictations) { session in
-                        sessionRow(session)
-                            .tag(SidebarPage.session(session.id))
-                            .contextMenu { sessionContextMenu(session) }
-                    }
-                }
-            }
-
             ForEach(historySections) { section in
                 Section(section.title) {
                     ForEach(section.sessions) { session in
@@ -115,15 +105,8 @@ struct SidebarView: View {
         visibleSessions.filter(\.pinned)
     }
 
-    private var recentDictations: [Session] {
-        visibleSessions
-            .filter { !$0.pinned && $0.source == .dictation }
-            .prefix(5)
-            .map { $0 }
-    }
-
     private var historySections: [SessionSection] {
-        let hiddenIDs = Set(pinnedSessions.map(\.id) + recentDictations.map(\.id))
+        let hiddenIDs = Set(pinnedSessions.map(\.id))
         let remainder = visibleSessions.filter { !hiddenIDs.contains($0.id) }
         let calendar = Calendar.current
         let grouped = Dictionary(grouping: remainder) { session -> String in
