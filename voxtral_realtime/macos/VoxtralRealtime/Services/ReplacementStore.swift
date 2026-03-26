@@ -70,11 +70,15 @@ final class ReplacementStore {
     }
 
     private static let defaultEntries: [ReplacementEntry] = [
-        ReplacementEntry(trigger: "mtia", replacement: "MTIA"),
-        ReplacementEntry(trigger: "mvai", replacement: "MVAI"),
         ReplacementEntry(trigger: "executorch", replacement: "ExecuTorch", requiresWordBoundary: false),
         ReplacementEntry(trigger: "excitorch", replacement: "ExecuTorch"),
         ReplacementEntry(trigger: "execute torch", replacement: "ExecuTorch"),
         ReplacementEntry(trigger: "xqtorch", replacement: "ExecuTorch"),
+        ReplacementEntry(trigger: "pie torch", replacement: "PyTorch"),
+        ReplacementEntry(trigger: "pytorch", replacement: "PyTorch", requiresWordBoundary: false),
+        ReplacementEntry(trigger: "iphone", replacement: "iPhone"),
+        ReplacementEntry(trigger: "github", replacement: "GitHub"),
+        ReplacementEntry(trigger: "linkedin", replacement: "LinkedIn"),
+        ReplacementEntry(trigger: "chatgpt", replacement: "ChatGPT"),
     ]
 }
