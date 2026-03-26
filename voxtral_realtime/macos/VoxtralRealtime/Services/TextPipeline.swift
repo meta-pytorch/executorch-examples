@@ -57,12 +57,15 @@ final class TextPipeline {
             baseText = trimmed
         }
 
-        let replacementsApplied = applyReplacements(to: baseText)
-        let snippetResolution = resolveSnippet(in: replacementsApplied, allowExpansion: context == .dictation && !literalCommand)
-        let styleApplied = applyStyle(to: snippetResolution.text)
+        let snippetResolution = resolveSnippet(in: baseText, allowExpansion: context == .dictation && !literalCommand)
+        let afterSnippets = snippetResolution.text
+        let replacementsApplied = snippetResolution.usedSnippetIDs.isEmpty
+            ? applyReplacements(to: afterSnippets)
+            : afterSnippets
+        let styleApplied = applyStyle(to: replacementsApplied)
 
         var tags: [String] = []
-        if replacementsApplied != baseText {
+        if replacementsApplied != afterSnippets {
             tags.append("replacement")
         }
         if !snippetResolution.usedSnippetIDs.isEmpty {
@@ -145,10 +148,13 @@ final class TextPipeline {
 
         let normalized = text.trimmingCharacters(in: .whitespacesAndNewlines)
         let lowered = normalized.lowercased()
+            .trimmingCharacters(in: .punctuationCharacters)
         let commandPrefixes = ["insert snippet ", "snippet ", "template "]
 
         for prefix in commandPrefixes where lowered.hasPrefix(prefix) {
-            let requestedTrigger = String(normalized.dropFirst(prefix.count)).trimmingCharacters(in: .whitespacesAndNewlines)
+            let requestedTrigger = String(lowered.dropFirst(prefix.count))
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .trimmingCharacters(in: .punctuationCharacters)
             if let snippet = snippetStore.snippets.first(where: {
                 $0.isEnabled && $0.trigger.compare(requestedTrigger, options: .caseInsensitive) == .orderedSame
             }) {
