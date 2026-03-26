@@ -163,6 +163,15 @@ final class TextPipeline {
             }
         }
 
+        let directMatch = lowered
+            .trimmingCharacters(in: .punctuationCharacters)
+        if let snippet = snippetStore.snippets.first(where: {
+            $0.isEnabled && $0.trigger.compare(directMatch, options: .caseInsensitive) == .orderedSame
+        }) {
+            snippetStore.markUsed(snippet.id)
+            return (snippet.content, [snippet.id])
+        }
+
         return (text, [])
     }
 
