@@ -182,6 +182,11 @@ final class DictationManager {
         dismissPanel()
         log.info("Dictation stopped, text length: \(rawText.count)")
 
+        defer {
+            store.wakeState = preferences.enableSileroVAD ? .listening : .disabled
+            Task { await startWakeListeningIfNeeded() }
+        }
+
         guard !rawText.isEmpty else { return }
 
         let result = store.processDictationText(rawText)
@@ -210,8 +215,6 @@ final class DictationManager {
             duration: duration,
             wakeTriggered: wakeTriggeredForCurrentSession
         )
-        store.wakeState = preferences.enableSileroVAD ? .listening : .disabled
-        await startWakeListeningIfNeeded()
     }
 
     // MARK: - Silence Detection
