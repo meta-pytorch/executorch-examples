@@ -8,12 +8,16 @@
 
 import SwiftUI
 
+private struct ReplacementEditorItem: Identifiable {
+    let id = UUID()
+    let entry: ReplacementEntry
+    let isEditing: Bool
+}
+
 struct ReplacementManagementView: View {
     @Environment(ReplacementStore.self) private var replacementStore
     @State private var searchText = ""
-    @State private var editingEntry = ReplacementEntry()
-    @State private var editingEntryID: UUID?
-    @State private var isPresentingEditor = false
+    @State private var editorItem: ReplacementEditorItem?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -21,9 +25,7 @@ struct ReplacementManagementView: View {
                 TextField("Search terms", text: $searchText)
                     .textFieldStyle(.roundedBorder)
                 Button("Add") {
-                    editingEntry = ReplacementEntry()
-                    editingEntryID = nil
-                    isPresentingEditor = true
+                    editorItem = ReplacementEditorItem(entry: ReplacementEntry(), isEditing: false)
                 }
                 .buttonStyle(.borderedProminent)
             }
@@ -54,17 +56,13 @@ struct ReplacementManagementView: View {
                             }
                             Spacer()
                             Button("Edit") {
-                                editingEntry = entry
-                                editingEntryID = entry.id
-                                isPresentingEditor = true
+                                editorItem = ReplacementEditorItem(entry: entry, isEditing: true)
                             }
                             .buttonStyle(.borderless)
                         }
                         .contextMenu {
                             Button("Edit") {
-                                editingEntry = entry
-                                editingEntryID = entry.id
-                                isPresentingEditor = true
+                                editorItem = ReplacementEditorItem(entry: entry, isEditing: true)
                             }
                             Button(entry.isEnabled ? "Disable" : "Enable") {
                                 replacementStore.toggleEnabled(for: entry.id)
@@ -79,16 +77,16 @@ struct ReplacementManagementView: View {
                 .listStyle(.inset)
             }
         }
-        .sheet(isPresented: $isPresentingEditor) {
-            ReplacementEntryEditor(entry: editingEntry, isEditing: editingEntryID != nil) { entry in
-                if editingEntryID == nil {
-                    replacementStore.add(entry)
-                } else {
+        .sheet(item: $editorItem) { item in
+            ReplacementEntryEditor(entry: item.entry, isEditing: item.isEditing) { entry in
+                if item.isEditing {
                     replacementStore.update(entry)
+                } else {
+                    replacementStore.add(entry)
                 }
-                isPresentingEditor = false
+                editorItem = nil
             } onCancel: {
-                isPresentingEditor = false
+                editorItem = nil
             }
             .frame(width: 420)
         }
