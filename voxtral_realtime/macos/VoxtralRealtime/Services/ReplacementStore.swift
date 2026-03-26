@@ -75,5 +75,6 @@ final class ReplacementStore {
         ReplacementEntry(trigger: "executorch", replacement: "ExecuTorch", requiresWordBoundary: false),
         ReplacementEntry(trigger: "excitorch", replacement: "ExecuTorch"),
         ReplacementEntry(trigger: "execute torch", replacement: "ExecuTorch"),
+        ReplacementEntry(trigger: "xqtorch", replacement: "ExecuTorch"),
     ]
 }
