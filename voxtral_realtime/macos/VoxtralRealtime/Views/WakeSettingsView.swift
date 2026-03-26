@@ -59,7 +59,7 @@ struct WakeSettingsView: View {
 
                 LabeledContent("Check window") {
                     VStack(alignment: .trailing, spacing: 4) {
-                        Slider(value: $prefs.wakeCheckSeconds, in: 1.0...4.0, step: 0.5)
+                        Slider(value: $prefs.wakeCheckSeconds, in: 2.0...8.0, step: 0.5)
                             .frame(width: 200)
                         Text(String(format: "%.1f s", prefs.wakeCheckSeconds))
                             .font(.caption)

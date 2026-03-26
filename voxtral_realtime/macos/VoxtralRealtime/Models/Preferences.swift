@@ -128,7 +128,7 @@ final class Preferences {
             let words = $0.lowercased().split(separator: " ")
             return words.count > 1 ? words.dropFirst().joined(separator: " ") : words.first.map(String.init)
         } ?? "torch"
-        self.wakeCheckSeconds = defaults.object(forKey: "wakeCheckSeconds") as? Double ?? 2.0
+        self.wakeCheckSeconds = defaults.object(forKey: "wakeCheckSeconds") as? Double ?? 4.0
 
         if !FileManager.default.fileExists(atPath: resolvedVadModelPath) {
             let probePaths = [
