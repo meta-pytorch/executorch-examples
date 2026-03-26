@@ -80,7 +80,7 @@ struct ReplacementManagementView: View {
             }
         }
         .sheet(isPresented: $isPresentingEditor) {
-            ReplacementEntryEditor(entry: editingEntry) { entry in
+            ReplacementEntryEditor(entry: editingEntry, isEditing: editingEntryID != nil) { entry in
                 if editingEntryID == nil {
                     replacementStore.add(entry)
                 } else {
@@ -90,7 +90,6 @@ struct ReplacementManagementView: View {
             } onCancel: {
                 isPresentingEditor = false
             }
-            .padding(20)
             .frame(width: 420)
         }
     }
@@ -118,12 +117,13 @@ struct ReplacementManagementView: View {
 
 private struct ReplacementEntryEditor: View {
     @State var entry: ReplacementEntry
+    let isEditing: Bool
     let onSave: (ReplacementEntry) -> Void
     let onCancel: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text(entry.trigger.isEmpty ? "Add Replacement" : "Edit Replacement")
+            Text(isEditing ? "Edit Replacement" : "Add Replacement")
                 .font(.headline)
 
             TextField("Trigger phrase", text: $entry.trigger)
@@ -149,5 +149,6 @@ private struct ReplacementEntryEditor: View {
                 .disabled(entry.trigger.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || entry.replacement.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
+        .padding(24)
     }
 }
