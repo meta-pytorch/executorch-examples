@@ -8,12 +8,16 @@
 
 import SwiftUI
 
+private struct SnippetEditorItem: Identifiable {
+    let id = UUID()
+    let snippet: Snippet
+    let isEditing: Bool
+}
+
 struct SnippetManagementView: View {
     @Environment(SnippetStore.self) private var snippetStore
     @State private var searchText = ""
-    @State private var editingSnippet = Snippet()
-    @State private var editingSnippetID: UUID?
-    @State private var isPresentingEditor = false
+    @State private var editorItem: SnippetEditorItem?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -21,9 +25,7 @@ struct SnippetManagementView: View {
                 TextField("Search snippets", text: $searchText)
                     .textFieldStyle(.roundedBorder)
                 Button("Add") {
-                    editingSnippet = Snippet()
-                    editingSnippetID = nil
-                    isPresentingEditor = true
+                    editorItem = SnippetEditorItem(snippet: Snippet(), isEditing: false)
                 }
                 .buttonStyle(.borderedProminent)
             }
@@ -65,17 +67,13 @@ struct SnippetManagementView: View {
                             }
                             Spacer()
                             Button("Edit") {
-                                editingSnippet = snippet
-                                editingSnippetID = snippet.id
-                                isPresentingEditor = true
+                                editorItem = SnippetEditorItem(snippet: snippet, isEditing: true)
                             }
                             .buttonStyle(.borderless)
                         }
                         .contextMenu {
                             Button("Edit") {
-                                editingSnippet = snippet
-                                editingSnippetID = snippet.id
-                                isPresentingEditor = true
+                                editorItem = SnippetEditorItem(snippet: snippet, isEditing: true)
                             }
                             Button(snippet.isEnabled ? "Disable" : "Enable") {
                                 snippetStore.toggleEnabled(for: snippet.id)
@@ -90,16 +88,16 @@ struct SnippetManagementView: View {
                 .listStyle(.inset)
             }
         }
-        .sheet(isPresented: $isPresentingEditor) {
-            SnippetEditor(snippet: editingSnippet, isEditing: editingSnippetID != nil) { snippet in
-                if editingSnippetID == nil {
-                    snippetStore.add(snippet)
-                } else {
+        .sheet(item: $editorItem) { item in
+            SnippetEditor(snippet: item.snippet, isEditing: item.isEditing) { snippet in
+                if item.isEditing {
                     snippetStore.update(snippet)
+                } else {
+                    snippetStore.add(snippet)
                 }
-                isPresentingEditor = false
+                editorItem = nil
             } onCancel: {
-                isPresentingEditor = false
+                editorItem = nil
             }
             .frame(width: 480, height: 460)
         }
