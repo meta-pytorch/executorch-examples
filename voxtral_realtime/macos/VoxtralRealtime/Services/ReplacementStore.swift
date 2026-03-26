@@ -73,5 +73,7 @@ final class ReplacementStore {
         ReplacementEntry(trigger: "mtia", replacement: "MTIA"),
         ReplacementEntry(trigger: "mvai", replacement: "MVAI"),
         ReplacementEntry(trigger: "executorch", replacement: "ExecuTorch", requiresWordBoundary: false),
+        ReplacementEntry(trigger: "excitorch", replacement: "ExecuTorch"),
+        ReplacementEntry(trigger: "execute torch", replacement: "ExecuTorch"),
     ]
 }
