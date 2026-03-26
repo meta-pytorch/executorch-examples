@@ -146,27 +146,12 @@ final class TextPipeline {
             return (text, [])
         }
 
-        let normalized = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let lowered = normalized.lowercased()
+        let trigger = text.trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
             .trimmingCharacters(in: .punctuationCharacters)
-        let commandPrefixes = ["insert snippet ", "snippet ", "template "]
 
-        for prefix in commandPrefixes where lowered.hasPrefix(prefix) {
-            let requestedTrigger = String(lowered.dropFirst(prefix.count))
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-                .trimmingCharacters(in: .punctuationCharacters)
-            if let snippet = snippetStore.snippets.first(where: {
-                $0.isEnabled && $0.trigger.compare(requestedTrigger, options: .caseInsensitive) == .orderedSame
-            }) {
-                snippetStore.markUsed(snippet.id)
-                return (snippet.content, [snippet.id])
-            }
-        }
-
-        let directMatch = lowered
-            .trimmingCharacters(in: .punctuationCharacters)
         if let snippet = snippetStore.snippets.first(where: {
-            $0.isEnabled && $0.trigger.compare(directMatch, options: .caseInsensitive) == .orderedSame
+            $0.isEnabled && $0.trigger.compare(trigger, options: .caseInsensitive) == .orderedSame
         }) {
             snippetStore.markUsed(snippet.id)
             return (snippet.content, [snippet.id])
