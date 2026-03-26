@@ -210,11 +210,6 @@ final class DictationManager {
             _ = Self.checkAccessibility(prompt: true)
         }
 
-        store.saveDictationSession(
-            result: result,
-            duration: duration,
-            wakeTriggered: wakeTriggeredForCurrentSession
-        )
     }
 
     // MARK: - Silence Detection
