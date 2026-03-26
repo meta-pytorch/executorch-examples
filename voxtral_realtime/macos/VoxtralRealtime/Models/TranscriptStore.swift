@@ -187,11 +187,19 @@ final class TranscriptStore {
     private func ensureRunnerLaunched() async {
         guard await !runner.isRunnerAlive else { return }
 
-        guard healthResult?.allGood == true else {
+        if healthResult == nil {
+            healthResult = await HealthCheck.run(
+                runnerPath: preferences.runnerPath,
+                modelPath: preferences.modelPath,
+                tokenizerPath: preferences.tokenizerPath,
+                preprocessorPath: preferences.preprocessorPath
+            )
+        }
+
+        guard healthResult?.filesReady == true else {
             currentError = healthResult.flatMap { result in
                 if !result.runnerAvailable { return .binaryNotFound(path: preferences.runnerPath) }
                 if let missing = result.missingFiles.first { return .modelMissing(file: missing) }
-                if result.micPermission != .authorized { return .microphonePermissionDenied }
                 return nil
             }
             return
