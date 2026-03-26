@@ -8,10 +8,14 @@ https://github.com/user-attachments/assets/6d6089fc-5feb-458b-a60b-08379855976a
 
 - **Live transcription** — real-time token streaming with audio waveform visualization
 - **System-wide dictation** — press `Ctrl+Space` in any app to transcribe speech and auto-paste the result
+- **"Hey torch" voice wake** — hands-free dictation via Silero VAD speech detection and wake phrase matching
+- **Text replacements** — auto-correct names, acronyms, and domain terms after transcription
+- **Snippets** — say a trigger phrase (e.g., "email signature") to paste pre-written templates
 - **Model preloading** — load the model once, transcribe instantly across sessions
 - **Pause / resume** — pause and resume within the same session without losing context
-- **Session history** — searchable history with rename, copy, and delete
-- **Silence detection** — dictation auto-stops after 2 seconds of silence
+- **Session history** — searchable history with pinning, recency grouping, rename, copy, and multi-format export (.txt, .json, .srt)
+- **Silence detection** — dictation auto-stops after configurable silence timeout
+- **Sidebar navigation** — Home, Replacements, Snippets, Wake, and Settings pages
 - **Self-contained DMG** — runner binary, model weights, and runtime libraries all bundled
 
 ## Download
@@ -40,8 +44,38 @@ https://github.com/user-attachments/assets/6d6089fc-5feb-458b-a60b-08379855976a
 2. Focus any text field in any app (Notes, Slack, browser, etc.)
 3. Press **`Ctrl+Space`** — a floating overlay appears with a waveform
 4. Speak — live transcribed text appears in the overlay
-5. Press **`Ctrl+Space`** again to stop, or wait for 2 seconds of silence
+5. Press **`Ctrl+Space`** again to stop, or wait for silence auto-stop
 6. The transcribed text is automatically pasted into the focused text field
+
+### Voice wake ("Hey torch")
+
+1. Open the **Wake** page in the sidebar and enable it (or press `Ctrl+Shift+W`)
+2. Say **"Hey torch"** — Silero VAD detects your speech, Voxtral checks for the wake keyword
+3. If matched, the dictation panel appears and you can start speaking
+4. Dictation auto-pastes when you stop speaking, then wake listening resumes
+
+The wake keyword is configurable in the Wake settings (default: "torch"). The app accumulates the full speech segment before checking, so you can say "hey torch" naturally as one phrase.
+
+### Replacements
+
+Add text replacements in the **Replacements** page. Each entry has a trigger and replacement — when the trigger appears in transcribed text, it's automatically replaced.
+
+Examples:
+- `mtia` → `MTIA`
+- `executorch` → `ExecuTorch`
+- `execute torch` → `ExecuTorch`
+
+Supports case-preserving matching and word boundary options.
+
+### Snippets
+
+Add voice-triggered templates in the **Snippets** page. When your entire dictation matches a snippet trigger, the template content is pasted instead.
+
+Example: say **"email signature"** to paste:
+```
+Best,
+Younghan
+```
 
 ### Keyboard shortcuts
 
@@ -53,7 +87,7 @@ https://github.com/user-attachments/assets/6d6089fc-5feb-458b-a60b-08379855976a
 | `Cmd+Shift+C` | Copy transcript |
 | `Cmd+Shift+U` | Unload model |
 | `Ctrl+Space` | Toggle system-wide dictation |
-| `Cmd+,` | Settings |
+| `Ctrl+Shift+W` | Toggle voice wake on/off |
 
 ---
 
@@ -129,7 +163,19 @@ The runner binary will be at:
 ${EXECUTORCH_PATH}/cmake-out/examples/models/voxtral_realtime/voxtral_realtime_runner
 ```
 
-#### 4. Install Python packages
+#### 4. Build the Silero VAD stream runner (for voice wake)
+
+```bash
+cd ${EXECUTORCH_PATH}
+make silero-vad-cpu
+```
+
+This builds `silero_vad_stream_runner` at:
+```
+${EXECUTORCH_PATH}/cmake-out/examples/models/silero_vad/silero_vad_stream_runner
+```
+
+#### 5. Install Python packages
 
 ```bash
 pip install huggingface_hub sounddevice
@@ -138,7 +184,7 @@ pip install huggingface_hub sounddevice
 - `huggingface_hub` — to download model artifacts from HuggingFace
 - `sounddevice` — for the CLI mic streaming test script
 
-#### 5. Download model artifacts
+#### 6. Download model artifacts
 
 ```bash
 export LOCAL_FOLDER="$HOME/voxtral_realtime_quant_metal"
@@ -152,7 +198,13 @@ This downloads three files (~6.2 GB total):
 
 HuggingFace repo: [`mistralai/Voxtral-Mini-4B-Realtime-2602-ExecuTorch`](https://huggingface.co/mistral-labs/Voxtral-Mini-4B-Realtime-2602-ExecuTorch)
 
-#### 6. Test with CLI (optional)
+Download the Silero VAD model:
+
+```bash
+hf download younghan-meta/Silero-VAD-ExecuTorch-XNNPACK --local-dir ~/silero_vad_xnnpack
+```
+
+#### 7. Test with CLI (optional)
 
 Verify the runner works before building the app:
 
@@ -170,7 +222,7 @@ cd ${LOCAL_FOLDER} && chmod +x stream_audio.py
     --mic
 ```
 
-#### 7. Build the app and create DMG
+#### 8. Build the app and create DMG
 
 ```bash
 cd voxtral_realtime/macos
@@ -198,6 +250,7 @@ VoxtralRealtimeApp
 ├── TranscriptStore (@Observable, @MainActor)
 │   ├── SessionState: idle → loading → transcribing ⇆ paused → idle
 │   ├── ModelState: unloaded → loading → ready
+│   ├── TextPipeline: replacements → snippets → style (no-op)
 │   └── RunnerBridge (actor)
 │         ├── Process (voxtral_realtime_runner)
 │         │   ├── stdin  ← raw 16kHz mono f32le PCM
@@ -207,9 +260,21 @@ VoxtralRealtimeApp
 │               └── AVAudioEngine → format conversion → pipe
 ├── DictationManager (@Observable, @MainActor)
 │   ├── Global hotkey (Carbon RegisterEventHotKey)
+│   ├── VadService (actor)
+│   │     ├── Process (silero_vad_stream_runner)
+│   │     │   ├── stdin  ← 16kHz mono f32le PCM
+│   │     │   └── stdout → PROB <time> <probability>
+│   │     └── AVAudioEngine → speech segment accumulation
+│   ├── Wake flow: VAD speech-end → Voxtral phrase check → active
 │   ├── DictationPanel (NSPanel, non-activating, floating)
 │   └── Paste via CGEvent (Cmd+V to frontmost app)
-└── Views (SwiftUI)
+├── ReplacementStore / SnippetStore (JSON, Application Support)
+└── Views (SwiftUI, sidebar navigation)
+      ├── Home (welcome, transcription, session detail)
+      ├── Replacements (add/edit/delete trigger→replacement)
+      ├── Snippets (add/edit/delete voice-triggered templates)
+      ├── Wake (VAD toggle, keyword, detection tuning, status)
+      └── Settings (runner paths, model files, silence, shortcuts)
 ```
 
 ## Troubleshooting
@@ -223,11 +288,13 @@ The app needs **Accessibility** permission to simulate `Cmd+V` in other apps.
 3. If already listed, toggle it **off and back on**
 4. **Quit and relaunch** the app — macOS caches the trust state at process launch
 
-When running Debug builds from Xcode, each rebuild produces a new binary signature. macOS tracks Accessibility trust per binary identity, so you may need to re-grant permission after rebuilding. To avoid this:
-- Remove the old entry from Accessibility settings before re-adding
-- Or run the Release build for testing dictation
+After every fresh build, reset Accessibility permissions:
 
-Even if Accessibility isn't granted, the transcribed text is always copied to the clipboard — you can paste manually with `Cmd+V`.
+```bash
+tccutil reset Accessibility org.pytorch.executorch.VoxtralRealtime
+```
+
+Then relaunch and re-grant when prompted.
 
 ### Model fails to load / runner crashes
 
@@ -248,6 +315,21 @@ The app requests microphone access on first use. If denied:
 1. Open **System Settings → Privacy & Security → Microphone**
 2. Enable `Voxtral Realtime`
 3. **Quit and relaunch** the app — macOS caches permission grants per process lifetime
+
+### Microphone producing silence
+
+If the Wake status shows "Disabled" with a silence error, macOS is delivering zero-audio to the app. This can happen after fresh builds or permission changes.
+
+1. Toggle the app's microphone permission **off and on** in System Settings
+2. Quit and relaunch the app
+3. If running from Cursor's terminal, try the native macOS Terminal instead
+
+### Voice wake not triggering
+
+- Check the **Wake** page — status should show "Listening for speech..."
+- Ensure `silero_vad_stream_runner` and `silero_vad.pte` paths are correct
+- Try increasing the **Check window** slider (default 4s) — Voxtral needs 1-2s to produce the first token
+- Speak clearly and wait for a brief pause after "hey torch" so VAD detects the speech segment end
 
 ### Permission prompts don't appear (stale TCC entries)
 
