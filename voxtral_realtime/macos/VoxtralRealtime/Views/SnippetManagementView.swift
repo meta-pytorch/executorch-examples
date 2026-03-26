@@ -173,5 +173,6 @@ private struct SnippetEditor: View {
                 )
             }
         }
+        .padding(24)
     }
 }
