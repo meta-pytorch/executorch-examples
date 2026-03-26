@@ -51,7 +51,7 @@ struct WakeSettingsView: View {
                     HStack(spacing: 4) {
                         Text("Hey")
                             .foregroundStyle(.secondary)
-                        TextField("torch", text: $prefs.wakeKeyword)
+                        TextField("", text: $prefs.wakeKeyword)
                             .textFieldStyle(.roundedBorder)
                             .frame(width: 140)
                     }
