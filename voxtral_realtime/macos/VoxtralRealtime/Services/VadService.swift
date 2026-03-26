@@ -15,7 +15,7 @@ private let vadLog = Logger(subsystem: "org.pytorch.executorch.VoxtralRealtime",
 actor VadService {
     enum Event: Sendable {
         case ready
-        case speechDetected(preRollSamples: [Float])
+        case speechSegment(samples: [Float])
         case silenceDetected
         case stopped
         case error(String)
@@ -25,20 +25,24 @@ actor VadService {
     private var stdinPipe: Pipe?
     private var engine: AVAudioEngine?
     private var recentSamples: [Float] = []
-    private var byteBuffer = Data()
-    private var consecutiveSpeechFrames = 0
-    private var armed = true
     private var eventHandler: (@Sendable (Event) -> Void)?
 
     private var totalSamplesWritten: Int = 0
     private var peakRms: Float = 0
     private var silenceCheckFired = false
-    private static let silenceCheckSamples = 16_000 * 2  // 2s at 16kHz
+    private static let silenceCheckSamples = 16_000 * 2
     private static let silenceRmsThreshold: Float = 1e-6
 
-    private var hangoverFramesRemaining = 0
     private var hangoverFramesMax = 0
     private static let frameDurationMs = 32
+
+    private var inSpeech = false
+    private var hangoverFramesRemaining = 0
+    private var speechSamples: [Float] = []
+    private var preRollSamples: [Float] = []
+    private var speechFrameCount = 0
+    private static let minSpeechFrames = 3
+    private static let preRollBufferSize = 16_000 / 2  // 0.5s at 16kHz
 
     func start(
         runnerPath: String,
@@ -50,15 +54,16 @@ actor VadService {
         await stop()
 
         self.eventHandler = eventHandler
-        armed = true
         recentSamples = []
-        byteBuffer = Data()
-        consecutiveSpeechFrames = 0
-        hangoverFramesRemaining = 0
         hangoverFramesMax = max(0, hangoverMs / Self.frameDurationMs)
         totalSamplesWritten = 0
         peakRms = 0
         silenceCheckFired = false
+        inSpeech = false
+        hangoverFramesRemaining = 0
+        speechSamples = []
+        preRollSamples = []
+        speechFrameCount = 0
 
         let stdoutPipe = Pipe()
         let stdinPipe = Pipe()
@@ -163,13 +168,24 @@ actor VadService {
             let frameCount = Int(converted.frameLength)
             let samples = Array(UnsafeBufferPointer(start: channelData[0], count: frameCount))
             Task {
-                await self.appendRecent(samples)
+                await self.bufferSamples(samples)
                 try? await self.write(samples: samples, to: handle)
             }
         }
 
         try engine.start()
         self.engine = engine
+    }
+
+    private func bufferSamples(_ samples: [Float]) {
+        if inSpeech {
+            speechSamples.append(contentsOf: samples)
+        } else {
+            preRollSamples.append(contentsOf: samples)
+            if preRollSamples.count > Self.preRollBufferSize {
+                preRollSamples.removeFirst(preRollSamples.count - Self.preRollBufferSize)
+            }
+        }
     }
 
     private func write(samples: [Float], to handle: FileHandle) throws {
@@ -191,14 +207,6 @@ actor VadService {
         }
     }
 
-    private func appendRecent(_ samples: [Float]) {
-        recentSamples.append(contentsOf: samples)
-        let maxSamples = 16_000 * 2
-        if recentSamples.count > maxSamples {
-            recentSamples.removeFirst(recentSamples.count - maxSamples)
-        }
-    }
-
     private func handleOutputLine(_ line: String, threshold: Float) {
         if line == "READY" {
             emit(.ready)
@@ -211,17 +219,29 @@ actor VadService {
         }
 
         if probability >= threshold {
-            consecutiveSpeechFrames += 1
+            speechFrameCount += 1
             hangoverFramesRemaining = hangoverFramesMax
-        } else if hangoverFramesRemaining > 0 {
-            hangoverFramesRemaining -= 1
-        } else {
-            consecutiveSpeechFrames = 0
-        }
 
-        if armed && consecutiveSpeechFrames >= 2 {
-            armed = false
-            emit(.speechDetected(preRollSamples: recentSamples))
+            if !inSpeech && speechFrameCount >= Self.minSpeechFrames {
+                inSpeech = true
+                speechSamples = preRollSamples
+                vadLog.info("Speech segment started")
+            }
+        } else if inSpeech {
+            if hangoverFramesRemaining > 0 {
+                hangoverFramesRemaining -= 1
+            } else {
+                let segment = speechSamples
+                inSpeech = false
+                speechSamples = []
+                speechFrameCount = 0
+                preRollSamples = []
+
+                vadLog.info("Speech segment ended (\(segment.count) samples, \(String(format: "%.2f", Double(segment.count) / 16000))s)")
+                emit(.speechSegment(samples: segment))
+            }
+        } else {
+            speechFrameCount = 0
         }
     }
 

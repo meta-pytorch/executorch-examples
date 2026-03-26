@@ -301,9 +301,9 @@ final class DictationManager {
         switch event {
         case .ready:
             store.wakeState = .listening
-        case let .speechDetected(preRollSamples):
+        case let .speechSegment(samples):
             guard state == .idle else { return }
-            await beginWakePhraseCheck(preRollSamples: preRollSamples)
+            await checkWakeSegment(samples: samples)
         case .silenceDetected:
             log.warning("VAD detected microphone silence — stopping wake listening")
             await vadService.stop()
@@ -319,48 +319,51 @@ final class DictationManager {
         }
     }
 
-    private func beginWakePhraseCheck(preRollSamples: [Float]) async {
-        await vadService.stop()
+    private func checkWakeSegment(samples: [Float]) async {
         wakeCheckTask?.cancel()
 
-        targetApp = NSWorkspace.shared.frontmostApplication
-        wakeTriggeredForCurrentSession = false
-        dictationStartedAt = .now
-        state = .listening
-        store.wakeState = .checkingPhrase
-
-        await store.startDictation(initialSamples: preRollSamples, skipMicCheck: true)
-
         if !preferences.enableWakePhrase {
+            await vadService.stop()
+            targetApp = NSWorkspace.shared.frontmostApplication
+            wakeTriggeredForCurrentSession = false
+            dictationStartedAt = .now
+            state = .listening
             store.wakeState = .active
             showPanel()
+            await store.startDictation(initialSamples: samples, skipMicCheck: true)
             startSilenceMonitor()
             return
         }
 
-        let requiredPhrase = store.normalizeWakePhrase(preferences.wakePhrase)
-        let keywords = Self.wakeKeywords(from: requiredPhrase)
+        store.wakeState = .checkingPhrase
+
+        await store.startDictation(initialSamples: samples, skipMicCheck: true)
+
+        let keywords = Self.wakeKeywords(from: store.normalizeWakePhrase(preferences.wakePhrase))
         let checkDurationNs = UInt64(preferences.wakeCheckSeconds * 1_000_000_000)
         let deadline = DispatchTime.now().uptimeNanoseconds + checkDurationNs
 
         wakeCheckTask = Task { @MainActor [weak self] in
             guard let self else { return }
-            while !Task.isCancelled && self.state == .listening {
+            while !Task.isCancelled {
                 let normalized = self.store.normalizeWakePhrase(self.store.dictationText)
                 if !keywords.isEmpty && keywords.allSatisfy({ normalized.contains($0) }) {
+                    await self.vadService.stop()
+                    self.targetApp = NSWorkspace.shared.frontmostApplication
                     self.wakeTriggeredForCurrentSession = true
+                    self.dictationStartedAt = .now
+                    self.state = .listening
                     self.store.stripLeadingWakePhrase(self.preferences.wakePhrase)
                     self.store.wakeState = .active
                     self.showPanel()
                     self.startSilenceMonitor()
+                    log.info("Wake keyword matched — dictation active")
                     return
                 }
                 if DispatchTime.now().uptimeNanoseconds >= deadline {
-                    log.info("Wake phrase not matched within \(self.preferences.wakeCheckSeconds)s — returning to idle")
                     _ = await self.store.stopDictation()
-                    self.state = .idle
                     self.store.wakeState = .listening
-                    await self.startWakeListeningIfNeeded()
+                    log.info("Speech segment did not contain wake keyword — continuing to listen")
                     return
                 }
                 try? await Task.sleep(for: .milliseconds(100))
