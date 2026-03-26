@@ -270,6 +270,13 @@ final class DictationManager {
             return
         }
 
+        if !store.isModelReady {
+            await store.preloadModel()
+            while store.modelState == .loading {
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+        }
+
         store.wakeState = .listening
 
         do {
