@@ -35,7 +35,6 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.outlined.AudioFile
@@ -70,8 +69,6 @@ fun ChatInput(
     onInputTextChange: (String) -> Unit,
     isModelReady: Boolean,
     isGenerating: Boolean,
-    thinkMode: Boolean,
-    onThinkModeToggle: () -> Unit,
     onSendClick: () -> Unit,
     onStopClick: () -> Unit,
     showMediaButtons: Boolean,
@@ -149,18 +146,6 @@ fun ChatInput(
                         modifier = Modifier.rotate(rotation)
                     )
                 }
-            }
-
-            // Think mode button
-            IconButton(
-                onClick = onThinkModeToggle,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Lightbulb,
-                    contentDescription = "Think mode",
-                    tint = if (thinkMode) Color(0xFFFFD54F) else appColors.textOnNavBar
-                )
             }
 
             // Text input
