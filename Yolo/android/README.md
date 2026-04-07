@@ -3,17 +3,24 @@
 ## 🐦 Android Bird Detection App with ExecuTorch
 
 A real-time bird detection and species identification Android app using YOLO + EfficientNet models deployed via Meta's ExecuTorch framework. The app provides session-based bird watching with automatic logging, thumbnails, and timestamps for backyard bird enthusiasts.
-Bird Detection Feature: Uses a two-stage pipeline where YOLO (COCO class 14) detects birds in camera frames, then EfficientNet classifier identifies the specific species from 525 possible bird types with 96.8% accuracy.
+
+**Bird Detection Feature:** Uses a two-stage pipeline where YOLO (COCO class 14) detects birds in camera frames, then EfficientNet classifier identifies the specific species from 525 possible bird types with 96.8% accuracy.
+
+## Prerequisites
+
+Install required dependencies:
+
+```bash
+pip install torch transformers executorch ultralytics
+```
 
 ## Model Download and Conversion
 
-### Step 1: Download Models
+### Step 1: Download and Convert Bird Classifier Model
 
-#### Bird Classifier Model
+Create `convert_bird_classifier.py`:
 
-Install dependencies
-
-```
+```python
 import torch                                                                                                                                  
 from transformers import AutoModelForImageClassification  
 from torch.export import export                                                                                                               
@@ -37,79 +44,41 @@ et_program = edge_program.to_executorch()
 with open("bird_classifier.pte", "wb") as f:
     et_program.write_to_file(f)
 print("Bird classifier converted to bird_classifier.pte")
+```
 
-Run it from a regular terminal (not Claude Code) to avoid the proxy block:
+Run the script:
 
-cd /home/sidart/executorch
+```bash
 python convert_bird_classifier.py
-"
 ```
 
-##  Detection Model
+### Step 2: Download YOLO Detection Model
 
-The app supports both v8 and v26 and automatically detects which version you're using based on the model output format.
+The app supports both YOLOv8 and YOLOv26, and automatically detects which version you're using based on the model output format.
 
-Install Ultralytics:
-
-```
+```bash
 pip install ultralytics
 ```
 
-### Download  model
-
-#### Option 1: v8 
-python -c "
-from ultralytics import 
-model = ('v8n.pt') # nano version for mobile
-print('v8 model downloaded')
-"
+#### Option 1: YOLOv8
+```python
+from ultralytics import YOLO
+model = YOLO('yolov8n.pt')  # nano version for mobile
+print('YOLOv8 model downloaded')
 ```
 
-#### Option 2: v26 (Recommended - Faster & More Accurate)
-python -c "
-from ultralytics import 
-model = ('26n.pt')  # nano version for mobile
-print('v26 model downloaded')
-"
+#### Option 2: YOLOv26 (Recommended - Faster & More Accurate)
+```python
+from ultralytics import YOLO
+model = YOLO('yolo26n.pt')  # nano version for mobile
+print('YOLOv26 model downloaded')
 ```
 
-## Model Conversion to ExecuTorch
+### Step 3: Convert YOLO Model to .pte Format
 
-### Step 2: Convert Models to .pte Format
+Create `convert_yolo.py`:
 
-#### Convert Bird Classifier
-
-convert_bird_classifier.py
-
-```
-import torch
-from transformers import AutoModelForImageClassification
-from torch.export import export
-from executorch.exir import to_edge_transform_and_lower
-from executorch.backends.xnnpack.partition.xnnpack_partitioner import XnnpackPartitioner
-Load model
-model = AutoModelForImageClassification.from_pretrained('./bird_classifier_model')
-model.eval()
-Export to ExecuTorch
-example_input = torch.randn(1, 3, 224, 224)
-exported_program = export(model, (example_input,))
-edge_program = to_edge_transform_and_lower(
-exported_program,
-partitioner=[XnnpackPartitioner()]
-)
-et_program = edge_program.to_executorch()
-Save as .pte file
-with open("bird_classifier.pte", "wb") as f:
-et_program.write_to_file(f)
-print("Bird classifier converted to bird_classifier.pte")
-```
-
-### Convert YOLO Model
-
-convert_yolo.py
-This script works for both YOLOv8 and YOLOv26 - just change the model filename.
-
-```
+```python
 from ultralytics import YOLO
 import torch
 from torch.export import export
@@ -137,25 +106,28 @@ with open("yolo_detector.pte", "wb") as f:
 print("YOLO model converted to yolo_detector.pte")
 ```
 
-#### Auto-Detection: The app automatically detects which YOLO version you're using (v8 or v26) based on the model's output format. No code changes needed when switching between versions!
+**Auto-Detection:** The app automatically detects which YOLO version you're using (v8 or v26) based on the model's output format. No code changes needed when switching between versions!
 
-### Generate Bird Species Names
+### Step 4: Generate Bird Species Names
 
-extract_species_names.py
+Create `extract_species_names.py`:
 
-```
+```python
 from transformers import AutoModelForImageClassification
 import json
+
 model = AutoModelForImageClassification.from_pretrained('./bird_classifier_model')
 species_names = [model.config.id2label[i] for i in range(len(model.config.id2label))]
+
 with open('bird_species.json', 'w') as f:
-json.dump(species_names, f, indent=2)
+    json.dump(species_names, f, indent=2)
+
 print(f"Saved {len(species_names)} bird species names to bird_species.json")
 ```
 
 ## Deploying Models to Android
 
-###  Step 3: Deploy Models to Android Device
+### Step 5: Deploy Models to Android Device
 
 #### Copy Models to Android Assets
 
@@ -166,19 +138,21 @@ cp yolo_detector.pte /path/to/android/app/src/main/assets/
 cp bird_species.json /path/to/android/app/src/main/assets/
 ```
 
-### Alternative: Push via ADB (for testing)
+#### Alternative: Push via ADB (for testing)
 
-Connect Android device and enable USB debugging
-
-```
+```bash
+# Connect Android device and enable USB debugging
 adb devices
-Create directory on device
+
+# Create directory on device
 adb shell mkdir -p /data/local/tmp/bird_detection/
-Push model files
+
+# Push model files
 adb push bird_classifier.pte /data/local/tmp/bird_detection/
 adb push yolo_detector.pte /data/local/tmp/bird_detection/
 adb push bird_species.json /data/local/tmp/bird_detection/
-Verify files are transferred
+
+# Verify files are transferred
 adb shell ls -la /data/local/tmp/bird_detection/
 ```
 
@@ -186,28 +160,28 @@ adb shell ls -la /data/local/tmp/bird_detection/
 
 ```
 app/src/main/assets/
-├── bird_classifier.pte # EfficientNet bird species classifier (8.5MB)
-├── yolo_detector.pte # YOLOv8n bird detection model (6MB)
-└── bird_species.json # List of 525 bird species names
+├── bird_classifier.pte    # EfficientNet bird species classifier (~8.5MB)
+├── yolo_detector.pte      # YOLO bird detection model (~6MB)
+└── bird_species.json      # List of 525 bird species names
 ```
 
 ## App Features
 
 ### Main Detection Screen
 
-- Camera Preview: Real-time video feed from device camera
-- Live Detection: Green bounding boxes around detected birds with species labels
-- Session Controls: Start/Stop buttons for bird watching sessions
+- **Camera Preview:** Real-time video feed from device camera
+- **Live Detection:** Green bounding boxes around detected birds with species labels
+- **Session Controls:** Start/Stop buttons for bird watching sessions
 
 ### Session Management
 
-#### "Start Session" Button:
-
+**Start Session Button:**
 - Activates bird detection and logging
 - Changes camera from passive viewing to active detection mode
 - Begins collecting bird sightings with timestamps and thumbnails
 - Button turns red and displays "Stop Session"
-- "Stop Session" Button:
+
+**Stop Session Button:**
 - Deactivates detection and shows session summary
 - Displays total birds detected and unique species count
 - Button turns green and displays "Start Session"
@@ -215,8 +189,7 @@ app/src/main/assets/
 
 ### Bird Log Viewer
 
-#### "View Logs" Button:
-
+**View Logs Button:**
 - Opens detailed session log showing all detected birds
 - Displays bird thumbnails, species names, detection times, and confidence scores
 - Organized as scrollable list with visual bird identification records
