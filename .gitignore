@@ -68,4 +68,5 @@ project.nuget.cache
 *.nuget.g.props
 *.nuget.g.targets
 publish/
+installer-output/
 .vs/
