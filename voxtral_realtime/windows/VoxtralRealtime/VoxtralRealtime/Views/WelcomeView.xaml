@@ -1,0 +1,130 @@
+<!-- Copyright (c) Meta Platforms, Inc. and affiliates. -->
+<!-- All rights reserved. -->
+<!-- This source code is licensed under the BSD-style license found in the -->
+<!-- LICENSE file in the root directory of this source tree. -->
+
+<UserControl x:Class="VoxtralRealtime.Views.WelcomeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:VoxtralRealtime.Views"
+             Background="White">
+    <Grid>
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
+                    MaxWidth="560" Margin="40">
+
+            <!-- Waveform icon (matches SF Symbol "waveform") -->
+            <views:AudioLevelControl x:Name="WaveIcon" Width="80" Height="50"
+                                     HorizontalAlignment="Center" Margin="0,0,0,24"/>
+
+            <!-- Title -->
+            <TextBlock Text="Voxtral Realtime" FontSize="20" FontWeight="Bold"
+                       Foreground="{StaticResource TextPrimaryBrush}"
+                       HorizontalAlignment="Center" Margin="0,0,0,8"/>
+
+            <!-- Subtitle -->
+            <TextBlock Text="On-device speech transcription powered by ExecuTorch"
+                       FontSize="13" Foreground="{StaticResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center" Margin="0,0,0,8"/>
+
+            <!-- Spacer -->
+            <Border Height="8"/>
+
+            <!-- Model Status Section -->
+            <Grid HorizontalAlignment="Center" Margin="0,0,0,24">
+                <!-- State: Unloaded -->
+                <Button x:Name="LoadModelBtn" Style="{StaticResource ActionButton}"
+                        Click="OnLoadModel" Padding="20,10" FontSize="14"
+                        Foreground="{StaticResource TextPrimaryBrush}">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Load Model" FontSize="14"/>
+                    </StackPanel>
+                </Button>
+
+                <!-- State: Loading -->
+                <Border x:Name="LoadingPanel" Visibility="Collapsed"
+                        Background="#F2F2F7" CornerRadius="10" Padding="8" MinWidth="220">
+                    <StackPanel HorizontalAlignment="Center" Margin="8">
+                        <!-- Indeterminate progress bar -->
+                        <ProgressBar IsIndeterminate="True" Height="4" Width="120"
+                                     Margin="0,0,0,12" Foreground="{StaticResource PrimaryBrush}"
+                                     Background="#E5E5EA" BorderThickness="0"/>
+                        <TextBlock x:Name="LoadingStatusText" Text="Loading model..."
+                                   FontSize="13" Foreground="{StaticResource TextSecondaryBrush}"
+                                   HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- State: Ready -->
+                <StackPanel x:Name="ReadyPanel" Visibility="Collapsed"
+                            Orientation="Horizontal" HorizontalAlignment="Center">
+                    <Ellipse Width="10" Height="10" Margin="0,0,8,0" VerticalAlignment="Center">
+                        <Ellipse.Fill>
+                            <SolidColorBrush Color="{StaticResource SuccessColor}"/>
+                        </Ellipse.Fill>
+                    </Ellipse>
+                    <TextBlock Text="Model loaded" FontSize="13"
+                               Foreground="{StaticResource TextSecondaryBrush}"
+                               VerticalAlignment="Center"/>
+                    <Button Content="&#x23CF;" Style="{StaticResource ToolbarButton}"
+                            Click="OnUnloadModel" FontSize="13" Padding="6,2" Margin="4,0,0,0"
+                            VerticalAlignment="Center" ToolTip="Unload model to free resources"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Start Transcription Button (only when model ready) -->
+            <Button x:Name="StartBtn" Style="{StaticResource PrimaryButton}"
+                    Click="OnStartTranscription" HorizontalAlignment="Center"
+                    Margin="0,0,0,24" MinWidth="180" Visibility="Collapsed">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#x1F3A4;" FontSize="13" Margin="0,0,6,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Start Transcription" FontSize="15" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+
+            <!-- Shortcut Hints -->
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <!-- Transcribe -->
+                <StackPanel Margin="8,0">
+                    <Border Background="#F2F2F7" CornerRadius="4" Padding="6,3"
+                            HorizontalAlignment="Center">
+                        <TextBlock Text="Ctrl+Shift+R" FontSize="10"
+                                   FontFamily="Consolas" Foreground="{StaticResource TextSecondaryBrush}"/>
+                    </Border>
+                    <TextBlock Text="Transcribe" FontSize="10" HorizontalAlignment="Center"
+                               Foreground="{StaticResource LabelGrayBrush}" Margin="0,4,0,0"/>
+                </StackPanel>
+                <!-- Pause -->
+                <StackPanel Margin="8,0">
+                    <Border Background="#F2F2F7" CornerRadius="4" Padding="6,3"
+                            HorizontalAlignment="Center">
+                        <TextBlock Text="Ctrl+." FontSize="10"
+                                   FontFamily="Consolas" Foreground="{StaticResource TextSecondaryBrush}"/>
+                    </Border>
+                    <TextBlock Text="Pause" FontSize="10" HorizontalAlignment="Center"
+                               Foreground="{StaticResource LabelGrayBrush}" Margin="0,4,0,0"/>
+                </StackPanel>
+                <!-- Done -->
+                <StackPanel Margin="8,0">
+                    <Border Background="#F2F2F7" CornerRadius="4" Padding="6,3"
+                            HorizontalAlignment="Center">
+                        <TextBlock Text="Ctrl+Enter" FontSize="10"
+                                   FontFamily="Consolas" Foreground="{StaticResource TextSecondaryBrush}"/>
+                    </Border>
+                    <TextBlock Text="Done" FontSize="10" HorizontalAlignment="Center"
+                               Foreground="{StaticResource LabelGrayBrush}" Margin="0,4,0,0"/>
+                </StackPanel>
+                <!-- Dictation -->
+                <StackPanel Margin="8,0">
+                    <Border Background="#F2F2F7" CornerRadius="4" Padding="6,3"
+                            HorizontalAlignment="Center">
+                        <TextBlock Text="Ctrl+Space" FontSize="10"
+                                   FontFamily="Consolas" Foreground="{StaticResource TextSecondaryBrush}"/>
+                    </Border>
+                    <TextBlock Text="Dictation" FontSize="10" HorizontalAlignment="Center"
+                               Foreground="{StaticResource LabelGrayBrush}" Margin="0,4,0,0"/>
+                </StackPanel>
+            </StackPanel>
+
+        </StackPanel>
+    </Grid>
+</UserControl>

@@ -1,5 +1,10 @@
 # System files
 .DS_Store
+*.png
+
+# IDE / editor settings
+.claude/
+.vs/
 
 # Python environment
 .venv/
@@ -37,3 +42,30 @@ local.properties
 node_modules/
 __pycache__/
 .cursor/
+
+# .NET / C# / Visual Studio
+[Bb]in/
+[Oo]bj/
+[Dd]ebug/
+[Rr]elease/
+*.dll
+*.exe
+*.pdb
+*.cache
+*.baml
+*.resources
+*.user
+*.suo
+*.nupkg
+*.snupkg
+*.g.cs
+*.g.resources
+*.AssemblyInfo.cs
+*.editorconfig
+project.assets.json
+project.nuget.cache
+*.nuget.dgspec.json
+*.nuget.g.props
+*.nuget.g.targets
+publish/
+.vs/

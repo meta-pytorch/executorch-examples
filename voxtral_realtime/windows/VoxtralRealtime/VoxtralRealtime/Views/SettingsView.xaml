@@ -1,0 +1,115 @@
+<!-- Copyright (c) Meta Platforms, Inc. and affiliates. -->
+<!-- All rights reserved. -->
+<!-- This source code is licensed under the BSD-style license found in the -->
+<!-- LICENSE file in the root directory of this source tree. -->
+
+<UserControl x:Class="VoxtralRealtime.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer Padding="24">
+        <StackPanel MaxWidth="600">
+            <TextBlock Text="Settings" FontSize="22" FontWeight="SemiBold" Margin="0,0,0,20"/>
+
+            <!-- Runner Path -->
+            <TextBlock Text="Runner Binary" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,4"/>
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="RunnerPathBox" Grid.Column="0" FontSize="12" Padding="6,4"
+                         Text="{Binding RunnerPath, UpdateSourceTrigger=PropertyChanged}"/>
+                <Button Grid.Column="1" Content="Browse..." Style="{StaticResource ToolbarButton}"
+                        Click="OnBrowseRunner" Margin="4,0"/>
+                <TextBlock x:Name="RunnerStatus" Grid.Column="2" FontSize="14" VerticalAlignment="Center"/>
+            </Grid>
+
+            <!-- Model Path -->
+            <TextBlock Text="Model File" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,4"/>
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="ModelPathBox" Grid.Column="0" FontSize="12" Padding="6,4"
+                         Text="{Binding ModelPath, UpdateSourceTrigger=PropertyChanged}"/>
+                <Button Grid.Column="1" Content="Browse..." Style="{StaticResource ToolbarButton}"
+                        Click="OnBrowseModel" Margin="4,0"/>
+                <TextBlock x:Name="ModelStatus" Grid.Column="2" FontSize="14" VerticalAlignment="Center"/>
+            </Grid>
+
+            <!-- Tokenizer Path -->
+            <TextBlock Text="Tokenizer File" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,4"/>
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="TokenizerPathBox" Grid.Column="0" FontSize="12" Padding="6,4"
+                         Text="{Binding TokenizerPath, UpdateSourceTrigger=PropertyChanged}"/>
+                <Button Grid.Column="1" Content="Browse..." Style="{StaticResource ToolbarButton}"
+                        Click="OnBrowseTokenizer" Margin="4,0"/>
+                <TextBlock x:Name="TokenizerStatus" Grid.Column="2" FontSize="14" VerticalAlignment="Center"/>
+            </Grid>
+
+            <!-- Preprocessor Path -->
+            <TextBlock Text="Preprocessor File" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,4"/>
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="PreprocessorPathBox" Grid.Column="0" FontSize="12" Padding="6,4"
+                         Text="{Binding PreprocessorPath, UpdateSourceTrigger=PropertyChanged}"/>
+                <Button Grid.Column="1" Content="Browse..." Style="{StaticResource ToolbarButton}"
+                        Click="OnBrowsePreprocessor" Margin="4,0"/>
+                <TextBlock x:Name="PreprocessorStatus" Grid.Column="2" FontSize="14" VerticalAlignment="Center"/>
+            </Grid>
+
+            <!-- Data Path (CUDA blob) -->
+            <TextBlock Text="CUDA Data Blob" FontSize="13" FontWeight="SemiBold" Margin="0,0,0,4"/>
+            <Grid Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="DataPathBox" Grid.Column="0" FontSize="12" Padding="6,4"
+                         Text="{Binding DataPath, UpdateSourceTrigger=PropertyChanged}"/>
+                <Button Grid.Column="1" Content="Browse..." Style="{StaticResource ToolbarButton}"
+                        Click="OnBrowseData" Margin="4,0"/>
+                <TextBlock x:Name="DataStatus" Grid.Column="2" FontSize="14" VerticalAlignment="Center"/>
+            </Grid>
+
+            <Separator Margin="0,8,0,16"/>
+
+            <!-- Dictation Settings -->
+            <TextBlock Text="Dictation" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,12"/>
+
+            <TextBlock Text="Silence Threshold" FontSize="13" Margin="0,0,0,4"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                <Slider x:Name="ThresholdSlider" Width="200" Minimum="0.005" Maximum="0.1"
+                        Value="{Binding SilenceThreshold}" TickFrequency="0.005"
+                        IsSnapToTickEnabled="True"/>
+                <TextBlock Text="{Binding SilenceThreshold, StringFormat='{}{0:F3}'}"
+                           Margin="8,0" FontSize="12" VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <TextBlock Text="Silence Timeout (seconds)" FontSize="13" Margin="0,0,0,4"/>
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
+                <Slider x:Name="TimeoutSlider" Width="200" Minimum="0.5" Maximum="5.0"
+                        Value="{Binding SilenceTimeoutSeconds}" TickFrequency="0.5"
+                        IsSnapToTickEnabled="True"/>
+                <TextBlock Text="{Binding SilenceTimeoutSeconds, StringFormat='{}{0:F1}s'}"
+                           Margin="8,0" FontSize="12" VerticalAlignment="Center"/>
+            </StackPanel>
+
+            <TextBlock Text="Dictation Hotkey: Ctrl+Space" FontSize="13" Foreground="Gray"
+                       Margin="0,4,0,0"/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>
