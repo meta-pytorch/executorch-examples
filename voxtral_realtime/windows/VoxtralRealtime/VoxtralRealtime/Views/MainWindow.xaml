@@ -1,0 +1,50 @@
+<!-- Copyright (c) Meta Platforms, Inc. and affiliates. -->
+<!-- All rights reserved. -->
+<!-- This source code is licensed under the BSD-style license found in the -->
+<!-- LICENSE file in the root directory of this source tree. -->
+
+<Window x:Class="VoxtralRealtime.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="clr-namespace:VoxtralRealtime.Views"
+        Title="Voxtral Realtime" Width="900" Height="600"
+        MinWidth="600" MinHeight="400"
+        Background="White"
+        WindowStartupLocation="CenterScreen"
+        Icon="/Resources/et-voice-logo.jpeg">
+    <Grid>
+        <!-- Error Banner Overlay -->
+        <views:ErrorBannerControl VerticalAlignment="Top" Panel.ZIndex="100"
+                                  Margin="80,0,80,0"/>
+
+        <!-- Main layout -->
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="240" MinWidth="180" MaxWidth="320"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Sidebar -->
+            <views:SidebarView Grid.Column="0"/>
+
+            <!-- Thin separator -->
+            <Rectangle Grid.Column="1" Width="0.5" Fill="#D1D1D6"
+                       VerticalAlignment="Stretch"/>
+
+            <!-- Right pane: toolbar + detail -->
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Toolbar (right-aligned, matches macOS) -->
+                <views:RecordingControlsBar Grid.Row="0"/>
+
+                <!-- Detail Content -->
+                <ContentControl Grid.Row="1" x:Name="DetailContent" Background="White"/>
+            </Grid>
+        </Grid>
+    </Grid>
+</Window>

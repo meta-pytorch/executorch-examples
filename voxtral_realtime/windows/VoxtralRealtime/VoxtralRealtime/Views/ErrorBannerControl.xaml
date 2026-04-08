@@ -1,0 +1,31 @@
+<!-- Copyright (c) Meta Platforms, Inc. and affiliates. -->
+<!-- All rights reserved. -->
+<!-- This source code is licensed under the BSD-style license found in the -->
+<!-- LICENSE file in the root directory of this source tree. -->
+
+<UserControl x:Class="VoxtralRealtime.Views.ErrorBannerControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Border x:Name="BannerBorder" Visibility="Collapsed"
+            CornerRadius="10" Padding="14,8" Margin="0,8,0,0">
+        <Border.Background>
+            <SolidColorBrush Color="#FF3B30"/>
+        </Border.Background>
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="8" Opacity="0.15" ShadowDepth="2"/>
+        </Border.Effect>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock x:Name="ErrorText" Grid.Column="0" Foreground="White"
+                       FontSize="13" TextWrapping="Wrap" VerticalAlignment="Center"/>
+
+            <Button Grid.Column="1" Content="Dismiss" Foreground="White"
+                    Background="Transparent" BorderThickness="0" Cursor="Hand"
+                    Click="OnDismiss" Padding="8,4" FontSize="12" Opacity="0.9"/>
+        </Grid>
+    </Border>
+</UserControl>

@@ -1,0 +1,74 @@
+<!-- Copyright (c) Meta Platforms, Inc. and affiliates. -->
+<!-- All rights reserved. -->
+<!-- This source code is licensed under the BSD-style license found in the -->
+<!-- LICENSE file in the root directory of this source tree. -->
+
+<UserControl x:Class="VoxtralRealtime.Views.SetupGuideView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer Padding="24">
+        <StackPanel MaxWidth="500" HorizontalAlignment="Center">
+            <TextBlock Text="Setup Required" FontSize="24" FontWeight="SemiBold"
+                       Margin="0,20,0,8"/>
+            <TextBlock Text="Some required files are missing. Please check the paths in Settings."
+                       FontSize="14" Foreground="Gray" TextWrapping="Wrap" Margin="0,0,0,24"/>
+
+            <!-- Health Check Items -->
+            <StackPanel x:Name="CheckItems" Margin="0,0,0,20">
+                <Border x:Name="RunnerCheck" CornerRadius="6" Padding="12,10" Margin="0,4"
+                        Background="#F8F8F8">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="RunnerIcon" Text="" FontSize="14" Width="24"/>
+                        <TextBlock Text="Runner binary" FontSize="13"/>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="ModelCheck" CornerRadius="6" Padding="12,10" Margin="0,4"
+                        Background="#F8F8F8">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="ModelIcon" Text="" FontSize="14" Width="24"/>
+                        <TextBlock Text="Model file (model.pte)" FontSize="13"/>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="PreprocessorCheck" CornerRadius="6" Padding="12,10" Margin="0,4"
+                        Background="#F8F8F8">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="PreprocessorIcon" Text="" FontSize="14" Width="24"/>
+                        <TextBlock Text="Preprocessor (preprocessor.pte)" FontSize="13"/>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="TokenizerCheck" CornerRadius="6" Padding="12,10" Margin="0,4"
+                        Background="#F8F8F8">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="TokenizerIcon" Text="" FontSize="14" Width="24"/>
+                        <TextBlock Text="Tokenizer (tekken.json)" FontSize="13"/>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="DataCheck" CornerRadius="6" Padding="12,10" Margin="0,4"
+                        Background="#F8F8F8">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="DataIcon" Text="" FontSize="14" Width="24"/>
+                        <TextBlock Text="CUDA data blob (aoti_cuda_blob.ptd)" FontSize="13"/>
+                    </StackPanel>
+                </Border>
+
+                <Border x:Name="MicCheck" CornerRadius="6" Padding="12,10" Margin="0,4"
+                        Background="#F8F8F8">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="MicIcon" Text="" FontSize="14" Width="24"/>
+                        <TextBlock Text="Microphone" FontSize="13"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <Button Content="Open Settings" Style="{StaticResource PrimaryButton}"
+                    Click="OnOpenSettings" HorizontalAlignment="Left"/>
+
+            <Button Content="Refresh" Style="{StaticResource ToolbarButton}"
+                    Click="OnRefresh" Margin="0,8,0,0" HorizontalAlignment="Left"/>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,30 @@
+<!-- Copyright (c) Meta Platforms, Inc. and affiliates. -->
+<!-- All rights reserved. -->
+<!-- This source code is licensed under the BSD-style license found in the -->
+<!-- LICENSE file in the root directory of this source tree. -->
+
+<Window x:Class="VoxtralRealtime.Views.EditSnippetDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Edit Snippet" Width="450" SizeToContent="Height"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize">
+    <StackPanel Margin="20">
+        <Label Content="Name:" FontSize="13"/>
+        <TextBox x:Name="NameBox" FontSize="13" Padding="6,4" Margin="0,0,0,12"/>
+
+        <Label Content="Trigger phrase:" FontSize="13"/>
+        <TextBox x:Name="TriggerBox" FontSize="13" Padding="6,4" Margin="0,0,0,12"/>
+
+        <Label Content="Content:" FontSize="13"/>
+        <TextBox x:Name="ContentBox" FontSize="13" Padding="6,4" Margin="0,0,0,16"
+                 AcceptsReturn="True" TextWrapping="Wrap" Height="120"
+                 VerticalScrollBarVisibility="Auto"/>
+
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Cancel" Style="{StaticResource ToolbarButton}"
+                    Click="OnCancel" Padding="16,6" Margin="0,0,8,0"/>
+            <Button Content="Save" Style="{StaticResource PrimaryButton}"
+                    Click="OnSave" Padding="16,6"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

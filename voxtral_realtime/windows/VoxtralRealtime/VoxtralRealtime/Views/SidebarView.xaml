@@ -1,0 +1,138 @@
+<!-- Copyright (c) Meta Platforms, Inc. and affiliates. -->
+<!-- All rights reserved. -->
+<!-- This source code is licensed under the BSD-style license found in the -->
+<!-- LICENSE file in the root directory of this source tree. -->
+
+<UserControl x:Class="VoxtralRealtime.Views.SidebarView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:VoxtralRealtime.Views"
+             xmlns:models="clr-namespace:VoxtralRealtime.Models">
+    <Grid Background="{StaticResource SidebarBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Search Box with placeholder -->
+        <Grid Grid.Row="0" Margin="12,12,12,8">
+            <TextBox x:Name="SearchBox" Style="{StaticResource SearchBox}"
+                     TextChanged="OnSearchChanged"/>
+            <TextBlock Text="Search history" FontSize="13" Foreground="#AEAEB2"
+                       IsHitTestVisible="False" Margin="10,7,0,0"
+                       Visibility="{Binding Text, ElementName=SearchBox,
+                       Converter={StaticResource NullToVisibility}, ConverterParameter=Invert}"/>
+        </Grid>
+
+        <!-- Nav Items -->
+        <StackPanel Grid.Row="1" Margin="8,0,8,4">
+            <Button Style="{StaticResource ToolbarButton}" Click="OnHomeClick"
+                    Padding="10,7" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#x1F3E0;" FontSize="13" Width="24"/>
+                    <TextBlock Text="Home" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
+                </StackPanel>
+            </Button>
+            <Button Style="{StaticResource ToolbarButton}" Click="OnReplacementsClick"
+                    Padding="10,7" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#x1F504;" FontSize="13" Width="24"/>
+                    <TextBlock Text="Replacements" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
+                </StackPanel>
+            </Button>
+            <Button Style="{StaticResource ToolbarButton}" Click="OnSnippetsClick"
+                    Padding="10,7" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#x1F4CB;" FontSize="13" Width="24"/>
+                    <TextBlock Text="Snippets" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
+                </StackPanel>
+            </Button>
+            <Button Style="{StaticResource ToolbarButton}" Click="OnSettingsClick"
+                    Padding="10,7" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#x2699;" FontSize="13" Width="24"/>
+                    <TextBlock Text="Settings" FontSize="13" Foreground="{StaticResource TextPrimaryBrush}"/>
+                </StackPanel>
+            </Button>
+        </StackPanel>
+
+        <!-- Live Session Row (shown when transcribing/paused) -->
+        <Border x:Name="LiveSessionRow" Grid.Row="2" Visibility="Collapsed"
+                Margin="6,0,6,4" CornerRadius="6" Padding="10,8" Cursor="Hand"
+                MouseLeftButtonUp="OnLiveSessionClick">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="28"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Audio level bars or pause icon -->
+                <views:AudioLevelControl x:Name="LiveAudioLevel" Grid.Column="0"
+                                         Width="24" Height="20" VerticalAlignment="Center"/>
+                <TextBlock x:Name="LivePauseIcon" Grid.Column="0" Text="&#x23F8;"
+                           FontSize="16" VerticalAlignment="Center"
+                           HorizontalAlignment="Center" Visibility="Collapsed">
+                    <TextBlock.Foreground>
+                        <SolidColorBrush Color="{StaticResource WarningColor}"/>
+                    </TextBlock.Foreground>
+                </TextBlock>
+
+                <StackPanel Grid.Column="1" Margin="4,0,0,0">
+                    <TextBlock x:Name="LiveTitle" FontSize="14" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}"/>
+                    <TextBlock x:Name="LivePreview" FontSize="11" MaxHeight="16"
+                               TextTrimming="CharacterEllipsis"
+                               Foreground="{StaticResource TextSecondaryBrush}" Margin="0,4,0,0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- History Label -->
+        <TextBlock Grid.Row="3" Text="History" FontSize="11" FontWeight="SemiBold"
+                   Foreground="{StaticResource LabelGrayBrush}" Margin="16,8,0,4"/>
+
+        <!-- Sessions List -->
+        <ListBox x:Name="SessionsList" Grid.Row="4" Margin="4,0"
+                 BorderThickness="0" Background="Transparent"
+                 ItemContainerStyle="{StaticResource SidebarItem}"
+                 SelectionChanged="OnSessionSelected"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListBox.ItemTemplate>
+                <DataTemplate DataType="{x:Type models:Session}">
+                    <StackPanel Margin="0,2">
+                        <TextBlock Text="{Binding DisplayTitle}" FontSize="13"
+                                   FontWeight="SemiBold" Foreground="#1C1C1E"
+                                   TextTrimming="CharacterEllipsis"/>
+                        <TextBlock Text="{Binding PreviewText}" FontSize="11"
+                                   Foreground="#8E8E93"
+                                   TextTrimming="CharacterEllipsis" Margin="0,2,0,0"/>
+                        <TextBlock FontSize="10" Foreground="#AEAEB2" Margin="0,3,0,0">
+                            <Run Text="{Binding Date, StringFormat='MMM d, h:mm tt', Mode=OneWay}"/>
+                        </TextBlock>
+                    </StackPanel>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+            <ListBox.ContextMenu>
+                <ContextMenu>
+                    <MenuItem Header="Pin/Unpin" Click="OnTogglePin"/>
+                    <MenuItem Header="Rename..." Click="OnRename"/>
+                    <Separator/>
+                    <MenuItem Header="Copy Transcript" Click="OnCopyTranscript"/>
+                    <MenuItem Header="Export">
+                        <MenuItem Header="Text (.txt)" Click="OnExportTxt"/>
+                        <MenuItem Header="JSON (.json)" Click="OnExportJson"/>
+                        <MenuItem Header="SRT (.srt)" Click="OnExportSrt"/>
+                    </MenuItem>
+                    <Separator/>
+                    <MenuItem Header="Delete" Click="OnDelete"/>
+                </ContextMenu>
+            </ListBox.ContextMenu>
+        </ListBox>
+
+        <!-- (nav moved to top) -->
+    </Grid>
+</UserControl>
