@@ -4,86 +4,16 @@ Real-time speech transcription desktop app powered by ExecuTorch with CUDA accel
 
 This is the Windows equivalent of the [macOS Voxtral Realtime app](../macos/).
 
-## Quick Start (Pre-built Release)
+## Quick Start
 
-Download `VoxtralRealtime.exe` from the [Releases](https://github.com/meta-pytorch/executorch-examples/releases) page and run it directly. No installation required.
+Download `VoxtralRealtime-Setup.exe` from the [Releases](https://github.com/meta-pytorch/executorch-examples/releases) page and run the installer. Everything is bundled -- the app, runner, model weights, and tokenizer. No additional downloads required.
 
-You also need:
-- The `voxtral_realtime_runner.exe` (built from ExecuTorch with CUDA support)
-- Model files from HuggingFace (see [Model Files](#model-files) below)
+After install, launch from the Start Menu or desktop shortcut and click "Start Transcription".
 
-## Prerequisites
+### Requirements
 
 - Windows 10/11 with NVIDIA GPU (CUDA-capable)
 - CUDA Toolkit installed (auto-detected from `C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\`)
-- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) (only for building from source)
-
-## Model Files
-
-Download from HuggingFace:
-
-```powershell
-pip install huggingface_hub
-huggingface-cli download younghan-meta/Voxtral-Mini-4B-Realtime-2602-ExecuTorch-CUDA --local-dir voxtral_rt_exports
-```
-
-This downloads: `model.pte`, `preprocessor.pte`, `aoti_cuda_blob.ptd`
-
-You also need the tokenizer from the base model:
-
-```powershell
-huggingface-cli download mistralai/Voxtral-Mini-4B-Realtime-2602 tekken.json --local-dir voxtral_tokenizer
-```
-
-## Building the Runner
-
-Build the `voxtral_realtime_runner.exe` from the ExecuTorch repo:
-
-```bash
-cd executorch
-cmake --preset voxtral-realtime-cuda
-cmake --build --preset voxtral-realtime-cuda
-```
-
-The runner will be at `cmake-out/examples/models/voxtral_realtime/Release/voxtral_realtime_runner.exe`.
-
-## Build from Source
-
-```powershell
-# Install .NET SDK if not already installed
-winget install Microsoft.DotNet.SDK.8
-
-# Build
-cd VoxtralRealtime
-dotnet restore
-dotnet build --configuration Release
-
-# Run
-dotnet run --project VoxtralRealtime --configuration Release
-```
-
-## Publish Standalone Executable
-
-Create a single self-contained exe (no .NET runtime required on target machine):
-
-```powershell
-cd VoxtralRealtime
-dotnet publish VoxtralRealtime --configuration Release --runtime win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:DebugType=none -o publish
-```
-
-The output `publish\VoxtralRealtime.exe` can be distributed and run on any Windows x64 machine.
-
-## Configuration
-
-On first launch, the app auto-loads the model from default paths. All paths are configurable in Settings:
-
-| File | Default Path |
-|------|-------------|
-| Runner | `cmake-out\examples\models\voxtral_realtime\Release\voxtral_realtime_runner.exe` |
-| Model | `voxtral_rt_exports_wsl\model.pte` |
-| Preprocessor | `voxtral_rt_exports_wsl\preprocessor.pte` |
-| CUDA blob | `voxtral_rt_exports_wsl\aoti_cuda_blob.ptd` |
-| Tokenizer | `tekken.json` |
 
 ## Features
 
@@ -102,6 +32,73 @@ On first launch, the app auto-loads the model from default paths. All paths are 
 | Ctrl+. | Pause transcription |
 | Ctrl+Enter | End session |
 | Ctrl+Space | Toggle dictation mode |
+
+## Build from Source
+
+For developers who want to build the app themselves.
+
+### Prerequisites
+
+- [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- Pre-built `voxtral_realtime_runner.exe` (see [Building the Runner](#building-the-runner))
+- Model files from HuggingFace (see [Model Files](#model-files))
+
+### Model Files
+
+```powershell
+pip install huggingface_hub
+huggingface-cli download younghan-meta/Voxtral-Mini-4B-Realtime-2602-ExecuTorch-CUDA-Windows --local-dir voxtral_rt_exports
+huggingface-cli download mistralai/Voxtral-Mini-4B-Realtime-2602 tekken.json --local-dir voxtral_tokenizer
+```
+
+### Building the Runner
+
+```bash
+cd executorch
+cmake --preset voxtral-realtime-cuda
+cmake --build --preset voxtral-realtime-cuda
+```
+
+### Build and Run
+
+```powershell
+cd VoxtralRealtime
+dotnet restore
+dotnet build --configuration Release
+dotnet run --project VoxtralRealtime --configuration Release
+```
+
+### Publish Standalone Executable
+
+```powershell
+cd VoxtralRealtime
+dotnet publish VoxtralRealtime --configuration Release --runtime win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:DebugType=none -o publish
+```
+
+### Create Installer
+
+Builds a self-contained installer that bundles the app, runner, model weights, and tokenizer:
+
+```powershell
+# 1. Install Inno Setup (one-time)
+winget install JRSoftware.InnoSetup
+
+# 2. Publish the app
+cd VoxtralRealtime
+dotnet publish VoxtralRealtime --configuration Release --runtime win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:DebugType=none -o publish
+
+# 3. Build the installer
+cd ..
+ISCC installer.iss
+```
+
+The output `installer-output\VoxtralRealtime-Setup.exe` includes:
+- App executable (self-contained, no .NET runtime needed)
+- `voxtral_realtime_runner.exe` + `aoti_cuda_shims.dll`
+- Model weights (`model.pte`, `preprocessor.pte`, `aoti_cuda_blob.ptd`)
+- Tokenizer (`tekken.json`)
+- Start Menu and optional desktop shortcuts
+- Clean uninstall via Windows Settings
 
 ## Architecture
 
