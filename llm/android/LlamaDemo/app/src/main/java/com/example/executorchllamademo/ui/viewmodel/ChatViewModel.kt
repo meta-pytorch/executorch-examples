@@ -60,10 +60,6 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     var supportsImageInput by mutableStateOf(false)
     var supportsAudioInput by mutableStateOf(false)
 
-    // Counter that increments on each token to trigger auto-scroll during generation
-    var scrollTrigger by mutableStateOf(0)
-        private set
-
     private val _selectedImages = mutableStateListOf<Uri>()
     val selectedImages: List<Uri> = _selectedImages
 
@@ -785,8 +781,6 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                 _messages[index] = updated
                 resultMessage = updated
             }
-            // Increment scroll trigger to auto-scroll during generation
-            scrollTrigger++
         }
     }
 

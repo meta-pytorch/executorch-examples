@@ -11,6 +11,7 @@ package com.example.executorchllamademo
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.UUID
 
 /**
  * Represents a chat message in the conversation.
@@ -26,7 +27,8 @@ class Message(
     isSent: Boolean,
     val messageType: MessageType,
     val promptID: Int,
-    existingTimestamp: Long? = null
+    existingTimestamp: Long? = null,
+    val id: String = UUID.randomUUID().toString()
 ) {
     // Use @JvmName to maintain Java compatibility - Java expects getIsSent()
     @get:JvmName("getIsSent")
@@ -56,7 +58,7 @@ class Message(
      */
     fun copy(): Message {
         val sourceText = if (messageType == MessageType.IMAGE) (imagePath ?: "") else text
-        return Message(sourceText, isSent, messageType, promptID, timestamp).also {
+        return Message(sourceText, isSent, messageType, promptID, timestamp, id).also {
             it.tokensPerSecond = tokensPerSecond
             it.totalGenerationTime = totalGenerationTime
         }
