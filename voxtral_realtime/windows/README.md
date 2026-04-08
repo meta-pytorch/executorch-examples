@@ -6,7 +6,9 @@ This is the Windows equivalent of the [macOS Voxtral Realtime app](../macos/).
 
 ## Quick Start (Pre-built Release)
 
-Download `VoxtralRealtime.exe` from the [Releases](https://github.com/meta-pytorch/executorch-examples/releases) page and run it directly. No installation required.
+Download `VoxtralRealtime-Setup.exe` from the [Releases](https://github.com/meta-pytorch/executorch-examples/releases) page and run the installer. It creates a Start Menu shortcut and optional desktop shortcut.
+
+Alternatively, download the standalone `VoxtralRealtime.exe` and run it directly (no installation required).
 
 You also need:
 - The `voxtral_realtime_runner.exe` (built from ExecuTorch with CUDA support)
@@ -72,6 +74,29 @@ dotnet publish VoxtralRealtime --configuration Release --runtime win-x64 --self-
 ```
 
 The output `publish\VoxtralRealtime.exe` can be distributed and run on any Windows x64 machine.
+
+## Create Installer
+
+Build a Windows installer (`.exe`) with Start Menu shortcut, desktop shortcut, and uninstaller:
+
+```powershell
+# 1. Install Inno Setup (one-time)
+winget install JRSoftware.InnoSetup
+
+# 2. Publish the app
+cd VoxtralRealtime
+dotnet publish VoxtralRealtime --configuration Release --runtime win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:DebugType=none -o publish
+
+# 3. Build the installer
+cd ..
+& "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer.iss
+```
+
+The output `installer-output\VoxtralRealtime-Setup.exe` is a self-contained installer that:
+- Installs to `Program Files\VoxtralRealtime` (no admin required)
+- Creates Start Menu and optional desktop shortcuts
+- Registers in Windows Settings for clean uninstall
+- Optionally launches the app after install
 
 ## Configuration
 
