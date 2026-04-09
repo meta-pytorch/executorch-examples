@@ -64,7 +64,7 @@ object PromptFormat {
     @JvmStatic
     fun getThinkingModeToken(modelType: ModelType, thinkingMode: Boolean): String {
         return when (modelType) {
-            ModelType.QWEN_3 -> if (thinkingMode) "" else "<think>\n\n</think>\n\n\n"
+            ModelType.QWEN_3 -> "" // Always enable thinking for Qwen-3
             else -> ""
         }
     }
@@ -74,8 +74,6 @@ object PromptFormat {
         return when (modelType) {
             ModelType.QWEN_3 -> when (token) {
                 "<|im_end|>" -> ""
-                "<think>" -> "Thinking...\n"
-                "</think>" -> "\nDone thinking"
                 else -> token
             }
             else -> token
