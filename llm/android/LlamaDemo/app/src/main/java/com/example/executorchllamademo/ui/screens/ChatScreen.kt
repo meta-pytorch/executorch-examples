@@ -255,8 +255,6 @@ fun ChatScreen(
                 onInputTextChange = { viewModel.inputText = it },
                 isModelReady = viewModel.isModelReady,
                 isGenerating = viewModel.isGenerating,
-                thinkMode = viewModel.thinkMode,
-                onThinkModeToggle = { viewModel.toggleThinkMode() },
                 onSendClick = { viewModel.sendMessage() },
                 onStopClick = { viewModel.stopGeneration() },
                 showMediaButtons = viewModel.showMediaButtons,

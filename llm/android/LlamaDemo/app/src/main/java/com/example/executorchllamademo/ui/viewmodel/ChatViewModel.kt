@@ -60,6 +60,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     var supportsImageInput by mutableStateOf(false)
     var supportsAudioInput by mutableStateOf(false)
 
+    // Thinking mode state: tracks whether we're inside a <think>...</think> block
+    private var isInThinkingBlock = false
+
+    // Counter that increments on each token to trigger auto-scroll during generation
+    var scrollTrigger by mutableStateOf(0)
+        private set
+
+
     private val _selectedImages = mutableStateListOf<Uri>()
     val selectedImages: List<Uri> = _selectedImages
 
@@ -639,6 +647,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
 
         // Create result message placeholder
         resultMessage = Message("", false, MessageType.TEXT, promptID)
+        isInThinkingBlock = false
         _messages.add(resultMessage!!)
 
         // Clear selected images after adding to chat
@@ -752,6 +761,16 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
             return
         }
 
+        // Thinking mode state machine: intercept <think> / </think> tags
+        if (processedResult == "<think>") {
+            isInThinkingBlock = true
+            return
+        }
+        if (processedResult == "</think>") {
+            isInThinkingBlock = false
+            return
+        }
+
         processedResult = PromptFormat.replaceSpecialToken(currentSettingsFields.modelType, processedResult)
 
         if (currentSettingsFields.modelType == ModelType.LLAMA_3 &&
@@ -769,19 +788,31 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
             return
         }
 
-        val keepResult = !(processedResult == "\n" || processedResult == "\n\n") ||
-                resultMessage?.text?.isNotEmpty() == true
-        if (keepResult) {
-            resultMessage?.appendText(processedResult)
-            // Create a new Message reference to trigger recomposition under Compose strong
-            // skipping mode, which compares unstable parameters by reference equality (===).
-            val index = _messages.indexOfLast { it === resultMessage }
-            if (index >= 0) {
-                val updated = resultMessage!!.copy()
-                _messages[index] = updated
-                resultMessage = updated
+        if (isInThinkingBlock) {
+            // Skip leading newlines in thinking content
+            val keepThinking = !(processedResult == "\n" || processedResult == "\n\n") ||
+                    resultMessage?.thinkingContent?.isNotEmpty() == true
+            if (keepThinking) {
+                resultMessage?.appendThinkingText(processedResult)
+            }
+        } else {
+            val keepResult = !(processedResult == "\n" || processedResult == "\n\n") ||
+                    resultMessage?.text?.isNotEmpty() == true
+            if (keepResult) {
+                resultMessage?.appendText(processedResult)
             }
         }
+
+        // Create a new Message reference to trigger recomposition under Compose strong
+        // skipping mode, which compares unstable parameters by reference equality (===).
+        val index = _messages.indexOfLast { it === resultMessage }
+        if (index >= 0) {
+            val updated = resultMessage!!.copy()
+            _messages[index] = updated
+            resultMessage = updated
+        }
+        // Increment scroll trigger to auto-scroll during generation
+        scrollTrigger++
     }
 
     override fun onStats(stats: String) {

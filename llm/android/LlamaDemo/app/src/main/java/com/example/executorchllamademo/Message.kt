@@ -46,8 +46,14 @@ class Message(
 
     var totalGenerationTime: Long = 0L
 
+    var thinkingContent: String = ""
+
     fun appendText(text: String) {
         this.text += text
+    }
+
+    fun appendThinkingText(text: String) {
+        thinkingContent += text
     }
 
     /**
@@ -61,6 +67,7 @@ class Message(
         return Message(sourceText, isSent, messageType, promptID, timestamp, id).also {
             it.tokensPerSecond = tokensPerSecond
             it.totalGenerationTime = totalGenerationTime
+            it.thinkingContent = thinkingContent
         }
     }
 
