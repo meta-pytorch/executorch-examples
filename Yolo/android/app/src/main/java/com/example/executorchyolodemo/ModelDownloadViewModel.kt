@@ -10,6 +10,8 @@ package com.example.executorchyolodemo
 
 import android.util.Log
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -63,13 +65,13 @@ class ModelDownloadViewModel : ViewModel() {
     var downloadStatus by mutableStateOf(DownloadStatus.NOT_STARTED)
         private set
 
-    var downloadProgress by mutableStateOf(0f)
+    var downloadProgress by mutableFloatStateOf(0f)
         private set
 
-    var currentFileIndex by mutableStateOf(0)
+    var currentFileIndex by mutableIntStateOf(0)
         private set
 
-    var totalFileCount by mutableStateOf(0)
+    var totalFileCount by mutableIntStateOf(0)
         private set
 
     var currentFileName by mutableStateOf("")
@@ -150,21 +152,22 @@ class ModelDownloadViewModel : ViewModel() {
         fileInfo: ModelFileInfo,
         targetFile: File
     ): Boolean = withContext(Dispatchers.IO) {
+        val tempFile = File(targetFile.absolutePath + ".tmp")
+        var connection: HttpURLConnection? = null
         try {
             Log.i(TAG, "Downloading ${fileInfo.filename} from ${fileInfo.url}")
             val url = URL(fileInfo.url)
-            val connection = url.openConnection() as HttpURLConnection
+            connection = url.openConnection() as HttpURLConnection
             connection.requestMethod = "GET"
             connection.instanceFollowRedirects = true
             connection.connectTimeout = 30000
-            connection.readTimeout = 30000
+            connection.readTimeout = 120000
             connection.connect()
 
             if (connection.responseCode != HttpURLConnection.HTTP_OK) {
                 throw Exception("Server returned HTTP ${connection.responseCode}")
             }
 
-            val tempFile = File(targetFile.absolutePath + ".tmp")
             connection.inputStream.use { input ->
                 FileOutputStream(tempFile).use { output ->
                     val buffer = ByteArray(8192)
@@ -180,10 +183,13 @@ class ModelDownloadViewModel : ViewModel() {
             true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to download ${fileInfo.filename}", e)
+            tempFile.delete()
             withContext(Dispatchers.Main) {
                 errorMessage = "Failed to download ${fileInfo.filename}: ${e.message}"
             }
             false
+        } finally {
+            connection?.disconnect()
         }
     }
 }
