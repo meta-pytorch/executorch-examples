@@ -39,7 +39,7 @@ Note:
 See [program-data-separation](../../README.md) for instructions.
 
 ## Install runtime dependencies.
-The ExecuTorch repository is configured as a git submodule at `~/executorch-examples/program-data-separation/cpp/executorch`.  To initialize it:
+The ExecuTorch repository is configured as a git submodule at `~/executorch-examples/third-party/executorch`, with `program-data-separation/cpp/executorch` being a symlink to it. To initialize:
 ```bash
 cd ~/executorch-examples/
 git submodule sync
@@ -48,7 +48,7 @@ git submodule update --init --recursive
 Install dev requirements for ExecuTorch
 
 ```bash
-cd ~/executorch-examples/program-data-separation/cpp/executorch
+cd ~/executorch-examples/third-party/executorch
 pip install -r requirements-dev.txt
 ```
 

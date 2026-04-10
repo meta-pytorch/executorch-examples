@@ -60,6 +60,9 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
     var supportsImageInput by mutableStateOf(false)
     var supportsAudioInput by mutableStateOf(false)
 
+    // Thinking mode state: tracks whether we're inside a <think>...</think> block
+    private var isInThinkingBlock = false
+
     // Counter that increments on each token to trigger auto-scroll during generation
     var scrollTrigger by mutableStateOf(0)
         private set
@@ -643,6 +646,7 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
 
         // Create result message placeholder
         resultMessage = Message("", false, MessageType.TEXT, promptID)
+        isInThinkingBlock = false
         _messages.add(resultMessage!!)
 
         // Clear selected images after adding to chat
@@ -687,7 +691,15 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
             }
 
             val generateDuration = System.currentTimeMillis() - generateStartTime
-            resultMessage?.totalGenerationTime = generateDuration
+            resultMessage?.let { msg ->
+                msg.totalGenerationTime = generateDuration
+                val index = _messages.indexOfLast { it === msg }
+                if (index >= 0) {
+                    val updated = msg.copy()
+                    _messages[index] = updated
+                    resultMessage = updated
+                }
+            }
             isGenerating = false
             ETLogging.getInstance().log("Inference completed")
         }
@@ -748,6 +760,16 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
             return
         }
 
+        // Thinking mode state machine: intercept <think> / </think> tags
+        if (processedResult == "<think>") {
+            isInThinkingBlock = true
+            return
+        }
+        if (processedResult == "</think>") {
+            isInThinkingBlock = false
+            return
+        }
+
         processedResult = PromptFormat.replaceSpecialToken(currentSettingsFields.modelType, processedResult)
 
         if (currentSettingsFields.modelType == ModelType.LLAMA_3 &&
@@ -765,18 +787,31 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
             return
         }
 
-        val keepResult = !(processedResult == "\n" || processedResult == "\n\n") ||
-                resultMessage?.text?.isNotEmpty() == true
-        if (keepResult) {
-            resultMessage?.appendText(processedResult)
-            // Force recomposition by updating the messages list
-            val index = _messages.indexOfLast { it === resultMessage }
-            if (index >= 0) {
-                _messages[index] = resultMessage!!
+        if (isInThinkingBlock) {
+            // Skip leading newlines in thinking content
+            val keepThinking = !(processedResult == "\n" || processedResult == "\n\n") ||
+                    resultMessage?.thinkingContent?.isNotEmpty() == true
+            if (keepThinking) {
+                resultMessage?.appendThinkingText(processedResult)
             }
-            // Increment scroll trigger to auto-scroll during generation
-            scrollTrigger++
+        } else {
+            val keepResult = !(processedResult == "\n" || processedResult == "\n\n") ||
+                    resultMessage?.text?.isNotEmpty() == true
+            if (keepResult) {
+                resultMessage?.appendText(processedResult)
+            }
         }
+
+        // Create a new Message reference to trigger recomposition under Compose strong
+        // skipping mode, which compares unstable parameters by reference equality (===).
+        val index = _messages.indexOfLast { it === resultMessage }
+        if (index >= 0) {
+            val updated = resultMessage!!.copy()
+            _messages[index] = updated
+            resultMessage = updated
+        }
+        // Increment scroll trigger to auto-scroll during generation
+        scrollTrigger++
     }
 
     override fun onStats(stats: String) {
@@ -792,10 +827,12 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
                 Log.e("LLM", "Error parsing JSON: ${e.message}")
             }
             msg.tokensPerSecond = tps
-            // Force recomposition
+            // Create a new reference to trigger recomposition under strong skipping mode
             val index = _messages.indexOfLast { it === msg }
             if (index >= 0) {
-                _messages[index] = msg
+                val updated = msg.copy()
+                _messages[index] = updated
+                resultMessage = updated
             }
         }
     }

@@ -152,7 +152,7 @@ fun ChatScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.smallTopAppBarColors(
+                colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = appColors.navBar,
                     titleContentColor = appColors.textOnNavBar
                 )
@@ -195,8 +195,6 @@ fun ChatScreen(
                 onInputTextChange = { viewModel.inputText = it },
                 isModelReady = viewModel.isModelReady,
                 isGenerating = viewModel.isGenerating,
-                thinkMode = viewModel.thinkMode,
-                onThinkModeToggle = { viewModel.toggleThinkMode() },
                 onSendClick = { viewModel.sendMessage() },
                 onStopClick = { viewModel.stopGeneration() },
                 showMediaButtons = viewModel.showMediaButtons,

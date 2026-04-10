@@ -13,26 +13,27 @@ build/
 *.pte
 *.ptd
 
+# DMG files (should be distributed via GitHub Releases)
+*.dmg
+*.dmg.*
+
 # Xcode
 xcuserdata/
 .build/
 .swiftpm/
 *.xcworkspace/
 *.xcframework/
-*.iml
 
+# Android / IntelliJ
+*.iml
 .gradle
-/local.properties
-./idea
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
+.idea/
+local.properties
 /captures
 .externalNativeBuild
 .cxx
-local.properties
 *.aar
+
+node_modules/
+__pycache__/
+.cursor/

@@ -167,18 +167,21 @@ public class BirdDetectionPipeline {
         List<BirdDetection> results = new ArrayList<>();
         frameCounter++;
 
+        Tensor yoloInput = null;
+        EValue[] yoloOutputs = null;
+
         try {
             // Cleanup old detection history every 30 frames
             if (frameCounter % 30 == 0) {
                 cleanupOldDetections();
             }
 
-            Tensor yoloInput = preprocessForYolo(bitmap);
+            yoloInput = preprocessForYolo(bitmap);
             if (yoloInput == null) {
                 return results;
             }
 
-            EValue[] yoloOutputs = yoloModule.forward(EValue.from(yoloInput));
+            yoloOutputs = yoloModule.forward(EValue.from(yoloInput));
             if (yoloOutputs == null || yoloOutputs.length == 0) {
                 return results;
             }
@@ -190,61 +193,68 @@ public class BirdDetectionPipeline {
             }
 
             // Apply enhanced NMS
-            List<Detection> filteredDetections = applyEnhancedNMS(detections);
+            List<Detection> nmsDetections = applyEnhancedNMS(detections);
 
             if (DEBUG_OUTPUT) {
-                Log.d(TAG, "Detections after enhanced NMS: " + filteredDetections.size());
+                Log.d(TAG, "Detections after NMS: " + nmsDetections.size());
             }
 
-            // Apply temporal stability tracking
-            List<Detection> stableDetections = applyTemporalStabilityTracking(filteredDetections);
-
-            // Limit to MAX_DETECTIONS with quality ranking
-            if (stableDetections.size() > MAX_DETECTIONS) {
-                // Sort by confidence and take top detections
-                Collections.sort(stableDetections, (a, b) -> Float.compare(b.confidence, a.confidence));
-                stableDetections = stableDetections.subList(0, MAX_DETECTIONS);
-            }
-
-            // Process stable detections only
-            for (Detection detection : stableDetections) {
+            // Classify each detection
+            for (Detection detection : nmsDetections) {
                 try {
-                    if (validateBirdDetectionEnhanced(bitmap, detection.boundingBox)) {
-                        String[] speciesResult = classifyBird(bitmap, detection.boundingBox);
-                        float classifierConfidence = Float.parseFloat(speciesResult[1]);
+                    Bitmap croppedBird = cropBitmap(bitmap, detection.boundingBox);
+                    if (croppedBird == null) continue;
 
-                        // Stricter classifier requirement for false positive reduction
-                        if (classifierConfidence > 0.5f) {
-                            // Weighted average favoring detection confidence
-                            float finalConfidence = (detection.confidence * 0.8f + classifierConfidence * 0.2f);
+                    String[] classificationResult = classifyBird(bitmap, detection.boundingBox);
+                    String species = (classificationResult != null && classificationResult.length > 0) ? classificationResult[0] : "Unknown Bird";
 
-                            // Check if this detection is stable over time
-                            DetectionHistory history = detectionHistory.get(detection.locationKey);
-                            boolean isStable = history != null && history.isStable();
+                    // Recycle the cropped bitmap immediately after classification
+                    if (!croppedBird.isRecycled()) {
+                        croppedBird.recycle();
+                    }
 
-                            results.add(new BirdDetection(
-                                    detection.boundingBox,
-                                    speciesResult[0],
-                                    finalConfidence,
-                                    isStable
-                            ));
+                    // Update detection history
+                    DetectionHistory history = detectionHistory.get(detection.locationKey);
+                    if (history == null) {
+                        history = new DetectionHistory();
+                        detectionHistory.put(detection.locationKey, history);
+                    }
+                    history.addConfidence(detection.confidence);
 
-                            if (DEBUG_OUTPUT) {
-                                Log.d(TAG, "FINAL BIRD: " + speciesResult[0] + " conf=" + finalConfidence + " stable=" + isStable);
-                            }
-                        }
+                    // Apply temporal bonus for stable detections
+                    float finalConfidence = detection.confidence;
+                    if (history.isStable()) {
+                        finalConfidence = Math.min(1.0f, detection.confidence + TEMPORAL_BONUS);
+                    }
+
+                    BirdDetection birdDetection = new BirdDetection(
+                            detection.boundingBox,
+                            species,
+                            finalConfidence,
+                            history.isStable()
+                    );
+                    results.add(birdDetection);
+
+                    if (DEBUG_OUTPUT) {
+                        Log.d(TAG, String.format("Bird detected: %s (%.2f) at [%.0f,%.0f,%.0f,%.0f] stable=%b",
+                                species, finalConfidence,
+                                detection.boundingBox.left, detection.boundingBox.top,
+                                detection.boundingBox.right, detection.boundingBox.bottom,
+                                history.isStable()));
                     }
                 } catch (Exception e) {
-                    Log.e(TAG, "Failed to classify detection", e);
+                    Log.e(TAG, "Error classifying detection", e);
                 }
             }
 
-        } catch (Exception e) {
-            Log.e(TAG, "Bird detection failed", e);
-        }
+            if (DEBUG_OUTPUT) {
+                Log.d(TAG, "Final bird detections: " + results.size());
+            }
 
-        if (DEBUG_OUTPUT) {
-            Log.d(TAG, "TOTAL FINAL RESULTS: " + results.size());
+        } catch (Exception e) {
+            Log.e(TAG, "Error in detectBirds", e);
+        } finally {
+            // Note: ExecutorTorch handles tensor cleanup automatically via garbage collection
         }
 
         return results;
@@ -327,6 +337,39 @@ public class BirdDetectionPipeline {
         }
     }
 
+    /**
+     * Release all resources and destroy models.
+     * Call this when the pipeline is no longer needed.
+     */
+    public void close() {
+        Log.d(TAG, "Closing BirdDetectionPipeline and releasing resources");
+
+        try {
+            if (yoloModule != null) {
+                yoloModule.destroy();
+                yoloModule = null;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error destroying yoloModule", e);
+        }
+
+        try {
+            if (classifierModule != null) {
+                classifierModule.destroy();
+                classifierModule = null;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Error destroying classifierModule", e);
+        }
+
+        // Clear detection history
+        if (detectionHistory != null) {
+            detectionHistory.clear();
+        }
+
+        Log.d(TAG, "BirdDetectionPipeline closed successfully");
+    }
+
     private Tensor preprocessForYolo(Bitmap bitmap) {
         try {
             if (bitmap == null || bitmap.isRecycled()) {
@@ -360,83 +403,138 @@ public class BirdDetectionPipeline {
             float[] output = outputs[0].toTensor().getDataAsFloatArray();
 
             if (DEBUG_OUTPUT) {
-                Log.d(TAG, "=== YOLOv8 OPTIMIZED PARSING ===");
+                Log.d(TAG, "=== YOLO PARSING ===");
                 Log.d(TAG, "Output length: " + output.length);
             }
 
-            int numDetections = 8400;
-            int numFeatures = 84;
-
-            if (output.length != numDetections * numFeatures) {
+            // Detect which YOLO version based on output size
+            if (output.length == 1800) {
+                // YOLOv26 format: [x1, y1, x2, y2, confidence, class] × 300
+                return parseYoloV26Output(output, imageWidth, imageHeight);
+            } else if (output.length == 705600) {
+                // YOLOv8 format: 84 × 8400
+                return parseYoloV8Output(output, imageWidth, imageHeight);
+            } else {
                 Log.e(TAG, "Unexpected output size: " + output.length);
                 return detections;
             }
 
-            float scaleX = (float) imageWidth / 640.0f;
-            float scaleY = (float) imageHeight / 640.0f;
-
-            int validDetectionCount = 0;
-            int totalChecked = 0;
-
-            for (int i = 0; i < numDetections && validDetectionCount < 15; i++) { // Reduced max checks
-                totalChecked++;
-
-                float x = output[0 * numDetections + i];
-                float y = output[1 * numDetections + i];
-                float w = output[2 * numDetections + i];
-                float h = output[3 * numDetections + i];
-
-                // Enhanced coordinate validation
-                if (x <= 0 || y <= 0 || w <= 0 || h <= 0 || w > 640 || h > 640) {
-                    continue;
-                }
-
-                float maxClassScore = 0;
-                int bestClass = -1;
-
-                for (int classIdx = 0; classIdx < 80; classIdx++) {
-                    int featureIdx = 4 + classIdx;
-                    if (featureIdx < numFeatures) {
-                        float classScore = output[featureIdx * numDetections + i];
-                        if (classScore > maxClassScore) {
-                            maxClassScore = classScore;
-                            bestClass = classIdx;
-                        }
-                    }
-                }
-
-                float confidence = maxClassScore;
-
-                if (DEBUG_OUTPUT && totalChecked <= 5) {
-                    Log.d(TAG, "Detection " + i + ": conf=" + confidence + " class=" + bestClass);
-                }
-
-                // Stricter confidence and class checking
-                if (confidence > CONFIDENCE_THRESHOLD && bestClass == 14) { // 14 = bird class in COCO
-                    RectF boundingBox = convertYoloV8Coordinates(x, y, w, h, scaleX, scaleY, imageWidth, imageHeight);
-
-                    if (boundingBox != null) {
-                        detections.add(new Detection(boundingBox, confidence, bestClass));
-                        validDetectionCount++;
-
-                        if (DEBUG_OUTPUT) {
-                            Log.d(TAG, "ACCEPTED detection " + validDetectionCount + ": " +
-                                    boundingBox.toString() + " conf=" + confidence);
-                        }
-                    }
-                }
-            }
-
-            if (DEBUG_OUTPUT) {
-                Log.d(TAG, "Checked " + totalChecked + " detections, found " + validDetectionCount + " valid");
-            }
-
         } catch (Exception e) {
-            Log.e(TAG, "Failed to parse YOLOv8 output", e);
+            Log.e(TAG, "Error parsing YOLO output", e);
         }
 
         return detections;
     }
+
+    private List<Detection> parseYoloV26Output(float[] output, int imageWidth, int imageHeight) {
+        List<Detection> detections = new ArrayList<>();
+
+        int numDetections = 300;
+        int numFeatures = 6;
+
+        float scaleX = (float) imageWidth / 640.0f;
+        float scaleY = (float) imageHeight / 640.0f;
+
+        for (int i = 0; i < numDetections; i++) {
+            int offset = i * numFeatures;
+
+            float x1 = output[offset + 0] * scaleX;
+            float y1 = output[offset + 1] * scaleY;
+            float x2 = output[offset + 2] * scaleX;
+            float y2 = output[offset + 3] * scaleY;
+            float confidence = output[offset + 4];
+            float classId = output[offset + 5];
+
+            // Filter by confidence threshold
+            if (confidence < CONFIDENCE_THRESHOLD) {
+                continue;
+            }
+
+            // Convert to RectF
+            RectF boundingBox = new RectF(x1, y1, x2, y2);
+
+            // Validate detection
+            float width = x2 - x1;
+            float height = y2 - y1;
+            if (width < MIN_BOX_SIZE || height < MIN_BOX_SIZE) {
+                continue;
+            }
+
+            Detection detection = new Detection(boundingBox, confidence, (int) classId);
+            detections.add(detection);
+
+            if (DEBUG_OUTPUT && detections.size() <= 5) {
+                Log.d(TAG, String.format("YOLOv26 Detection %d: conf=%.2f, class=%d, box=[%.1f,%.1f,%.1f,%.1f]",
+                        detections.size(), confidence, (int)classId, x1, y1, x2, y2));
+            }
+        }
+
+        if (DEBUG_OUTPUT) {
+            Log.d(TAG, "YOLOv26 parsed " + detections.size() + " detections");
+        }
+
+        return detections;
+    }
+
+    private List<Detection> parseYoloV8Output(float[] output, int imageWidth, int imageHeight) {
+        List<Detection> detections = new ArrayList<>();
+
+        int numDetections = 8400;
+        int numFeatures = 84;
+
+        float scaleX = (float) imageWidth / 640.0f;
+        float scaleY = (float) imageHeight / 640.0f;
+
+        for (int i = 0; i < numDetections; i++) {
+            float x = output[0 * numDetections + i];
+            float y = output[1 * numDetections + i];
+            float w = output[2 * numDetections + i];
+            float h = output[3 * numDetections + i];
+
+            // Enhanced coordinate validation
+            if (x <= 0 || y <= 0 || w <= 0 || h <= 0 || w > 640 || h > 640) {
+                continue;
+            }
+
+            // Find max class confidence
+            float maxClassScore = 0;
+            int bestClass = -1;
+
+            for (int classIdx = 0; classIdx < 80; classIdx++) {
+                int featureIdx = 4 + classIdx;
+                if (featureIdx < numFeatures) {
+                    float classScore = output[featureIdx * numDetections + i];
+                    if (classScore > maxClassScore) {
+                        maxClassScore = classScore;
+                        bestClass = classIdx;
+                    }
+                }
+            }
+
+            float confidence = maxClassScore;
+
+            // Stricter confidence and class checking
+            if (confidence > CONFIDENCE_THRESHOLD && bestClass == 14) { // 14 = bird class in COCO
+                RectF boundingBox = convertYoloV8Coordinates(x, y, w, h, scaleX, scaleY, imageWidth, imageHeight);
+
+                if (boundingBox != null) {
+                    detections.add(new Detection(boundingBox, confidence, bestClass));
+
+                    if (DEBUG_OUTPUT && detections.size() <= 5) {
+                        Log.d(TAG, "YOLOv8 ACCEPTED detection: " + boundingBox.toString() + " conf=" + confidence);
+                    }
+                }
+            }
+        }
+
+        if (DEBUG_OUTPUT) {
+            Log.d(TAG, "YOLOv8 parsed " + detections.size() + " detections");
+        }
+
+        return detections;
+    }
+
+
 
     private RectF convertYoloV8Coordinates(float centerX, float centerY, float width, float height,
                                            float scaleX, float scaleY, int imageWidth, int imageHeight) {
