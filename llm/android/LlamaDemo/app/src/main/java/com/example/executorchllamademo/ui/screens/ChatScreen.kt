@@ -10,19 +10,22 @@ package com.example.executorchllamademo.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Article
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -30,6 +33,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -37,11 +41,15 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
@@ -53,6 +61,7 @@ import com.example.executorchllamademo.ui.components.MessageItem
 import com.example.executorchllamademo.ui.theme.LocalAppColors
 import com.example.executorchllamademo.ui.viewmodel.ChatViewModel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 
@@ -72,11 +81,37 @@ fun ChatScreen(
     val listState = rememberLazyListState()
     val appColors = LocalAppColors.current
     val focusManager = LocalFocusManager.current
+    val coroutineScope = rememberCoroutineScope()
 
-    // Auto-scroll to bottom when new messages are added or content changes during generation
-    LaunchedEffect(viewModel.messages.size, viewModel.scrollTrigger) {
+    // Detect whether the user is near the bottom of the list
+    val isNearBottom by remember {
+        derivedStateOf {
+            val layoutInfo = listState.layoutInfo
+            val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+            lastVisible >= layoutInfo.totalItemsCount - 2
+        }
+    }
+
+    // Scroll to bottom when a new message is added (user sent or new response placeholder)
+    LaunchedEffect(viewModel.messages.size) {
         if (viewModel.messages.isNotEmpty()) {
             listState.animateScrollToItem(viewModel.messages.size - 1)
+        }
+    }
+
+    // During generation: poll and scroll only if user is near bottom (throttled)
+    LaunchedEffect(viewModel.isGenerating) {
+        if (viewModel.isGenerating) {
+            while (viewModel.isGenerating) {
+                delay(300)
+                if (isNearBottom && viewModel.messages.isNotEmpty()) {
+                    listState.scrollToItem(viewModel.messages.size - 1)
+                }
+            }
+            // Final animated scroll when generation completes
+            if (isNearBottom && viewModel.messages.isNotEmpty()) {
+                listState.animateScrollToItem(viewModel.messages.size - 1)
+            }
         }
     }
 
@@ -165,27 +200,52 @@ fun ChatScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .imePadding()
-                .clickable(
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
-                ) {
-                    focusManager.clearFocus()
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = { focusManager.clearFocus() })
                 }
         ) {
-            // Messages list
-            LazyColumn(
-                state = listState,
+            // Messages list with scroll-to-bottom FAB overlay
+            Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
-                    .background(appColors.chatBackground)
-                    .padding(horizontal = 8.dp)
             ) {
-                itemsIndexed(
-                    items = viewModel.messages,
-                    key = { index, message -> "${index}_${message.timestamp}_${message.promptID}" }
-                ) { _, message ->
-                    MessageItem(message = message)
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(appColors.chatBackground)
+                        .padding(horizontal = 8.dp)
+                ) {
+                    items(
+                        items = viewModel.messages,
+                        key = { message -> message.id }
+                    ) { message ->
+                        MessageItem(message = message)
+                    }
+                }
+
+                // Scroll-to-bottom FAB: shown when user scrolls up
+                if (!isNearBottom && viewModel.messages.isNotEmpty()) {
+                    SmallFloatingActionButton(
+                        onClick = {
+                            coroutineScope.launch {
+                                listState.animateScrollToItem(viewModel.messages.size - 1)
+                            }
+                        },
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(12.dp)
+                            .size(36.dp),
+                        containerColor = appColors.navBar
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.KeyboardArrowDown,
+                            contentDescription = "Scroll to bottom",
+                            tint = appColors.textOnNavBar,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
             }
 

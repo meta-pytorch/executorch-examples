@@ -31,6 +31,8 @@ import com.example.executorchllamademo.ModelUtils
 import com.example.executorchllamademo.PromptFormat
 import com.example.executorchllamademo.ModuleSettings
 import com.google.gson.Gson
+import com.google.gson.GsonBuilder
+import com.google.gson.InstanceCreator
 import com.google.gson.reflect.TypeToken
 import org.json.JSONException
 import org.json.JSONObject
@@ -62,10 +64,6 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
 
     // Thinking mode state: tracks whether we're inside a <think>...</think> block
     private var isInThinkingBlock = false
-
-    // Counter that increments on each token to trigger auto-scroll during generation
-    var scrollTrigger by mutableStateOf(0)
-        private set
 
     private val _selectedImages = mutableStateListOf<Uri>()
     val selectedImages: List<Uri> = _selectedImages
@@ -125,7 +123,14 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
 
         val existingMsgJSON = demoSharedPreferences.getSavedMessages()
         if (existingMsgJSON.isNotEmpty()) {
-            val gson = Gson()
+            // Use InstanceCreator so that Gson calls the Message constructor (which
+            // assigns default values like id = UUID). Without this, Gson uses
+            // Unsafe.allocateInstance() and fields missing from old JSON become null.
+            val gson = GsonBuilder()
+                .registerTypeAdapter(Message::class.java, InstanceCreator<Message> {
+                    Message("", false, MessageType.TEXT, 0)
+                })
+                .create()
             val type = object : TypeToken<ArrayList<Message>>() {}.type
             val savedMessages: ArrayList<Message>? = gson.fromJson(existingMsgJSON, type)
             savedMessages?.let {
@@ -810,8 +815,6 @@ class ChatViewModel(application: Application) : AndroidViewModel(application), L
             _messages[index] = updated
             resultMessage = updated
         }
-        // Increment scroll trigger to auto-scroll during generation
-        scrollTrigger++
     }
 
     override fun onStats(stats: String) {
