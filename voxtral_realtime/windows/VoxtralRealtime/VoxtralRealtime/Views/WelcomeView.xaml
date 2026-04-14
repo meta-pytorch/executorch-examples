@@ -40,7 +40,7 @@
                     </StackPanel>
                 </Button>
 
-                <!-- State: Loading -->
+            <!-- State: Loading -->
                 <Border x:Name="LoadingPanel" Visibility="Collapsed"
                         Background="#F2F2F7" CornerRadius="10" Padding="8" MinWidth="220">
                     <StackPanel HorizontalAlignment="Center" Margin="8">
@@ -51,6 +51,25 @@
                         <TextBlock x:Name="LoadingStatusText" Text="Loading model..."
                                    FontSize="13" Foreground="{StaticResource TextSecondaryBrush}"
                                    HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- State: Downloading -->
+                <Border x:Name="DownloadingPanel" Visibility="Collapsed"
+                        Background="#F2F2F7" CornerRadius="10" Padding="8" MinWidth="300">
+                    <StackPanel HorizontalAlignment="Center" Margin="8">
+                        <ProgressBar x:Name="DownloadProgressBar" Minimum="0" Maximum="100"
+                                     Value="0" Height="6" Width="240"
+                                     Margin="0,0,0,8" Foreground="{StaticResource PrimaryBrush}"
+                                     Background="#E5E5EA" BorderThickness="0"/>
+                        <TextBlock x:Name="DownloadStatusText" Text="Preparing download..."
+                                   FontSize="13" Foreground="{StaticResource TextSecondaryBrush}"
+                                   HorizontalAlignment="Center" TextWrapping="Wrap"
+                                   MaxWidth="280" Margin="0,0,0,8"/>
+                        <Button x:Name="CancelDownloadBtn" Content="Cancel"
+                                Style="{StaticResource ToolbarButton}"
+                                Click="OnCancelDownload" HorizontalAlignment="Center"
+                                Padding="12,4" FontSize="12"/>
                     </StackPanel>
                 </Border>
 

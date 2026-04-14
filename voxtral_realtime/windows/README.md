@@ -6,9 +6,10 @@ This is the Windows equivalent of the [macOS Voxtral Realtime app](../macos/).
 
 ## Quick Start
 
-Download `VoxtralRealtime-Setup.exe` from the [Releases](https://github.com/meta-pytorch/executorch-examples/releases) page and run the installer. Everything is bundled -- the app, runner, model weights, and tokenizer. No additional downloads required.
-
-After install, launch from the Start Menu or desktop shortcut and click "Start Transcription".
+1. Download `VoxtralRealtime-Setup.exe` from the [Releases](https://github.com/meta-pytorch/executorch-examples/releases) page and run the installer
+2. Launch from the Start Menu or desktop shortcut
+3. Click **"Load Model"** — the app will automatically download the required model files (~5.2 GB) from HuggingFace on first launch
+4. Once loaded, click **"Start Transcription"**
 
 ### Requirements
 
@@ -23,6 +24,7 @@ After install, launch from the Start Menu or desktop shortcut and click "Start T
 - **Text Snippets** - Voice-triggered templates for common text blocks
 - **Dictation Mode** - Ctrl+Space global hotkey, floating overlay, auto-paste to any app, auto-stop on 2s silence
 - **Audio Level Visualization** - Real-time waveform display
+- **Auto Model Download** - Model weights are downloaded from HuggingFace on first launch with progress tracking
 
 ## Keyboard Shortcuts
 
@@ -41,23 +43,18 @@ For developers who want to build the app themselves.
 
 - [.NET 8.0 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 - Pre-built `voxtral_realtime_runner.exe` (see [Building the Runner](#building-the-runner))
-- Model files from HuggingFace (see [Model Files](#model-files))
-
-### Model Files
-
-```powershell
-pip install huggingface_hub
-huggingface-cli download younghan-meta/Voxtral-Mini-4B-Realtime-2602-ExecuTorch-CUDA-Windows --local-dir voxtral_rt_exports
-huggingface-cli download mistralai/Voxtral-Mini-4B-Realtime-2602 tekken.json --local-dir voxtral_tokenizer
-```
 
 ### Building the Runner
+
+Build the `voxtral_realtime_runner.exe` from the [ExecuTorch](https://github.com/pytorch/executorch) repo:
 
 ```bash
 cd executorch
 cmake --preset voxtral-realtime-cuda
 cmake --build --preset voxtral-realtime-cuda
 ```
+
+The runner will be at `cmake-out/examples/models/voxtral_realtime/Release/voxtral_realtime_runner.exe`.
 
 ### Build and Run
 
@@ -68,7 +65,17 @@ dotnet build --configuration Release
 dotnet run --project VoxtralRealtime --configuration Release
 ```
 
+Model files will be auto-downloaded on first launch to the `models/` directory next to the executable. To download them manually instead:
+
+```powershell
+pip install huggingface_hub
+huggingface-cli download younghan-meta/Voxtral-Mini-4B-Realtime-2602-ExecuTorch-CUDA-Windows --local-dir models
+huggingface-cli download mistralai/Voxtral-Mini-4B-Realtime-2602 tekken.json --local-dir models
+```
+
 ### Publish Standalone Executable
+
+Create a single self-contained exe (no .NET runtime required on target machine):
 
 ```powershell
 cd VoxtralRealtime
@@ -77,7 +84,7 @@ dotnet publish VoxtralRealtime --configuration Release --runtime win-x64 --self-
 
 ### Create Installer
 
-Builds a self-contained installer that bundles the app, runner, model weights, and tokenizer:
+Builds an installer that bundles the app and runner. Model weights are downloaded automatically on first launch.
 
 ```powershell
 # 1. Install Inno Setup (one-time)
@@ -87,18 +94,19 @@ winget install JRSoftware.InnoSetup
 cd VoxtralRealtime
 dotnet publish VoxtralRealtime --configuration Release --runtime win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:DebugType=none -o publish
 
-# 3. Build the installer
+# 3. Build the installer (set EXECUTORCH_ROOT to your ExecuTorch repo path)
 cd ..
-ISCC installer.iss
+$env:EXECUTORCH_ROOT = "C:\path\to\executorch"
+& "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe" installer.iss
 ```
 
 The output `installer-output\VoxtralRealtime-Setup.exe` includes:
 - App executable (self-contained, no .NET runtime needed)
 - `voxtral_realtime_runner.exe` + `aoti_cuda_shims.dll`
-- Model weights (`model.pte`, `preprocessor.pte`, `aoti_cuda_blob.ptd`)
-- Tokenizer (`tekken.json`)
 - Start Menu and optional desktop shortcuts
 - Clean uninstall via Windows Settings
+
+Model weights (`model.pte`, `preprocessor.pte`, `aoti_cuda_blob.ptd`, `tekken.json`) are **not bundled** — they are downloaded from HuggingFace on first launch, keeping the installer small (~49 MB).
 
 ## Architecture
 

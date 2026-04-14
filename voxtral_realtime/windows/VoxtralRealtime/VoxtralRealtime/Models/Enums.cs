@@ -16,6 +16,7 @@ public enum SessionState
 public enum ModelState
 {
     Unloaded,
+    Downloading,
     Loading,
     Ready
 }
