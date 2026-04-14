@@ -35,6 +35,16 @@ public partial class RecordingControlsBar : UserControl
         var modelState = App.Store.ModelState;
         bool hasSession = App.Store.HasActiveSession;
 
+        // Hide controls during download
+        if (modelState == ModelState.Downloading)
+        {
+            LoadingIndicator.Visibility = Visibility.Collapsed;
+            MainBtn.Visibility = Visibility.Collapsed;
+            DoneBtn.Visibility = Visibility.Collapsed;
+            UnloadBtn.Visibility = Visibility.Collapsed;
+            return;
+        }
+
         // Main button state
         LoadingIndicator.Visibility = state == SessionState.Loading
             ? Visibility.Visible : Visibility.Collapsed;

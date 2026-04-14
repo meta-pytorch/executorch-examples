@@ -27,7 +27,8 @@ public partial class WelcomeView : UserControl
     {
         if (e.PropertyName is nameof(App.Store.ModelState) or
             nameof(App.Store.StatusMessage) or
-            nameof(App.Store.SessionState))
+            nameof(App.Store.SessionState) or
+            nameof(App.Store.DownloadProgress))
         {
             Dispatcher.BeginInvoke(UpdateModelState);
         }
@@ -40,6 +41,8 @@ public partial class WelcomeView : UserControl
         // Model section visibility
         LoadModelBtn.Visibility = modelState == ModelState.Unloaded
             ? Visibility.Visible : Visibility.Collapsed;
+        DownloadingPanel.Visibility = modelState == ModelState.Downloading
+            ? Visibility.Visible : Visibility.Collapsed;
         LoadingPanel.Visibility = modelState == ModelState.Loading
             ? Visibility.Visible : Visibility.Collapsed;
         ReadyPanel.Visibility = modelState == ModelState.Ready
@@ -48,6 +51,14 @@ public partial class WelcomeView : UserControl
         // Start button only when ready
         StartBtn.Visibility = modelState == ModelState.Ready
             ? Visibility.Visible : Visibility.Collapsed;
+
+        // Download progress
+        if (modelState == ModelState.Downloading)
+        {
+            DownloadProgressBar.Value = App.Store.DownloadProgress;
+            DownloadStatusText.Text = string.IsNullOrEmpty(App.Store.StatusMessage)
+                ? "Preparing download..." : App.Store.StatusMessage;
+        }
 
         // Loading status text
         if (modelState == ModelState.Loading)
@@ -62,13 +73,18 @@ public partial class WelcomeView : UserControl
         await App.Store.StartTranscription();
     }
 
-    private void OnLoadModel(object sender, RoutedEventArgs e)
+    private async void OnLoadModel(object sender, RoutedEventArgs e)
     {
-        App.Store.PreloadModel();
+        await App.Store.PreloadModel();
     }
 
     private void OnUnloadModel(object sender, RoutedEventArgs e)
     {
         App.Store.UnloadModel();
+    }
+
+    private void OnCancelDownload(object sender, RoutedEventArgs e)
+    {
+        App.Store.CancelDownload();
     }
 }

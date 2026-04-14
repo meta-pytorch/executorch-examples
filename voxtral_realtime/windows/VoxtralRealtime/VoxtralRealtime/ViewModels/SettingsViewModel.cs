@@ -12,24 +12,22 @@ namespace VoxtralRealtime.ViewModels;
 
 public partial class SettingsViewModel : ObservableObject
 {
-    private static readonly string DefaultRunnerPath = Path.Combine(
-        @"C:\Users\younghan\project\executorch",
-        @"cmake-out\examples\models\voxtral_realtime\Release\voxtral_realtime_runner.exe");
+    private static readonly string AppDir = AppDomain.CurrentDomain.BaseDirectory;
 
-    private static readonly string DefaultModelPath = Path.Combine(
-        @"C:\Users\younghan\project\executorch",
-        @"voxtral_rt_exports_wsl\model.pte");
+    // Models directory: always next to the exe (install dir or dev dir).
+    // Models are either bundled by the installer or auto-downloaded on first launch.
+    public static readonly string ModelsDir = Path.Combine(AppDir, "models");
 
-    private static readonly string DefaultPreprocessorPath = Path.Combine(
-        @"C:\Users\younghan\project\executorch",
-        @"voxtral_rt_exports_wsl\preprocessor.pte");
-
-    private static readonly string DefaultDataPath = Path.Combine(
-        @"C:\Users\younghan\project\executorch",
-        @"voxtral_rt_exports_wsl\aoti_cuda_blob.ptd");
-
+    private static readonly string DefaultRunnerPath =
+        Path.Combine(AppDir, "runner", "voxtral_realtime_runner.exe");
+    private static readonly string DefaultModelPath =
+        Path.Combine(ModelsDir, "model.pte");
+    private static readonly string DefaultPreprocessorPath =
+        Path.Combine(ModelsDir, "preprocessor.pte");
+    private static readonly string DefaultDataPath =
+        Path.Combine(ModelsDir, "aoti_cuda_blob.ptd");
     private static readonly string DefaultTokenizerPath =
-        @"C:\Users\younghan\models\Voxtral-Mini-4B-Realtime-2602\tekken.json";
+        Path.Combine(ModelsDir, "tekken.json");
 
     [ObservableProperty] private string _runnerPath = DefaultRunnerPath;
     [ObservableProperty] private string _modelPath = DefaultModelPath;
@@ -71,13 +69,21 @@ public partial class SettingsViewModel : ObservableObject
         var data = PersistenceService.Load<SettingsData>(PersistenceService.SettingsPath);
         if (data == null) return;
 
-        RunnerPath = data.RunnerPath ?? DefaultRunnerPath;
-        ModelPath = data.ModelPath ?? DefaultModelPath;
-        TokenizerPath = data.TokenizerPath ?? DefaultTokenizerPath;
-        PreprocessorPath = data.PreprocessorPath ?? DefaultPreprocessorPath;
-        DataPath = data.DataPath ?? DefaultDataPath;
+        // Only restore saved paths if the files actually exist;
+        // otherwise fall back to defaults (triggers auto-download).
+        RunnerPath = FileOrDefault(data.RunnerPath, DefaultRunnerPath);
+        ModelPath = FileOrDefault(data.ModelPath, DefaultModelPath);
+        TokenizerPath = FileOrDefault(data.TokenizerPath, DefaultTokenizerPath);
+        PreprocessorPath = FileOrDefault(data.PreprocessorPath, DefaultPreprocessorPath);
+        DataPath = FileOrDefault(data.DataPath, DefaultDataPath);
         SilenceThreshold = data.SilenceThreshold;
         SilenceTimeoutSeconds = data.SilenceTimeoutSeconds;
+    }
+
+    private static string FileOrDefault(string? saved, string fallback)
+    {
+        if (!string.IsNullOrEmpty(saved) && File.Exists(saved)) return saved;
+        return fallback;
     }
 
     private class SettingsData

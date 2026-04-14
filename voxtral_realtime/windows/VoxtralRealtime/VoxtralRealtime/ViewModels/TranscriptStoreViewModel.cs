@@ -20,6 +20,8 @@ public partial class TranscriptStoreViewModel : ObservableObject
     private readonly RunnerBridge _runner = new();
     private readonly SettingsViewModel _settings;
     private readonly TextPipeline _textPipeline;
+    private readonly ModelDownloadService _downloadService = new();
+    private CancellationTokenSource? _downloadCts;
     private DateTime? _startDate;
 
     [ObservableProperty]
@@ -31,6 +33,7 @@ public partial class TranscriptStoreViewModel : ObservableObject
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsModelReady))]
+    [NotifyPropertyChangedFor(nameof(IsDownloading))]
     private ModelState _modelState = ModelState.Unloaded;
 
     [ObservableProperty] private string _liveTranscript = "";
@@ -42,12 +45,14 @@ public partial class TranscriptStoreViewModel : ObservableObject
     [ObservableProperty] private Guid? _selectedSessionId;
     [ObservableProperty] private string _dictationText = "";
     [ObservableProperty] private bool _isDictating;
+    [ObservableProperty] private double _downloadProgress;
 
     public bool HasActiveSession => SessionState != SessionState.Idle;
     public bool IsTranscribing => SessionState == SessionState.Transcribing;
     public bool IsPaused => SessionState == SessionState.Paused;
     public bool IsLoading => SessionState == SessionState.Loading;
     public bool IsModelReady => ModelState == ModelState.Ready;
+    public bool IsDownloading => ModelState == ModelState.Downloading;
 
     // Raw audio level event - fires on audio thread without dispatch delay.
     // Used by DictationViewModel for accurate silence detection.
@@ -121,15 +126,16 @@ public partial class TranscriptStoreViewModel : ObservableObject
     // MARK: - Model lifecycle
 
     [RelayCommand]
-    public void PreloadModel()
+    public async Task PreloadModel()
     {
         if (ModelState != ModelState.Unloaded) return;
-        EnsureRunnerLaunched();
+        await EnsureRunnerLaunched();
     }
 
     [RelayCommand]
     public void UnloadModel()
     {
+        CancelDownload();
         if (HasActiveSession) EndSession();
         _runner.Stop();
         ModelState = ModelState.Unloaded;
@@ -145,9 +151,8 @@ public partial class TranscriptStoreViewModel : ObservableObject
 
         if (ModelState != ModelState.Ready)
         {
-            EnsureRunnerLaunched();
+            await EnsureRunnerLaunched();
             SessionState = SessionState.Loading;
-            // Wait for model to be ready
             while (ModelState == ModelState.Loading)
             {
                 await Task.Delay(100);
@@ -184,7 +189,7 @@ public partial class TranscriptStoreViewModel : ObservableObject
 
         if (ModelState != ModelState.Ready)
         {
-            EnsureRunnerLaunched();
+            await EnsureRunnerLaunched();
             while (ModelState == ModelState.Loading)
             {
                 await Task.Delay(100);
@@ -357,7 +362,7 @@ public partial class TranscriptStoreViewModel : ObservableObject
 
         if (ModelState != ModelState.Ready)
         {
-            EnsureRunnerLaunched();
+            await EnsureRunnerLaunched();
             while (ModelState == ModelState.Loading)
             {
                 await Task.Delay(100);
@@ -424,20 +429,73 @@ public partial class TranscriptStoreViewModel : ObservableObject
 
     // MARK: - Private
 
-    private void EnsureRunnerLaunched()
+    private async Task EnsureRunnerLaunched()
     {
         if (_runner.IsRunnerAlive) return;
 
         RunHealthCheck();
+
+        // Runner binary must exist — it can't be downloaded
+        if (HealthResult?.RunnerAvailable != true)
+        {
+            CurrentError = "Runner binary not found. Build from source or install the app.";
+            return;
+        }
+
+        // If model files are missing, attempt download
         if (HealthResult?.FilesReady != true)
         {
-            if (HealthResult != null)
+            var modelsDir = SettingsViewModel.ModelsDir;
+            var missing = _downloadService.GetMissingFiles(modelsDir);
+
+            if (missing.Count > 0)
             {
-                var missing = HealthResult.MissingFiles;
-                if (missing.Count > 0)
-                    CurrentError = $"Missing: {string.Join(", ", missing)}";
+                ModelState = ModelState.Downloading;
+                DownloadProgress = 0;
+                StatusMessage = "Preparing download...";
+                CurrentError = null;
+
+                _downloadCts?.Cancel();
+                _downloadCts = new CancellationTokenSource();
+                var ct = _downloadCts.Token;
+
+                _downloadService.ProgressChanged += OnDownloadProgress;
+                try
+                {
+                    await _downloadService.DownloadAllAsync(modelsDir, ct);
+                }
+                catch (OperationCanceledException)
+                {
+                    ModelState = ModelState.Unloaded;
+                    StatusMessage = "Download cancelled";
+                    return;
+                }
+                catch (Exception ex)
+                {
+                    ModelState = ModelState.Unloaded;
+                    CurrentError = $"Download failed: {ex.Message}";
+                    return;
+                }
+                finally
+                {
+                    _downloadService.ProgressChanged -= OnDownloadProgress;
+                }
+
+                // Update settings to point to downloaded files
+                _settings.ModelPath = Path.Combine(modelsDir, "model.pte");
+                _settings.PreprocessorPath = Path.Combine(modelsDir, "preprocessor.pte");
+                _settings.DataPath = Path.Combine(modelsDir, "aoti_cuda_blob.ptd");
+                _settings.TokenizerPath = Path.Combine(modelsDir, "tekken.json");
+
+                // Re-run health check with updated paths
+                RunHealthCheck();
+                if (HealthResult?.FilesReady != true)
+                {
+                    ModelState = ModelState.Unloaded;
+                    CurrentError = "Download completed but files could not be verified.";
+                    return;
+                }
             }
-            return;
         }
 
         _runner.LaunchRunner(
@@ -446,6 +504,29 @@ public partial class TranscriptStoreViewModel : ObservableObject
             _settings.TokenizerPath,
             _settings.PreprocessorPath,
             _settings.DataPath);
+
+        // Set ModelState synchronously so callers' while loops work correctly.
+        // The runner also fires ModelStateChanged(Loading) via BeginInvoke,
+        // but that hasn't been processed yet when this method returns.
+        ModelState = ModelState.Loading;
+    }
+
+    private void OnDownloadProgress(Services.DownloadProgress p)
+    {
+        Application.Current.Dispatcher.BeginInvoke(() =>
+        {
+            var pct = p.TotalBytes > 0
+                ? (double)p.BytesDownloaded / p.TotalBytes * 100
+                : 0;
+            DownloadProgress = pct;
+            StatusMessage = $"Downloading {p.FileName} ({ModelDownloadService.FormatBytes(p.BytesDownloaded)} / {ModelDownloadService.FormatBytes(p.TotalBytes)}) — file {p.FileIndex}/{p.TotalFiles}";
+        });
+    }
+
+    [RelayCommand]
+    public void CancelDownload()
+    {
+        _downloadCts?.Cancel();
     }
 
     private static string FormatSrt(Session session)
