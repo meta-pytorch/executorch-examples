@@ -1,0 +1,37 @@
+<UserControl x:Class="ParakeetApp.Views.RecordingBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:ParakeetApp.Views">
+    <Border Background="White" BorderBrush="#E5E5EA" BorderThickness="0,0,0,0.5" Padding="8,4">
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button x:Name="RecordBtn" Style="{StaticResource ToolbarButton}"
+                    Click="OnRecordAction" Padding="10,5" Margin="2,0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="RecordIcon" FontSize="12" Margin="0,0,5,0"
+                               VerticalAlignment="Center"/>
+                    <TextBlock x:Name="RecordLabel" FontSize="13"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+            <StackPanel x:Name="TranscribingIndicator" Orientation="Horizontal" Margin="8,0"
+                        Visibility="Collapsed">
+                <ProgressBar IsIndeterminate="True" Width="16" Height="16"
+                             Foreground="{StaticResource PrimaryBrush}" BorderThickness="0"/>
+                <TextBlock x:Name="TranscribingLabel" Text="Transcribing..." FontSize="13"
+                           Margin="6,0,0,0"
+                           Foreground="{StaticResource TextSecondaryBrush}"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+            <views:AudioLevelControl x:Name="AudioLevel" Width="60" Height="20"
+                                     Margin="8,0" Visibility="Collapsed"/>
+            <Button x:Name="StopBtn" Style="{StaticResource ToolbarButton}"
+                    Click="OnStop" Padding="10,5" Margin="2,0" Visibility="Collapsed">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#x25A0;" FontSize="12" Margin="0,0,5,0"
+                               VerticalAlignment="Center" Foreground="{StaticResource RecordingBrush}"/>
+                    <TextBlock Text="Stop &amp; Transcribe" FontSize="13" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Button>
+        </StackPanel>
+    </Border>
+</UserControl>

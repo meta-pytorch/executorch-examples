@@ -1,0 +1,68 @@
+<UserControl x:Class="ParakeetApp.Views.TranscriptView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:views="clr-namespace:ParakeetApp.Views"
+             Background="White">
+    <Grid>
+        <ScrollViewer x:Name="TranscriptScroller"
+                      VerticalScrollBarVisibility="Auto" Padding="24,16,24,60">
+            <StackPanel>
+                <StackPanel x:Name="TranscribingPlaceholder" Visibility="Collapsed"
+                            HorizontalAlignment="Center" Margin="0,80,0,0">
+                    <ProgressBar IsIndeterminate="True" Height="4" Width="200"
+                                 Margin="0,0,0,16" Foreground="{StaticResource PrimaryBrush}"
+                                 Background="#E5E5EA" BorderThickness="0"/>
+                    <TextBlock x:Name="TranscribingStatusText" Text="Transcribing..."
+                               FontSize="16" Foreground="{StaticResource TextSecondaryBrush}"
+                               HorizontalAlignment="Center"/>
+                    <Button Content="Cancel" Style="{StaticResource ToolbarButton}"
+                            Click="OnCancelTranscription" HorizontalAlignment="Center"
+                            Margin="0,12,0,0" Padding="12,4"/>
+                </StackPanel>
+                <StackPanel x:Name="SessionHeader" Visibility="Collapsed" Margin="8,0,8,12">
+                    <TextBlock x:Name="SessionTitle" FontSize="18" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,4"/>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock x:Name="SessionMeta" FontSize="12"
+                                   Foreground="{StaticResource LabelGrayBrush}"/>
+                    </StackPanel>
+                </StackPanel>
+                <TextBlock x:Name="TranscriptText" TextWrapping="Wrap" FontSize="14"
+                           Foreground="{StaticResource TextPrimaryBrush}"
+                           LineHeight="24" Padding="8"/>
+                <StackPanel x:Name="TimestampsSection" Visibility="Collapsed" Margin="8,16,8,0">
+                    <TextBlock Text="Timestamps" FontSize="14" FontWeight="SemiBold"
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,8"/>
+                    <ItemsControl x:Name="TimestampsList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Margin="0,2" Padding="8,4" CornerRadius="4"
+                                        Background="#F8F8F8">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="100"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" FontSize="12" FontFamily="Consolas"
+                                                   Foreground="{StaticResource PrimaryBrush}"
+                                                   VerticalAlignment="Center">
+                                            <Run Text="{Binding Start, StringFormat='{}{0:F2}s', Mode=OneWay}"/>
+                                            <Run Text=" - "/>
+                                            <Run Text="{Binding End, StringFormat='{}{0:F2}s', Mode=OneWay}"/>
+                                        </TextBlock>
+                                        <TextBlock Grid.Column="1" Text="{Binding Text}" FontSize="13"
+                                                   Foreground="{StaticResource TextPrimaryBrush}"
+                                                   TextWrapping="Wrap" VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
+        <Button x:Name="CopyBtn" Content="Copy All" Style="{StaticResource ActionButton}"
+                Click="OnCopyAll" HorizontalAlignment="Right" VerticalAlignment="Top"
+                Margin="0,12,16,0" FontSize="11" Padding="10,5" Visibility="Collapsed"/>
+    </Grid>
+</UserControl>
