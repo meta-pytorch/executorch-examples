@@ -15,7 +15,7 @@ struct WelcomeView: View {
     var isDropTargeted: Bool = false
 
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 18) {
             Image(systemName: "waveform")
                 .font(.system(size: 56))
                 .foregroundStyle(.secondary)
@@ -26,8 +26,6 @@ struct WelcomeView: View {
             Text("On-device speech recognition powered by ExecuTorch")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-
-            Spacer().frame(height: 8)
 
             modelSection
 
@@ -69,13 +67,6 @@ struct WelcomeView: View {
         .padding(40)
         .frame(maxWidth: 520)
         .background(backgroundStyle, in: RoundedRectangle(cornerRadius: 18))
-        .overlay {
-            RoundedRectangle(cornerRadius: 18)
-                .strokeBorder(
-                    isDropTargeted ? Color.accentColor : Color.secondary.opacity(0.16),
-                    style: StrokeStyle(lineWidth: isDropTargeted ? 2 : 1, dash: isDropTargeted ? [10, 6] : [])
-                )
-        }
     }
 
     @ViewBuilder
@@ -216,12 +207,14 @@ struct WelcomeView: View {
     }
 
     private var shortcutHints: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
+            shortcutBadge(preferences.dictationShortcut.displayString, label: "Dictation")
+            Divider()
+                .frame(height: 24)
             shortcutBadge("⌘⇧R", label: "Record / Stop")
             shortcutBadge("⌘⇧C", label: "Copy")
-            shortcutBadge(preferences.dictationShortcut.displayString, label: "Dictation")
         }
-        .padding(.top, 8)
+        .padding(.top, 4)
     }
 
     private var dropHint: some View {

@@ -122,7 +122,6 @@ targets:
       - path: ExecuWhisper/Models/Preferences.swift
       - path: ExecuWhisper/Models/ReplacementEntry.swift
       - path: ExecuWhisper/Models/Session.swift
-      - path: ExecuWhisper/Models/Snippet.swift
       - path: ExecuWhisper/Models/TranscriptStore.swift
       - path: ExecuWhisper/Utilities/PersistencePaths.swift
       - path: ExecuWhisper/Utilities/SessionHistory.swift
@@ -137,7 +136,6 @@ targets:
       - path: ExecuWhisper/Services/ParakeetHelperProtocol.swift
       - path: ExecuWhisper/Services/ReplacementStore.swift
       - path: ExecuWhisper/Services/RunnerBridge.swift
-      - path: ExecuWhisper/Services/SnippetStore.swift
       - path: ExecuWhisper/Services/TextPipeline.swift
       - path: ExecuWhisper/Views/AudioLevelView.swift
       - path: ExecuWhisper/Views/DictationOverlayView.swift

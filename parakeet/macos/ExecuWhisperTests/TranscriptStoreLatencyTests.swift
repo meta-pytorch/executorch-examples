@@ -68,6 +68,64 @@ struct TranscriptStoreLatencyTests {
     }
 
     @Test
+    func importAudioFileRestoresSelectionWhenDecodingFails() async throws {
+        let sandbox = makeSandbox()
+        let preferences = try makeReadyPreferences(in: sandbox)
+        let sessionsURL = sandbox.appendingPathComponent("sessions.json")
+        let existing = Session(title: "Existing", transcript: "saved", duration: 1)
+        try JSONEncoder().encode([existing]).write(to: sessionsURL, options: .atomic)
+
+        let store = TranscriptStore(
+            preferences: preferences,
+            downloader: ModelDownloader(),
+            sessionsURL: sessionsURL,
+            audioDecoder: FailingImportedAudioDecoder()
+        )
+        store.selectedSessionID = existing.id
+        store.selectedHistorySessionIDs = [existing.id]
+
+        let didImport = await store.importAudioFile(sandbox.appendingPathComponent("broken.mp3"))
+
+        #expect(!didImport)
+        #expect(store.selectedSessionID == existing.id)
+        #expect(store.selectedHistorySessionIDs == [existing.id])
+        #expect(store.currentError != nil)
+    }
+
+    @Test
+    func importAudioFileRestoresSelectionWhenRunnerFails() async throws {
+        let sandbox = makeSandbox()
+        let preferences = try makeReadyPreferences(in: sandbox)
+        let sessionsURL = sandbox.appendingPathComponent("sessions.json")
+        let existing = Session(title: "Existing", transcript: "saved", duration: 1)
+        try JSONEncoder().encode([existing]).write(to: sessionsURL, options: .atomic)
+
+        let store = TranscriptStore(
+            preferences: preferences,
+            downloader: ModelDownloader(),
+            sessionsURL: sessionsURL,
+            audioDecoder: FakeImportedAudioDecoder(
+                decodedAudio: .init(
+                    pcmData: makePCMData(sampleCount: 1_600),
+                    duration: 1
+                )
+            ),
+            runner: FakeRunnerBridge(
+                pcmError: RunnerError.runnerCrashed(exitCode: 1, stderr: "boom")
+            )
+        )
+        store.selectedSessionID = existing.id
+        store.selectedHistorySessionIDs = [existing.id]
+
+        let didImport = await store.importAudioFile(sandbox.appendingPathComponent("broken.wav"))
+
+        #expect(!didImport)
+        #expect(store.selectedSessionID == existing.id)
+        #expect(store.selectedHistorySessionIDs == [existing.id])
+        #expect(store.currentError != nil)
+    }
+
+    @Test
     func preloadAndUnloadUpdateHelperResidencyState() async {
         let sandbox = makeSandbox()
         let fakeRunner = FakeRunnerBridge()
@@ -146,6 +204,11 @@ private actor FakeRunnerBridge: RunnerBridgeClient {
     private var prepareCallCount = 0
     private var shutdownCallCount = 0
     private var runtimeState: RunnerBridge.ResidencyState = .unloaded
+    private let pcmError: Error?
+
+    init(pcmError: Error? = nil) {
+        self.pcmError = pcmError
+    }
 
     func runtimeSnapshot() async -> RunnerBridge.RuntimeSnapshot {
         RunnerBridge.RuntimeSnapshot(
@@ -200,6 +263,10 @@ private actor FakeRunnerBridge: RunnerBridgeClient {
         pcmCallCount += 1
         lastPCMData = pcmData
         return AsyncThrowingStream { continuation in
+            if let pcmError {
+                continuation.finish(throwing: pcmError)
+                return
+            }
             continuation.yield(.completed(.init(
                 text: "direct-pcm",
                 stdout: "",
@@ -228,5 +295,11 @@ private struct FakeImportedAudioDecoder: ImportedAudioDecoding {
 
     func decodeAudioFile(at url: URL) throws -> DecodedImportedAudioFile {
         decodedAudio
+    }
+}
+
+private struct FailingImportedAudioDecoder: ImportedAudioDecoding {
+    func decodeAudioFile(at url: URL) throws -> DecodedImportedAudioFile {
+        throw RunnerError.transcriptionFailed(description: "decode failed")
     }
 }

@@ -12,7 +12,6 @@ struct TextProcessingResult: Sendable, Equatable {
     let rawText: String
     let outputText: String
     let tags: [String]
-    let usedSnippetIDs: [UUID]
 
     var transformed: Bool {
         rawText != outputText
@@ -27,36 +26,21 @@ final class TextPipeline {
     }
 
     private let replacementStore: ReplacementStore
-    private let snippetStore: SnippetStore?
 
-    init(replacementStore: ReplacementStore, snippetStore: SnippetStore? = nil) {
+    init(replacementStore: ReplacementStore) {
         self.replacementStore = replacementStore
-        self.snippetStore = snippetStore
     }
 
     func process(_ text: String, context: Context = .standard) -> TextProcessingResult {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
-            return TextProcessingResult(rawText: text, outputText: "", tags: [], usedSnippetIDs: [])
+            return TextProcessingResult(rawText: text, outputText: "", tags: [])
         }
 
         let replaced = applyReplacements(to: trimmed)
-        if context == .dictation, let snippet = snippetStore?.matchingSnippet(for: replaced) {
-            snippetStore?.markUsed(snippet.id)
-            var tags: [String] = ["snippet"]
-            if replaced != trimmed {
-                tags.insert("replacement", at: 0)
-            }
-            return TextProcessingResult(
-                rawText: trimmed,
-                outputText: snippet.content,
-                tags: tags,
-                usedSnippetIDs: [snippet.id]
-            )
-        }
         let styled = applyStyle(to: replaced)
         let tags = styled == trimmed ? [] : ["replacement"]
-        return TextProcessingResult(rawText: trimmed, outputText: styled, tags: tags, usedSnippetIDs: [])
+        return TextProcessingResult(rawText: trimmed, outputText: styled, tags: tags)
     }
 
     private func applyReplacements(to text: String) -> String {

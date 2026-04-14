@@ -6,6 +6,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
+import AVFoundation
 import Foundation
 import Testing
 
@@ -77,6 +78,46 @@ struct AudioRecorderTests {
         )
 
         #expect(trimmed == pcmData)
+    }
+
+    @Test
+    func nativeCaptureWriterCreatesReadableWAVFile() throws {
+        let format = AVAudioFormat(
+            commonFormat: .pcmFormatFloat32,
+            sampleRate: 44_100,
+            channels: 2,
+            interleaved: false
+        )!
+        let frameCount: AVAudioFrameCount = 4_410
+        let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount)!
+        buffer.frameLength = frameCount
+        for channel in 0..<Int(format.channelCount) {
+            let samples = buffer.floatChannelData![channel]
+            for frame in 0..<Int(frameCount) {
+                samples[frame] = Float(frame) / Float(frameCount)
+            }
+        }
+
+        let tempDir = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDir) }
+
+        let fileURL = tempDir.appendingPathComponent("native_test.wav")
+        do {
+            let outputFile = try AVAudioFile(
+                forWriting: fileURL,
+                settings: format.settings,
+                commonFormat: format.commonFormat,
+                interleaved: format.isInterleaved
+            )
+            try outputFile.write(from: buffer)
+        }
+
+        let readBack = try AVAudioFile(forReading: fileURL)
+        #expect(readBack.processingFormat.sampleRate == 44_100)
+        #expect(readBack.processingFormat.channelCount == 2)
+        #expect(readBack.length == Int64(frameCount))
     }
 
     private func makePCMData(sampleCount: Int) -> Data {

@@ -58,22 +58,6 @@ struct TextPipelineTests {
     }
 
     @Test
-    func dictationExactSnippetTriggerReplacesOutput() {
-        let sandbox = makeSandbox()
-        let replacementStore = ReplacementStore(fileURL: sandbox.appendingPathComponent("replacements.json"))
-        let snippetStore = SnippetStore.preview(entries: [
-            Snippet(trigger: "email signature", content: "Best,\nYounghan")
-        ])
-        let pipeline = TextPipeline(replacementStore: replacementStore, snippetStore: snippetStore)
-
-        let result = pipeline.process("email signature", context: .dictation)
-
-        #expect(result.outputText == "Best,\nYounghan")
-        #expect(result.tags == ["snippet"])
-        #expect(result.usedSnippetIDs.count == 1)
-    }
-
-    @Test
     func transcriptStorePersistsRawAndProcessedTranscripts() throws {
         let sandbox = makeSandbox()
         let replacementStore = ReplacementStore(fileURL: sandbox.appendingPathComponent("replacements.json"))

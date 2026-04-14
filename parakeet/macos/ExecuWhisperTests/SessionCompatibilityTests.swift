@@ -28,7 +28,6 @@ struct SessionCompatibilityTests {
         #expect(session.rawTranscript == nil)
         #expect(session.tags.isEmpty)
         #expect(!session.pinned)
-        #expect(session.usedSnippetIDs.isEmpty)
         #expect(session.previewText == "hello world")
     }
 
@@ -38,7 +37,6 @@ struct SessionCompatibilityTests {
         #expect(PersistencePaths.sessionsURL.deletingLastPathComponent() == PersistencePaths.appSupportDirectory)
         #expect(PersistencePaths.modelsDirectoryURL.deletingLastPathComponent() == PersistencePaths.appSupportDirectory)
         #expect(PersistencePaths.replacementsURL.deletingLastPathComponent() == PersistencePaths.appSupportDirectory)
-        #expect(PersistencePaths.snippetsURL.deletingLastPathComponent() == PersistencePaths.appSupportDirectory)
     }
 
     @Test

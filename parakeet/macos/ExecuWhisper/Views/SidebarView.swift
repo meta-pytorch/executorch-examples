@@ -11,7 +11,6 @@ import SwiftUI
 enum SidebarPage: Hashable {
     case home
     case replacements
-    case snippets
     case settings
     case session(UUID)
 }
@@ -30,8 +29,6 @@ struct SidebarView: View {
                     .tag(SidebarPage.home)
                 Label("Replacements", systemImage: "arrow.2.squarepath")
                     .tag(SidebarPage.replacements)
-                Label("Snippets", systemImage: "text.append")
-                    .tag(SidebarPage.snippets)
                 Label("Settings", systemImage: "gear")
                     .tag(SidebarPage.settings)
             }

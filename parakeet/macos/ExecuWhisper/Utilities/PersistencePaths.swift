@@ -28,10 +28,6 @@ enum PersistencePaths {
         appSupportDirectory.appendingPathComponent("replacements.json")
     }
 
-    static var snippetsURL: URL {
-        appSupportDirectory.appendingPathComponent("snippets.json")
-    }
-
     static var logsDirectoryURL: URL {
         let directory = appSupportDirectory.appendingPathComponent("logs", isDirectory: true)
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

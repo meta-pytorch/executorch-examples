@@ -14,7 +14,6 @@ struct ExecuWhisperApp: App {
     @State private var preferences = Preferences()
     @State private var downloader = ModelDownloader()
     @State private var replacementStore = ReplacementStore()
-    @State private var snippetStore = SnippetStore()
     @State private var store: TranscriptStore
     @State private var dictationManager: DictationManager
 
@@ -22,8 +21,7 @@ struct ExecuWhisperApp: App {
         let prefs = Preferences()
         let downloader = ModelDownloader()
         let replacementStore = ReplacementStore()
-        let snippetStore = SnippetStore()
-        let textPipeline = TextPipeline(replacementStore: replacementStore, snippetStore: snippetStore)
+        let textPipeline = TextPipeline(replacementStore: replacementStore)
         let store = TranscriptStore(
             preferences: prefs,
             downloader: downloader,
@@ -33,7 +31,6 @@ struct ExecuWhisperApp: App {
         _preferences = State(initialValue: prefs)
         _downloader = State(initialValue: downloader)
         _replacementStore = State(initialValue: replacementStore)
-        _snippetStore = State(initialValue: snippetStore)
         _store = State(initialValue: store)
         _dictationManager = State(initialValue: dictationManager)
     }
@@ -45,7 +42,6 @@ struct ExecuWhisperApp: App {
                 .environment(preferences)
                 .environment(downloader)
                 .environment(replacementStore)
-                .environment(snippetStore)
                 .environment(dictationManager)
                 .frame(minWidth: 700, minHeight: 460)
                 .task {

@@ -110,10 +110,6 @@ struct ContentView: View {
                 ReplacementManagementView()
                     .padding()
                     .navigationTitle("Replacements")
-            case .snippets:
-                SnippetManagementView()
-                    .padding()
-                    .navigationTitle("Snippets")
             case .settings:
                 SettingsView()
                     .padding()

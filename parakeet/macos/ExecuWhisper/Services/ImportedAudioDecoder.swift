@@ -22,6 +22,7 @@ protocol ImportedAudioDecoding: Sendable {
 struct ImportedAudioDecoder: ImportedAudioDecoding {
     private static let supportedExtensions: Set<String> = ["wav", "mp3"]
     private static let maxImportedDuration: TimeInterval = 30 * 60
+    private static let maxEstimatedImportMemoryBytes = 256 * 1024 * 1024
     private let outputSampleRate: Double = 16_000
 
     static var allowedContentTypes: [UTType] {
@@ -65,6 +66,14 @@ struct ImportedAudioDecoder: ImportedAudioDecoding {
         let duration = Double(frameCount) / sourceFormat.sampleRate
         guard duration <= Self.maxImportedDuration else {
             throw RunnerError.transcriptionFailed(description: "Audio file is too long to import. Please use a file shorter than 30 minutes.")
+        }
+        let estimatedSourcePCMBytes = Double(frameCount) * Double(max(sourceFormat.channelCount, 1)) * Double(MemoryLayout<Float>.size)
+        let estimatedNormalizedBytes = duration * outputSampleRate * Double(MemoryLayout<Float>.size)
+        let estimatedPeakBytes = estimatedSourcePCMBytes + (estimatedNormalizedBytes * 2)
+        guard estimatedPeakBytes <= Double(Self.maxEstimatedImportMemoryBytes) else {
+            throw RunnerError.transcriptionFailed(
+                description: "Audio file is too large to import reliably. Please use a shorter recording."
+            )
         }
 
         guard let inputBuffer = AVAudioPCMBuffer(

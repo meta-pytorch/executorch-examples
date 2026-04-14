@@ -377,6 +377,8 @@ final class TranscriptStore {
             return false
         }
 
+        let previousSelectedSessionID = selectedSessionID
+        let previousHistorySelection = selectedHistorySessionIDs
         selectedSessionID = nil
         selectedHistorySessionIDs = []
         liveTranscript = ""
@@ -397,10 +399,14 @@ final class TranscriptStore {
             )
             return true
         } catch let error as RunnerError {
+            selectedSessionID = previousSelectedSessionID
+            selectedHistorySessionIDs = previousHistorySelection
             currentError = error
             resetLiveState()
             return false
         } catch {
+            selectedSessionID = previousSelectedSessionID
+            selectedHistorySessionIDs = previousHistorySelection
             currentError = .transcriptionFailed(description: error.localizedDescription)
             resetLiveState()
             return false
@@ -510,7 +516,6 @@ final class TranscriptStore {
         rawText: String,
         transcript: String,
         tags: [String],
-        usedSnippetIDs: [UUID],
         duration: TimeInterval,
         persistSession: Bool,
         titleOverride: String?
@@ -522,8 +527,7 @@ final class TranscriptStore {
                 transcript: transcript,
                 duration: duration,
                 rawTranscript: rawText,
-                tags: tags,
-                usedSnippetIDs: usedSnippetIDs
+                tags: tags
             )
             sessions.insert(session, at: 0)
             selectedSessionID = session.id
@@ -680,12 +684,11 @@ final class TranscriptStore {
         titleOverride: String?
     ) -> TextProcessingResult {
         let processed = textPipeline?.process(rawText, context: context)
-            ?? TextProcessingResult(rawText: rawText, outputText: rawText, tags: [], usedSnippetIDs: [])
+            ?? TextProcessingResult(rawText: rawText, outputText: rawText, tags: [])
         finishTranscription(
             rawText: processed.rawText,
             transcript: processed.outputText,
             tags: processed.tags,
-            usedSnippetIDs: processed.usedSnippetIDs,
             duration: duration,
             persistSession: persistSession,
             titleOverride: titleOverride
