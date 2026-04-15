@@ -2,6 +2,10 @@
 
 Real-time speech transcription desktop app powered by ExecuTorch with CUDA acceleration.
 
+https://github.com/user-attachments/assets/9288b923-24e6-4d73-9298-80b325633c2c
+
+
+
 This is the Windows equivalent of the [macOS Voxtral Realtime app](../macos/).
 
 ## Quick Start
