@@ -18,15 +18,6 @@ https://github.com/user-attachments/assets/6d6089fc-5feb-458b-a60b-08379855976a
 - **Sidebar navigation** — Home, Replacements, Snippets, Wake, and Settings pages
 - **Self-contained DMG** — runner binary, model weights, and runtime libraries all bundled
 
-## Download
-
-**End users**: download the latest DMG from [GitHub Releases](https://github.com/meta-pytorch/executorch-examples/releases/tag/voxtral_realtime-v1.0.0). The DMG is self-contained — runner binary, model weights (~6.2 GB), and runtime libraries are all bundled. No terminal, no Python, no model downloads required.
-
-### Requirements
-
-- macOS 14.0+ (Sonoma)
-- Apple Silicon (M1/M2/M3/M4)
-- ~7 GB disk space
 
 ## Usage
 
