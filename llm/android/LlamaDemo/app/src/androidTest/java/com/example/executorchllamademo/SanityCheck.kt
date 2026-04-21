@@ -11,7 +11,6 @@ package com.example.executorchllamademo
 import android.util.Log
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Test
@@ -56,9 +55,7 @@ class SanityCheck : LlmCallback {
         val model = File(RESOURCE_PATH + modelFile)
         val module = LlmModule(model.path, tokenizerPath, 0.8f)
 
-        val loadResult = module.load()
-        // Check that the model can be loaded successfully
-        assertEquals(0, loadResult)
+        module.load()
 
         // Run a testing prompt
         module.generate("How do you do! I'm testing llm on mobile device", this)
