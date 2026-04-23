@@ -1,0 +1,147 @@
+name: ExecuWhisper
+options:
+  bundleIdPrefix: org.pytorch.executorch
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "16.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+    ENABLE_HARDENED_RUNTIME: YES
+
+schemes:
+  ExecuWhisper:
+    build:
+      targets:
+        ExecuWhisper: all
+        ExecuWhisperTests: [test]
+    test:
+      gatherCoverageData: true
+      targets:
+        - ExecuWhisperTests
+
+targets:
+  ExecuWhisper:
+    type: application
+    platform: macOS
+    sources:
+      - path: ExecuWhisper
+        excludes:
+          - "Resources/**"
+      - path: ExecuWhisper/Resources/Assets.xcassets
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.pytorch.executorch.ExecuWhisper
+        PRODUCT_NAME: ExecuWhisper
+        INFOPLIST_FILE: ExecuWhisper/Info.plist
+        CODE_SIGN_ENTITLEMENTS: ExecuWhisper/ExecuWhisper.entitlements
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: "ExecuWhisper needs microphone access to record audio for on-device transcription."
+        COMBINE_HIDPI_IMAGES: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    entitlements:
+      path: ExecuWhisper/ExecuWhisper.entitlements
+      properties:
+        com.apple.security.cs.disable-library-validation: true
+        com.apple.security.device.audio-input: true
+        com.apple.security.network.client: true
+    postCompileScripts:
+      - script: |
+          set -euo pipefail
+
+          ET_PATH="${EXECUTORCH_PATH:-${HOME}/executorch}"
+          HELPER_SRC="${ET_PATH}/cmake-out/examples/models/parakeet/parakeet_helper"
+          MODEL_DIR="${MODEL_DIR:-${HOME}/parakeet_metal}"
+          BUNDLE_MODEL_ARTIFACTS="${BUNDLE_MODEL_ARTIFACTS:-0}"
+          LIBOMP_HOMEBREW="/opt/homebrew/opt/libomp/lib/libomp.dylib"
+          LIBOMP_LLVM="/opt/llvm-openmp/lib/libomp.dylib"
+          LIBCXX_SRC="/usr/lib/libc++.1.dylib"
+          DEST="${BUILT_PRODUCTS_DIR}/${CONTENTS_FOLDER_PATH}/Resources"
+
+          mkdir -p "${DEST}"
+
+          resolve_libomp() {
+            if [ -f "${LIBOMP_HOMEBREW}" ]; then
+              echo "${LIBOMP_HOMEBREW}"
+            elif [ -f "${LIBOMP_LLVM}" ]; then
+              echo "${LIBOMP_LLVM}"
+            fi
+          }
+
+          copy_if_newer() {
+            local src="$1" dst="$2"
+            if [ ! -f "${src}" ]; then
+              echo "warning: Not found: ${src}"
+              return
+            fi
+            if [ ! -f "${dst}" ] || [ "${src}" -nt "${dst}" ]; then
+              cp -fL "${src}" "${dst}"
+              echo "Bundled $(basename "${dst}")"
+            fi
+          }
+
+          copy_if_newer "${HELPER_SRC}" "${DEST}/parakeet_helper"
+          chmod +x "${DEST}/parakeet_helper" 2>/dev/null || true
+          rm -f "${DEST}/parakeet_runner"
+
+          LIBOMP_SRC="$(resolve_libomp)"
+          if [ -n "${LIBOMP_SRC:-}" ]; then
+            copy_if_newer "${LIBOMP_SRC}" "${DEST}/libomp.dylib"
+          else
+            echo "warning: libomp.dylib not found in expected locations"
+          fi
+
+          copy_if_newer "${LIBCXX_SRC}" "${DEST}/libc++.1.dylib"
+
+          if [ "${BUNDLE_MODEL_ARTIFACTS}" = "1" ]; then
+            copy_if_newer "$MODEL_DIR/model.pte" "${DEST}/model.pte"
+            copy_if_newer "$MODEL_DIR/tokenizer.model" "${DEST}/tokenizer.model"
+          else
+            rm -f "${DEST}/model.pte" "${DEST}/tokenizer.model"
+          fi
+
+          if [ -f "${DEST}/parakeet_helper" ] && [ -f "${DEST}/libomp.dylib" ]; then
+            install_name_tool -change /opt/homebrew/opt/libomp/lib/libomp.dylib @executable_path/libomp.dylib "${DEST}/parakeet_helper" 2>/dev/null || true
+            install_name_tool -change /opt/llvm-openmp/lib/libomp.dylib @executable_path/libomp.dylib "${DEST}/parakeet_helper" 2>/dev/null || true
+            install_name_tool -add_rpath @executable_path "${DEST}/parakeet_helper" 2>/dev/null || true
+            install_name_tool -add_rpath /usr/lib "${DEST}/parakeet_helper" 2>/dev/null || true
+          fi
+
+        name: Bundle Helper and Model Artifacts
+        basedOnDependencyAnalysis: false
+  ExecuWhisperTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: ExecuWhisper/Models/DictationShortcut.swift
+      - path: ExecuWhisper/Models/Preferences.swift
+      - path: ExecuWhisper/Models/ReplacementEntry.swift
+      - path: ExecuWhisper/Models/Session.swift
+      - path: ExecuWhisper/Models/TranscriptStore.swift
+      - path: ExecuWhisper/Utilities/PersistencePaths.swift
+      - path: ExecuWhisper/Utilities/SessionHistory.swift
+      - path: ExecuWhisper/Utilities/SessionExportFormat.swift
+      - path: ExecuWhisper/Utilities/RunnerError.swift
+      - path: ExecuWhisper/Services/AudioRecorder.swift
+      - path: ExecuWhisper/Services/DictationManager.swift
+      - path: ExecuWhisper/Services/GlobalHotKeyManager.swift
+      - path: ExecuWhisper/Services/HealthCheck.swift
+      - path: ExecuWhisper/Services/ImportedAudioDecoder.swift
+      - path: ExecuWhisper/Services/ModelDownloader.swift
+      - path: ExecuWhisper/Services/ParakeetHelperProtocol.swift
+      - path: ExecuWhisper/Services/ReplacementStore.swift
+      - path: ExecuWhisper/Services/RunnerBridge.swift
+      - path: ExecuWhisper/Services/TextPipeline.swift
+      - path: ExecuWhisper/Views/AudioLevelView.swift
+      - path: ExecuWhisper/Views/DictationOverlayView.swift
+      - path: ExecuWhisper/Views/DictationPanel.swift
+      - path: ExecuWhisperTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.pytorch.executorch.ExecuWhisperTests
+        GENERATE_INFOPLIST_FILE: YES
