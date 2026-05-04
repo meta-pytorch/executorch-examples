@@ -1,0 +1,21 @@
+# Model directories
+models/
+
+# Model files
+*.pte
+*.bin
+*.onnx
+*.pt
+*.pth
+*.safetensors
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# OS
+.DS_Store
