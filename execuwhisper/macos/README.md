@@ -6,15 +6,11 @@
 
 <p align="center"><strong>ExecuWhisper is your free, open-source alternative to Wispr Flow and SuperWhisper.</strong></p>
 
-If you don't want to pay $12–$15 / month for Wispr Flow or SuperWhisper but want a much simpler version that does what most people seem to need — press a hotkey, dictate, get clean punctuated text pasted into the focused app — ExecuWhisper does the basics well. It does **not** offer every feature those products ship (no cloud sync, no team collab, no agentic prompt-injection of "rules"); it covers the core dictation loop.
+If you don't want to pay $12–$15/month for Wispr Flow or SuperWhisper but want the core flow — press a hotkey, dictate, get clean punctuated text pasted into the focused app — ExecuWhisper does just that, **fully on-device**: NVIDIA Parakeet-TDT for ASR (Metal) + a fine-tuned LiquidAI LFM2.5-350M for cleanup (MLX), running on [ExecuTorch](https://github.com/pytorch/executorch). No cloud, no API keys, no telemetry; the only network call is the first-launch model download from Hugging Face Hub.
 
-Wispr Flow and SuperWhisper are great products and this is definitely not a 1:1 clone. ExecuWhisper is a much simpler take, just the basics for folks who want control, **don't want their voice or transcripts leaving the laptop**, and don't want to pay. If you need all the fancy features, your best bet is to support those teams. But if you just want something free (no gotchas), open, and **fully on-device**, this project does the job!
+**100% free** for personal and commercial use under BSD-3-Clause. Wispr Flow / SuperWhisper are great products and this is not a 1:1 clone — if you need cloud sync, team collab, or agentic "rules," support those teams. If you want something free, open, and that keeps your voice on your laptop, this is for you.
 
-**100% free** for both **personal** and **commercial** use under the BSD-3-Clause license that covers the rest of [`meta-pytorch/executorch-examples`](https://github.com/meta-pytorch/executorch-examples). Use it, modify it, distribute it — and if you feel like it, shout out the project (or open a PR) 🙂.
-
-It runs **fully on-device** using [ExecuTorch](https://github.com/pytorch/executorch). Speech-to-text via NVIDIA's Parakeet-TDT (Metal backend); a fine-tuned LiquidAI LFM2.5-350M cleans up disfluencies, casing, and punctuation (MLX delegate). No cloud, no API keys, no telemetry — the only network calls are the first-launch model downloads from the Hugging Face Hub.
-
-> **Status:** v0.1.0 — initial open-source release. Apple Silicon, macOS 14+. The three required ExecuTorch helper PRs are still in upstream review (see [Build From Source](#build-from-source)). Prebuilt arm64 helpers are attached to the [GitHub Release](#install-prebuilt) so you don't have to build them yourself.
+> **Status:** v0.1.0 — Apple Silicon, macOS 14+. Three required ExecuTorch helper PRs are still in upstream review (see [Build From Source](#build-from-source)); prebuilt arm64 helpers are attached to the [GitHub Release](#install-prebuilt) so you don't have to build them yourself.
 
 ## Demo
 
@@ -38,6 +34,14 @@ https://github.com/user-attachments/assets/b840bf99-e221-4c19-ba2e-771903fa357b
 
 (Recording outline lives in [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md).)
 
+## Architecture
+
+<p align="center">
+  <img src="docs/architecture.png" alt="ExecuWhisper architecture diagram" />
+</p>
+
+At a glance: microphone → `AudioRecorder` → `parakeet_helper` (Metal, [pytorch/executorch#18861](https://github.com/pytorch/executorch/pull/18861)) → 30-word chunker → `lfm25_formatter_helper` (MLX, [pytorch/executorch#19562](https://github.com/pytorch/executorch/pull/19562); export from [#19195](https://github.com/pytorch/executorch/pull/19195)) → validator + replacements → `ExecuWhisper Paste Helper` (`LSBackgroundOnly`; CGEvent ⌘V) → focused text field in any app.
+
 ## Footprint & Performance
 
 ExecuWhisper is one of the smaller fully-on-device dictation stacks shippable today. Measurements taken on an Apple Silicon Mac during active dictation:
@@ -57,14 +61,6 @@ ExecuWhisper is one of the smaller fully-on-device dictation stacks shippable to
 > **For context:** the 34 MB app bundle is roughly 5–10× smaller than a typical Electron-based dictation app, and the 1.27 GB on-disk model footprint is well under what a single 7B-class chat LLM would occupy. Peak memory of ~4.8 GB is the cost of keeping both helper processes warm with their KV caches resident on the Metal GPU; idle steady-state RSS sits closer to ~1.7 GB.
 
 Throughput numbers from `eval/eval_ami_mlx_4w_g32.json` on the [formatter HF repo](https://huggingface.co/younghan-meta/LFM2.5-350M-ExecuWhisper-Formatter); footprint numbers from `vmmap --summary` ("Physical footprint (peak)") on the running app.
-
-## Architecture
-
-<p align="center">
-  <img src="docs/architecture.png" alt="ExecuWhisper architecture diagram" />
-</p>
-
-At a glance: microphone → `AudioRecorder` → `parakeet_helper` (Metal, [pytorch/executorch#18861](https://github.com/pytorch/executorch/pull/18861)) → 30-word chunker → `lfm25_formatter_helper` (MLX, [pytorch/executorch#19562](https://github.com/pytorch/executorch/pull/19562); export from [#19195](https://github.com/pytorch/executorch/pull/19195)) → validator + replacements → `ExecuWhisper Paste Helper` (`LSBackgroundOnly`; CGEvent ⌘V) → focused text field in any app.
 
 ## Features
 
