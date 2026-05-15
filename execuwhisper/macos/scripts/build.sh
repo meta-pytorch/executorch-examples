@@ -187,6 +187,15 @@ echo "--- Step 3: Building app ---"
 mkdir -p "${BUILD_DIR}"
 BUILD_LOG="${BUILD_DIR}/build.log"
 
+# Forward DEVELOPMENT_TEAM through to xcodebuild as an explicit build setting
+# when set in the environment. Without this, the project (which intentionally
+# leaves DEVELOPMENT_TEAM unset in project.yml so users supply their own)
+# won't pick up the env var during signing.
+TEAM_OVERRIDE=()
+if [[ -n "${DEVELOPMENT_TEAM:-}" ]]; then
+  TEAM_OVERRIDE=(DEVELOPMENT_TEAM="${DEVELOPMENT_TEAM}")
+fi
+
 set +e
 BUNDLE_MODEL_ARTIFACTS=$([[ "${BUNDLE_MODELS}" == true ]] && echo 1 || echo 0) \
 xcodebuild \
@@ -194,6 +203,7 @@ xcodebuild \
   -scheme "${SCHEME}" \
   -configuration "${CONFIG}" \
   -derivedDataPath "${BUILD_DIR}" \
+  "${TEAM_OVERRIDE[@]}" \
   build \
   > "${BUILD_LOG}" 2>&1
 BUILD_EXIT=$?
