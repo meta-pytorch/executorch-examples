@@ -45,7 +45,7 @@ At a glance: microphone → `AudioRecorder` → `parakeet_helper` (Metal, [pytor
 
 For users who want to skip building three upstream ExecuTorch PRs:
 
-1. Download the prebuilt helpers tarball from the [GitHub Release](https://github.com/seyeong-han/executorch-examples/releases) attached to this PR (`helpers-arm64-darwin.tar.gz`).
+1. Download the prebuilt helpers tarball from the [v0.1.0 GitHub Release](https://github.com/seyeong-han/executorch-examples/releases/tag/execuwhisper-v0.1.0) (`helpers-arm64-darwin.tar.gz`).
 2. Extract into your ExecuTorch checkout:
    ```bash
    mkdir -p ~/executorch/cmake-out/examples/models/llama
