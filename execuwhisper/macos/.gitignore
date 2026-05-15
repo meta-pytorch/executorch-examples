@@ -1,0 +1,25 @@
+# Xcode generated files (run `xcodegen generate` to recreate the project)
+*.xcodeproj/
+xcuserdata/
+*.xcuserstate
+*.xcuserdatad/
+
+# Build outputs
+build/
+DerivedData/
+*.dmg
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# macOS
+.DS_Store
+
+# Local-only dictation samples and prompt-quality corpus.
+test_audio/
+evaluation/
+
+# Local notes / scratch
+docs/superpowers/

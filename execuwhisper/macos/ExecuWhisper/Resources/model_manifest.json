@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "repositories": {
+    "asr": "younghan-meta/Parakeet-TDT-ExecuTorch-Metal",
+    "formatter": "younghan-meta/LFM2.5-350M-ExecuWhisper-Formatter"
+  },
+  "assets": {
+    "model.pte": {
+      "bytes": 822365760,
+      "sha256": "406c7625094faefd019932cceba317954c1fc60de068b0be372570bfe5509ef2"
+    },
+    "tokenizer.model": {
+      "bytes": 360916,
+      "sha256": "eacec2b0a77f336d4a2ca4a25a7047575d3c2b74de47e997f4c205126ed3135e"
+    },
+    "lfm2_5_350m_mlx_4w.pte": {
+      "bytes": 490342656,
+      "sha256": "d3e220c62890f3ac655e23068f2ec59aa2cdabeb74aa86a95a725d7d463bb853"
+    },
+    "tokenizer.json": {
+      "bytes": 4733383,
+      "sha256": "2221c71b5dce048a8abae62843b92bd7deec13cc153f95fa6e3327a47b79a7da"
+    },
+    "tokenizer_config.json": {
+      "bytes": 595,
+      "sha256": "3701f370c70034d06e28947ff51c1063983393319f429e3ce58f06a45fae67cc"
+    }
+  }
+}
