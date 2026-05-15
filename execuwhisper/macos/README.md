@@ -18,6 +18,8 @@ It runs **fully on-device** using [ExecuTorch](https://github.com/pytorch/execut
 
 ## Demo
 
+### In-app dictation
+
 https://github.com/user-attachments/assets/b0557b3d-fd2e-4c8d-9ca1-dd9a35f6736c
 
 **What you hear in the clip:**
@@ -27,6 +29,12 @@ https://github.com/user-attachments/assets/b0557b3d-fd2e-4c8d-9ca1-dd9a35f6736c
 **What gets pasted:**
 
 > Can we move the meeting to Friday? Actually, no, let's make it Monday at 10 AM in the morning.
+
+### System-wide overlay dictation
+
+Press the global hotkey (`Ctrl+Space` by default) in any app — Notes, Slack, browser, IDE — and a floating overlay captures speech, then auto-pastes the formatted text into the focused text field.
+
+https://github.com/user-attachments/assets/b840bf99-e221-4c19-ba2e-771903fa357b
 
 (Recording outline lives in [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md).)
 
