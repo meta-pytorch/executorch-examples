@@ -44,23 +44,11 @@ At a glance: microphone → `AudioRecorder` → `parakeet_helper` (Metal, [pytor
 
 ## Footprint & Performance
 
-ExecuWhisper is one of the smaller fully-on-device dictation stacks shippable today. Measurements taken on an Apple Silicon Mac during active dictation:
-
-| What | Size |
+| What | Value |
 |---|---:|
-| App bundle (`ExecuWhisper.app`) — Swift UI + 2 helper binaries + `mlx.metallib` + `libomp.dylib` | **34 MB** |
-| Models on disk (downloaded once on first launch) | **1.27 GB** |
-| &nbsp;&nbsp;&nbsp;Parakeet-TDT ASR (`model.pte` + tokenizer) | 800 MB |
-| &nbsp;&nbsp;&nbsp;LFM2.5-350M formatter (`lfm2_5_350m_mlx_4w.pte` + tokenizer) | 472 MB |
-| Peak working-set memory during inference (sum of UI + both helpers) | **~4.8 GB** |
-| &nbsp;&nbsp;&nbsp;ExecuWhisper UI (SwiftUI) | 106 MB |
-| &nbsp;&nbsp;&nbsp;`parakeet_helper` (ASR, Metal) | 1.4 GB |
-| &nbsp;&nbsp;&nbsp;`lfm25_formatter_helper` (LFM2.5, MLX) | 3.3 GB |
 | LFM2.5 formatter throughput (mean over 100-row AMI eval) | **533 tok/s** |
 
-> **For context:** the 34 MB app bundle is roughly 5–10× smaller than a typical Electron-based dictation app, and the 1.27 GB on-disk model footprint is well under what a single 7B-class chat LLM would occupy. Peak memory of ~4.8 GB is the cost of keeping both helper processes warm with their KV caches resident on the Metal GPU; idle steady-state RSS sits closer to ~1.7 GB.
-
-Throughput numbers from `eval/eval_ami_mlx_4w_g32.json` on the [formatter HF repo](https://huggingface.co/younghan-meta/LFM2.5-350M-ExecuWhisper-Formatter); footprint numbers from `vmmap --summary` ("Physical footprint (peak)") on the running app.
+Throughput numbers from `eval/eval_ami_mlx_4w_g32.json` on the [formatter HF repo](https://huggingface.co/younghan-meta/LFM2.5-350M-ExecuWhisper-Formatter).
 
 ## Features
 
