@@ -20,6 +20,14 @@ It runs **fully on-device** using [ExecuTorch](https://github.com/pytorch/execut
 
 https://github.com/user-attachments/assets/b0557b3d-fd2e-4c8d-9ca1-dd9a35f6736c
 
+**What you hear in the clip:**
+
+> _"Uh can we, can we move the meeting uh to Friday, actually no, let's let's make it Monday at 10 in the morning."_
+
+**What gets pasted:**
+
+> Can we move the meeting to Friday? Actually, no, let's make it Monday at 10 AM in the morning.
+
 (Recording outline lives in [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md).)
 
 ## Architecture
