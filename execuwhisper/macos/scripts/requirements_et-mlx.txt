@@ -172,7 +172,7 @@ torchtune @ git+https://github.com/pytorch/torchtune.git@44271b570af36cfda8ee20a
 torchvision==0.26.0
 tqdm==4.67.3
 trailrunner==1.4.0
-transformers==5.0.0rc1
+transformers==5.5.0
 typer==0.24.1
 typer-slim==0.24.0
 typing-inspect==0.9.0
