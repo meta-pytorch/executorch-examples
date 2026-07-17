@@ -230,7 +230,7 @@ tokenizers==0.22.2
 toml==0.10.2
 tomlkit==0.13.3
 toolz==1.1.0
-torch==2.11.0
+torch==2.13.0
 # torchao is provided by the executorch editable install (third-party/ao)
 torchaudio==2.11.0
 torchdata==0.11.0+cpu
