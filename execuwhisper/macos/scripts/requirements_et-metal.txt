@@ -145,7 +145,7 @@ parso==0.8.7
 pathspec==1.0.4
 peft==0.19.1
 pexpect==4.9.0
-pillow==12.1.1
+pillow==12.3.0
 platformdirs==4.9.4
 pluggy==1.6.0
 pooch==1.9.0
