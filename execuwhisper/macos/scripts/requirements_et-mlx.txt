@@ -98,7 +98,7 @@ pandas==3.0.1
 parameterized==0.9.0
 pathspec==1.1.1
 pfzy==0.3.4
-pillow==12.1.1
+pillow==12.3.0
 platformdirs==4.9.4
 pluggy==1.6.0
 pooch==1.9.0
