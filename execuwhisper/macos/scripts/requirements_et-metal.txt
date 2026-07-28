@@ -132,7 +132,7 @@ nv-one-logger-core==2.3.1
 nv-one-logger-pytorch-lightning-integration==2.3.1
 nv-one-logger-training-telemetry==2.3.1
 omegaconf==2.3.0
-onnx==1.21.0
+onnx==1.22.0
 onnxruntime==1.24.1
 onnxslim==0.1.84
 optuna==4.8.0
