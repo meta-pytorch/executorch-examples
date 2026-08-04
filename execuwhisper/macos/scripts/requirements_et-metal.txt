@@ -13,7 +13,7 @@ asttokens==3.0.1
 attrs==26.1.0
 audioread==3.1.0
 bandit==1.9.2
-black==24.4.2
+black==26.3.1
 blobfile==3.2.0
 braceexpand==0.1.7
 brotli==1.2.0
