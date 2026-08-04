@@ -10,7 +10,7 @@ anyio==4.12.1
 attrs==25.4.0
 audioread==3.1.0
 bandit==1.9.2
-black==24.4.2
+black==26.3.1
 blobfile==3.2.0
 brotli==1.2.0
 cattrs==26.1.0
