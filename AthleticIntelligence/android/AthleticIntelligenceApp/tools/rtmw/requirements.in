@@ -1,0 +1,15 @@
+# Copyright (c) Meta Platforms, Inc. and affiliates.
+# All rights reserved.
+#
+# This source code is licensed under the BSD-style license found in the
+# LICENSE file in the root directory of this source tree.
+
+executorch==1.1.0
+onnx==1.22.0
+onnx2torch==1.5.15
+onnxruntime==1.28.0
+onnxslim==0.1.95
+pillow==12.3.0
+torch==2.10.0
+torchao==0.15.0
+torchvision==0.25.0
