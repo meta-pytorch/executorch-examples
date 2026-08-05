@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">Athletic Intelligence</string>
+    <string name="activity_squats">Squats</string>
+    <string name="destination_live">Live</string>
+    <string name="destination_insights">Insights</string>
+    <string name="destination_timeline">Timeline</string>
+    <string name="timeline_session">Session</string>
+    <string name="timeline_mistakes">Mistakes</string>
+    <string name="squat_start_session">Start Session</string>
+    <string name="squat_end_session">End Session</string>
+    <string name="squat_tracking_lost">Move into view</string>
+</resources>

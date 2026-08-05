@@ -1,0 +1,22 @@
+# Android/Gradle local state
+.gradle/
+.idea/
+app/build/
+local.properties
+local.properties.backup
+*.iml
+
+# Python exporter local state and downloaded/generated artifacts
+.venv*/
+__pycache__/
+tools/rtmw/artifacts/
+validation/
+*.onnx
+*.pte
+*.zip
+
+# Workstation files
+.DS_Store
+
+# The parent repository ignores PNG globally; launcher resources are source assets.
+!app/src/main/res/mipmap-*/ic_launcher*.png
