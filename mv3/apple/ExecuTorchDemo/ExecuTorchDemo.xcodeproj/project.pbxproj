@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		031B92F72ACF2A5400D4EBE0 /* mv3_mps_float16.pte in Resources */ = {isa = PBXBuildFile; fileRef = 031B92F62ACF2A5400D4EBE0 /* mv3_mps_float16.pte */; };
 		032C01A52AC22B16002955E1 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032C018B2AC22B16002955E1 /* App.swift */; };
 		032C01A72AC22B16002955E1 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032C018D2AC22B16002955E1 /* ContentView.swift */; };
 		032C01B72AC329B6002955E1 /* CustomViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 032C01B62AC329B6002955E1 /* CustomViews.swift */; };
@@ -16,11 +15,9 @@
 		032C02032AC47CFB002955E1 /* mv3_xnnpack_fp32.pte in Resources */ = {isa = PBXBuildFile; fileRef = 032C01FC2AC47CFB002955E1 /* mv3_xnnpack_fp32.pte */; };
 		032C02082AC47CFB002955E1 /* imagenet_classes.txt in Resources */ = {isa = PBXBuildFile; fileRef = 032C02012AC47CFB002955E1 /* imagenet_classes.txt */; };
 		03672A662DE1226100147123 /* backend_coreml in Frameworks */ = {isa = PBXBuildFile; productRef = 03672A652DE1226100147123 /* backend_coreml */; };
-		03672A682DE1226100147123 /* backend_mps in Frameworks */ = {isa = PBXBuildFile; productRef = 03672A672DE1226100147123 /* backend_mps */; };
 		03672A6A2DE1226100147123 /* backend_xnnpack in Frameworks */ = {isa = PBXBuildFile; productRef = 03672A692DE1226100147123 /* backend_xnnpack */; };
 		03672A752DE144CF00147123 /* executorch_debug in Frameworks */ = {isa = PBXBuildFile; productRef = 03672A742DE144CF00147123 /* executorch_debug */; };
 		03672A772DE1457900147123 /* backend_coreml in Frameworks */ = {isa = PBXBuildFile; productRef = 03672A762DE1457900147123 /* backend_coreml */; };
-		03672A792DE1457900147123 /* backend_mps in Frameworks */ = {isa = PBXBuildFile; productRef = 03672A782DE1457900147123 /* backend_mps */; };
 		03672A7B2DE1457900147123 /* backend_xnnpack in Frameworks */ = {isa = PBXBuildFile; productRef = 03672A7A2DE1457900147123 /* backend_xnnpack */; };
 		036834D52ACB710D00BA100F /* mv3.pte in Resources */ = {isa = PBXBuildFile; fileRef = 036834D42ACB710D00BA100F /* mv3.pte */; };
 		036834D62ACB710D00BA100F /* mv3.pte in Resources */ = {isa = PBXBuildFile; fileRef = 036834D42ACB710D00BA100F /* mv3.pte */; };
@@ -40,7 +37,6 @@
 		03C818482AC7BF470084CC29 /* imagenet_classes.txt in Resources */ = {isa = PBXBuildFile; fileRef = 032C02012AC47CFB002955E1 /* imagenet_classes.txt */; };
 		03C8184A2AC7BF470084CC29 /* mv3_xnnpack_fp32.pte in Resources */ = {isa = PBXBuildFile; fileRef = 032C01FC2AC47CFB002955E1 /* mv3_xnnpack_fp32.pte */; };
 		03C8DC7C2AE2533C0064384A /* mv3_coreml_all.pte in Resources */ = {isa = PBXBuildFile; fileRef = 036834D72ACB893700BA100F /* mv3_coreml_all.pte */; };
-		03D494E22B5B7AE900FCF524 /* mv3_mps_float16.pte in Resources */ = {isa = PBXBuildFile; fileRef = 031B92F62ACF2A5400D4EBE0 /* mv3_mps_float16.pte */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -89,7 +85,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		031B92F62ACF2A5400D4EBE0 /* mv3_mps_float16.pte */ = {isa = PBXFileReference; lastKnownFileType = file; path = mv3_mps_float16.pte; sourceTree = "<group>"; };
 		032C016F2AC228E6002955E1 /* ExecuTorchDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ExecuTorchDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		032C018A2AC22B16002955E1 /* MobileNetClassifier.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MobileNetClassifier.swift; sourceTree = "<group>"; };
 		032C018B2AC22B16002955E1 /* App.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
@@ -120,7 +115,6 @@
 				032C01EC2AC34CAC002955E1 /* libMobileNetClassifier.a in Frameworks */,
 				03672A6A2DE1226100147123 /* backend_xnnpack in Frameworks */,
 				03B184962E1FA1E400246294 /* kernels_optimized in Frameworks */,
-				03672A682DE1226100147123 /* backend_mps in Frameworks */,
 				03672A662DE1226100147123 /* backend_coreml in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -141,7 +135,6 @@
 				03C818282AC760650084CC29 /* libMobileNetClassifier.a in Frameworks */,
 				03672A7B2DE1457900147123 /* backend_xnnpack in Frameworks */,
 				03B184982E1FA1F400246294 /* kernels_optimized in Frameworks */,
-				03672A792DE1457900147123 /* backend_mps in Frameworks */,
 				03672A772DE1457900147123 /* backend_coreml in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -239,7 +232,6 @@
 			children = (
 				032C02012AC47CFB002955E1 /* imagenet_classes.txt */,
 				036834D72ACB893700BA100F /* mv3_coreml_all.pte */,
-				031B92F62ACF2A5400D4EBE0 /* mv3_mps_float16.pte */,
 				032C01FC2AC47CFB002955E1 /* mv3_xnnpack_fp32.pte */,
 				036834D42ACB710D00BA100F /* mv3.pte */,
 			);
@@ -298,7 +290,6 @@
 			name = App;
 			packageProductDependencies = (
 				03672A652DE1226100147123 /* backend_coreml */,
-				03672A672DE1226100147123 /* backend_mps */,
 				03672A692DE1226100147123 /* backend_xnnpack */,
 				03B184952E1FA1E400246294 /* kernels_optimized */,
 			);
@@ -343,7 +334,6 @@
 			name = MobileNetClassifierTest;
 			packageProductDependencies = (
 				03672A762DE1457900147123 /* backend_coreml */,
-				03672A782DE1457900147123 /* backend_mps */,
 				03672A7A2DE1457900147123 /* backend_xnnpack */,
 				03B184972E1FA1F400246294 /* kernels_optimized */,
 			);
@@ -420,7 +410,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				031B92F72ACF2A5400D4EBE0 /* mv3_mps_float16.pte in Resources */,
 				036834D82ACB893700BA100F /* mv3_coreml_all.pte in Resources */,
 				036834D52ACB710D00BA100F /* mv3.pte in Resources */,
 				032C02082AC47CFB002955E1 /* imagenet_classes.txt in Resources */,
@@ -439,7 +428,6 @@
 				03C818192AC671980084CC29 /* Samoyed.jpg in Resources */,
 				03C8181F2AC69DFF0084CC29 /* hot pot.jpg in Resources */,
 				03C8DC7C2AE2533C0064384A /* mv3_coreml_all.pte in Resources */,
-				03D494E22B5B7AE900FCF524 /* mv3_mps_float16.pte in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -810,11 +798,6 @@
 			package = 03672A642DE1226100147123 /* XCRemoteSwiftPackageReference "executorch" */;
 			productName = backend_coreml;
 		};
-		03672A672DE1226100147123 /* backend_mps */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 03672A642DE1226100147123 /* XCRemoteSwiftPackageReference "executorch" */;
-			productName = backend_mps;
-		};
 		03672A692DE1226100147123 /* backend_xnnpack */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 03672A642DE1226100147123 /* XCRemoteSwiftPackageReference "executorch" */;
@@ -829,11 +812,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 03672A642DE1226100147123 /* XCRemoteSwiftPackageReference "executorch" */;
 			productName = backend_coreml;
-		};
-		03672A782DE1457900147123 /* backend_mps */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 03672A642DE1226100147123 /* XCRemoteSwiftPackageReference "executorch" */;
-			productName = backend_mps;
 		};
 		03672A7A2DE1457900147123 /* backend_xnnpack */ = {
 			isa = XCSwiftPackageProductDependency;

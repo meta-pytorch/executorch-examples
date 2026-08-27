@@ -38,7 +38,7 @@ Get hands-on with running LLMs — exported via ExecuTorch — natively on your 
 ​​​
 ## Models
 ​​​
-Download already exported LLMs along with tokenizers from [HuggingFace](https://huggingface.co/executorch-community) or export your own empowered by XNNPACK, Core ML or MPS backends.
+Download already exported LLMs along with tokenizers from [HuggingFace](https://huggingface.co/executorch-community) or export your own empowered by XNNPACK or Core ML backends.
 ​​​
 ## Build and Run
 

@@ -13,7 +13,6 @@ import SwiftUI
 enum Mode: String, CaseIterable {
   case xnnpack = "XNNPACK"
   case coreML = "Core ML"
-  case mps = "MPS"
 }
 
 class ClassificationController: ObservableObject {
@@ -63,8 +62,6 @@ class ClassificationController: ObservableObject {
     switch mode {
     case .coreML:
       modelFileName = "mv3_coreml_all"
-    case .mps:
-      modelFileName = "mv3_mps_float16"
     case .xnnpack:
       modelFileName = "mv3_xnnpack_fp32"
     }

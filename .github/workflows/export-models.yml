@@ -36,7 +36,6 @@ jobs:
             output: |
               mv3/python/mv3.pte
               mv3/python/mv3_coreml_all.pte
-              mv3/python/mv3_mps_float16.pte
               mv3/python/mv3_xnnpack_fp32.pte
 
     name: Export ${{ matrix.name }}

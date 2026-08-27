@@ -18,7 +18,6 @@
 		0324D6932BAACB6900DEF36F /* ResourceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0324D6882BAACB6900DEF36F /* ResourceMonitor.swift */; };
 		0324D6962BAACB7000DEF36F /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0324D6942BAACB7000DEF36F /* Assets.xcassets */; };
 		03F546242E70906E0040AE84 /* backend_coreml in Frameworks */ = {isa = PBXBuildFile; productRef = 03F546232E70906E0040AE84 /* backend_coreml */; };
-		03F546262E70906E0040AE84 /* backend_mps in Frameworks */ = {isa = PBXBuildFile; productRef = 03F546252E70906E0040AE84 /* backend_mps */; };
 		03F546282E70906E0040AE84 /* backend_xnnpack in Frameworks */ = {isa = PBXBuildFile; productRef = 03F546272E70906E0040AE84 /* backend_xnnpack */; };
 		03F5462A2E70906E0040AE84 /* executorch_debug in Frameworks */ = {isa = PBXBuildFile; productRef = 03F546292E70906E0040AE84 /* executorch_debug */; };
 		03F5462C2E70906E0040AE84 /* executorch_llm_debug in Frameworks */ = {isa = PBXBuildFile; productRef = 03F5462B2E70906E0040AE84 /* executorch_llm_debug */; };
@@ -42,7 +41,6 @@
 		MAC0001002E8000000000000B /* ImagePicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26A6A4272C8A3769005A761E /* ImagePicker.swift */; };
 		MAC0001002E8000000000000C /* Constants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3072D5222DC3EA280083FC83 /* Constants.swift */; };
 		MAC0001002E8000000000000D /* backend_coreml in Frameworks */ = {isa = PBXBuildFile; productRef = MAC0001002E80000000000020 /* backend_coreml */; };
-		MAC0001002E8000000000000E /* backend_mps in Frameworks */ = {isa = PBXBuildFile; productRef = MAC0001002E80000000000021 /* backend_mps */; };
 		MAC0001002E8000000000000F /* backend_xnnpack in Frameworks */ = {isa = PBXBuildFile; productRef = MAC0001002E80000000000022 /* backend_xnnpack */; };
 		MAC0001002E80000000000010 /* executorch_debug in Frameworks */ = {isa = PBXBuildFile; productRef = MAC0001002E80000000000023 /* executorch_debug */; };
 		MAC0001002E80000000000011 /* executorch_llm_debug in Frameworks */ = {isa = PBXBuildFile; productRef = MAC0001002E80000000000024 /* executorch_llm_debug */; };
@@ -83,7 +81,6 @@
 				03F546322E70906E0040AE84 /* kernels_quantized in Frameworks */,
 				03F5462E2E70906E0040AE84 /* kernels_llm in Frameworks */,
 				03F5462A2E70906E0040AE84 /* executorch_debug in Frameworks */,
-				03F546262E70906E0040AE84 /* backend_mps in Frameworks */,
 				03F546242E70906E0040AE84 /* backend_coreml in Frameworks */,
 				03F546302E70906E0040AE84 /* kernels_optimized in Frameworks */,
 				03F546282E70906E0040AE84 /* backend_xnnpack in Frameworks */,
@@ -99,7 +96,6 @@
 				MAC0001002E80000000000014 /* kernels_quantized in Frameworks */,
 				MAC0001002E80000000000012 /* kernels_llm in Frameworks */,
 				MAC0001002E80000000000010 /* executorch_debug in Frameworks */,
-				MAC0001002E8000000000000E /* backend_mps in Frameworks */,
 				MAC0001002E8000000000000D /* backend_coreml in Frameworks */,
 				MAC0001002E80000000000013 /* kernels_optimized in Frameworks */,
 				MAC0001002E8000000000000F /* backend_xnnpack in Frameworks */,
@@ -191,7 +187,6 @@
 			name = etLLM;
 			packageProductDependencies = (
 				03F546232E70906E0040AE84 /* backend_coreml */,
-				03F546252E70906E0040AE84 /* backend_mps */,
 				03F546272E70906E0040AE84 /* backend_xnnpack */,
 				03F546292E70906E0040AE84 /* executorch_debug */,
 				03F5462B2E70906E0040AE84 /* executorch_llm_debug */,
@@ -219,7 +214,6 @@
 			name = "etLLM-macOS";
 			packageProductDependencies = (
 				MAC0001002E80000000000020 /* backend_coreml */,
-				MAC0001002E80000000000021 /* backend_mps */,
 				MAC0001002E80000000000022 /* backend_xnnpack */,
 				MAC0001002E80000000000023 /* executorch_debug */,
 				MAC0001002E80000000000024 /* executorch_llm_debug */,
@@ -638,11 +632,6 @@
 			package = 03CF43942CEC5CEC00C7113B /* XCRemoteSwiftPackageReference "executorch" */;
 			productName = backend_coreml;
 		};
-		03F546252E70906E0040AE84 /* backend_mps */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 03CF43942CEC5CEC00C7113B /* XCRemoteSwiftPackageReference "executorch" */;
-			productName = backend_mps;
-		};
 		03F546272E70906E0040AE84 /* backend_xnnpack */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 03CF43942CEC5CEC00C7113B /* XCRemoteSwiftPackageReference "executorch" */;
@@ -683,11 +672,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 03CF43942CEC5CEC00C7113B /* XCRemoteSwiftPackageReference "executorch" */;
 			productName = backend_coreml;
-		};
-		MAC0001002E80000000000021 /* backend_mps */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 03CF43942CEC5CEC00C7113B /* XCRemoteSwiftPackageReference "executorch" */;
-			productName = backend_mps;
 		};
 		MAC0001002E80000000000022 /* backend_xnnpack */ = {
 			isa = XCSwiftPackageProductDependency;
