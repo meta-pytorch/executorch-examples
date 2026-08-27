@@ -15,13 +15,16 @@
 		032C02032AC47CFB002955E1 /* mv3_xnnpack_fp32.pte in Resources */ = {isa = PBXBuildFile; fileRef = 032C01FC2AC47CFB002955E1 /* mv3_xnnpack_fp32.pte */; };
 		032C02082AC47CFB002955E1 /* imagenet_classes.txt in Resources */ = {isa = PBXBuildFile; fileRef = 032C02012AC47CFB002955E1 /* imagenet_classes.txt */; };
 		03672A662DE1226100147123 /* backend_coreml in Frameworks */ = {isa = PBXBuildFile; productRef = 03672A652DE1226100147123 /* backend_coreml */; };
+		CAFE00010000000000000000 /* backend_mlx in Frameworks */ = {isa = PBXBuildFile; productRef = CAFE00010000000000000002 /* backend_mlx */; };
 		03672A6A2DE1226100147123 /* backend_xnnpack in Frameworks */ = {isa = PBXBuildFile; productRef = 03672A692DE1226100147123 /* backend_xnnpack */; };
 		03672A752DE144CF00147123 /* executorch_debug in Frameworks */ = {isa = PBXBuildFile; productRef = 03672A742DE144CF00147123 /* executorch_debug */; };
 		03672A772DE1457900147123 /* backend_coreml in Frameworks */ = {isa = PBXBuildFile; productRef = 03672A762DE1457900147123 /* backend_coreml */; };
+		CAFE00010000000000000001 /* backend_mlx in Frameworks */ = {isa = PBXBuildFile; productRef = CAFE00010000000000000003 /* backend_mlx */; };
 		03672A7B2DE1457900147123 /* backend_xnnpack in Frameworks */ = {isa = PBXBuildFile; productRef = 03672A7A2DE1457900147123 /* backend_xnnpack */; };
 		036834D52ACB710D00BA100F /* mv3.pte in Resources */ = {isa = PBXBuildFile; fileRef = 036834D42ACB710D00BA100F /* mv3.pte */; };
 		036834D62ACB710D00BA100F /* mv3.pte in Resources */ = {isa = PBXBuildFile; fileRef = 036834D42ACB710D00BA100F /* mv3.pte */; };
 		036834D82ACB893700BA100F /* mv3_coreml_all.pte in Resources */ = {isa = PBXBuildFile; fileRef = 036834D72ACB893700BA100F /* mv3_coreml_all.pte */; };
+		CAFE00010000000000000004 /* mv3_mlx.pte in Resources */ = {isa = PBXBuildFile; fileRef = CAFE00010000000000000006 /* mv3_mlx.pte */; };
 		03B184962E1FA1E400246294 /* kernels_optimized in Frameworks */ = {isa = PBXBuildFile; productRef = 03B184952E1FA1E400246294 /* kernels_optimized */; };
 		03B184982E1FA1F400246294 /* kernels_optimized in Frameworks */ = {isa = PBXBuildFile; productRef = 03B184972E1FA1F400246294 /* kernels_optimized */; };
 		03C818192AC671980084CC29 /* Samoyed.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 03C818182AC671980084CC29 /* Samoyed.jpg */; };
@@ -37,6 +40,7 @@
 		03C818482AC7BF470084CC29 /* imagenet_classes.txt in Resources */ = {isa = PBXBuildFile; fileRef = 032C02012AC47CFB002955E1 /* imagenet_classes.txt */; };
 		03C8184A2AC7BF470084CC29 /* mv3_xnnpack_fp32.pte in Resources */ = {isa = PBXBuildFile; fileRef = 032C01FC2AC47CFB002955E1 /* mv3_xnnpack_fp32.pte */; };
 		03C8DC7C2AE2533C0064384A /* mv3_coreml_all.pte in Resources */ = {isa = PBXBuildFile; fileRef = 036834D72ACB893700BA100F /* mv3_coreml_all.pte */; };
+		CAFE00010000000000000005 /* mv3_mlx.pte in Resources */ = {isa = PBXBuildFile; fileRef = CAFE00010000000000000006 /* mv3_mlx.pte */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -96,6 +100,7 @@
 		032C02012AC47CFB002955E1 /* imagenet_classes.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = imagenet_classes.txt; sourceTree = "<group>"; };
 		036834D42ACB710D00BA100F /* mv3.pte */ = {isa = PBXFileReference; lastKnownFileType = file; path = mv3.pte; sourceTree = "<group>"; };
 		036834D72ACB893700BA100F /* mv3_coreml_all.pte */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = mv3_coreml_all.pte; sourceTree = "<group>"; };
+		CAFE00010000000000000006 /* mv3_mlx.pte */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = mv3_mlx.pte; sourceTree = "<group>"; };
 		03C8180A2AC66FC30084CC29 /* MobileNetClassifierTest.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MobileNetClassifierTest.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		03C818182AC671980084CC29 /* Samoyed.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = Samoyed.jpg; sourceTree = "<group>"; };
 		03C8181C2AC69C280084CC29 /* Arctic fox.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "Arctic fox.jpg"; sourceTree = "<group>"; };
@@ -116,6 +121,7 @@
 				03672A6A2DE1226100147123 /* backend_xnnpack in Frameworks */,
 				03B184962E1FA1E400246294 /* kernels_optimized in Frameworks */,
 				03672A662DE1226100147123 /* backend_coreml in Frameworks */,
+				CAFE00010000000000000000 /* backend_mlx in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -136,6 +142,7 @@
 				03672A7B2DE1457900147123 /* backend_xnnpack in Frameworks */,
 				03B184982E1FA1F400246294 /* kernels_optimized in Frameworks */,
 				03672A772DE1457900147123 /* backend_coreml in Frameworks */,
+				CAFE00010000000000000001 /* backend_mlx in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -232,6 +239,7 @@
 			children = (
 				032C02012AC47CFB002955E1 /* imagenet_classes.txt */,
 				036834D72ACB893700BA100F /* mv3_coreml_all.pte */,
+				CAFE00010000000000000006 /* mv3_mlx.pte */,
 				032C01FC2AC47CFB002955E1 /* mv3_xnnpack_fp32.pte */,
 				036834D42ACB710D00BA100F /* mv3.pte */,
 			);
@@ -290,6 +298,7 @@
 			name = App;
 			packageProductDependencies = (
 				03672A652DE1226100147123 /* backend_coreml */,
+				CAFE00010000000000000002 /* backend_mlx */,
 				03672A692DE1226100147123 /* backend_xnnpack */,
 				03B184952E1FA1E400246294 /* kernels_optimized */,
 			);
@@ -334,6 +343,7 @@
 			name = MobileNetClassifierTest;
 			packageProductDependencies = (
 				03672A762DE1457900147123 /* backend_coreml */,
+				CAFE00010000000000000003 /* backend_mlx */,
 				03672A7A2DE1457900147123 /* backend_xnnpack */,
 				03B184972E1FA1F400246294 /* kernels_optimized */,
 			);
@@ -411,6 +421,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				036834D82ACB893700BA100F /* mv3_coreml_all.pte in Resources */,
+				CAFE00010000000000000004 /* mv3_mlx.pte in Resources */,
 				036834D52ACB710D00BA100F /* mv3.pte in Resources */,
 				032C02082AC47CFB002955E1 /* imagenet_classes.txt in Resources */,
 				032C02032AC47CFB002955E1 /* mv3_xnnpack_fp32.pte in Resources */,
@@ -428,6 +439,7 @@
 				03C818192AC671980084CC29 /* Samoyed.jpg in Resources */,
 				03C8181F2AC69DFF0084CC29 /* hot pot.jpg in Resources */,
 				03C8DC7C2AE2533C0064384A /* mv3_coreml_all.pte in Resources */,
+				CAFE00010000000000000005 /* mv3_mlx.pte in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -786,7 +798,7 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/pytorch/executorch";
 			requirement = {
-				branch = "swiftpm-1.1.0";
+				branch = "swiftpm-1.5.0.20260827";
 				kind = branch;
 			};
 		};
@@ -797,6 +809,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 03672A642DE1226100147123 /* XCRemoteSwiftPackageReference "executorch" */;
 			productName = backend_coreml;
+		};
+		CAFE00010000000000000002 /* backend_mlx */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 03672A642DE1226100147123 /* XCRemoteSwiftPackageReference "executorch" */;
+			productName = backend_mlx;
 		};
 		03672A692DE1226100147123 /* backend_xnnpack */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -812,6 +829,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 03672A642DE1226100147123 /* XCRemoteSwiftPackageReference "executorch" */;
 			productName = backend_coreml;
+		};
+		CAFE00010000000000000003 /* backend_mlx */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 03672A642DE1226100147123 /* XCRemoteSwiftPackageReference "executorch" */;
+			productName = backend_mlx;
 		};
 		03672A7A2DE1457900147123 /* backend_xnnpack */ = {
 			isa = XCSwiftPackageProductDependency;
