@@ -25,6 +25,10 @@ final class MobileNetClassifierTest: XCTestCase {
     try run(model: "mv3_xnnpack_fp32")
   }
 
+  func testV3WithMLXBackend() throws {
+    try run(model: "mv3_mlx")
+  }
+
   private func run(model modelName: String) throws {
     guard
       let modelFilePath = Bundle(for: type(of: self))
