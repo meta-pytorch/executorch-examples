@@ -26,7 +26,11 @@ final class MobileNetClassifierTest: XCTestCase {
   }
 
   func testV3WithMLXBackend() throws {
-    try run(model: "mv3_mlx")
+    #if targetEnvironment(simulator)
+      throw XCTSkip("MLX needs a real GPU: the simulator's Metal cannot allocate heaps.")
+    #else
+      try run(model: "mv3_mlx")
+    #endif
   }
 
   private func run(model modelName: String) throws {

@@ -14,6 +14,16 @@ enum Mode: String, CaseIterable {
   case xnnpack = "XNNPACK"
   case coreML = "Core ML"
   case mlx = "MLX"
+
+  static var allCases: [Mode] {
+    // MLX needs a real GPU: the simulator's Metal cannot allocate heaps, so offering
+    // it there gives a choice that can only fail.
+    #if targetEnvironment(simulator)
+      return [.xnnpack, .coreML]
+    #else
+      return [.xnnpack, .coreML, .mlx]
+    #endif
+  }
 }
 
 class ClassificationController: ObservableObject {
