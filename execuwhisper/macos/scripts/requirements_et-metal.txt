@@ -242,7 +242,7 @@ torchvision==0.26.0
 tqdm==4.67.3
 trailrunner==1.4.0
 traitlets==5.15.0
-transformers==4.57.3
+transformers==5.10.1
 typeguard==4.5.1
 typer==0.24.1
 typer-slim==0.24.0
