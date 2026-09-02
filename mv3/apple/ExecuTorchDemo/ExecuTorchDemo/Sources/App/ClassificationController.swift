@@ -16,8 +16,8 @@ enum Mode: String, CaseIterable {
   case mlx = "MLX"
 
   static var allCases: [Mode] {
-    // MLX needs a real GPU: the simulator's Metal cannot allocate heaps, so offering
-    // it there gives a choice that can only fail.
+    // The MLX delegate reports itself unavailable on the simulator, so loading a
+    // model there fails. Offer it only where it can run.
     #if targetEnvironment(simulator)
       return [.xnnpack, .coreML]
     #else

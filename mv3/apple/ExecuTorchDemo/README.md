@@ -4,10 +4,11 @@ Welcome to the tutorial on setting up the ExecuTorch iOS Demo App!
 
 This app uses the
 [MobileNet v3](https://pytorch.org/vision/main/models/mobilenetv3.html) model to
-process live camera images leveraging two different backends:
-[XNNPACK](https://github.com/google/XNNPACK) and
+process live camera images leveraging three different backends:
+[XNNPACK](https://github.com/google/XNNPACK),
 [Core ML](https://developer.apple.com/documentation/coreml)
-(Xcode 15+ and iOS 17+ only).
+(Xcode 15+ and iOS 17+ only), and
+[MLX](https://github.com/ml-explore/mlx) (Apple Silicon devices only).
 
 <p align="center">
   <img src="https://github.com/pytorch/executorch/blob/main/docs/source/_static/img/demo_ios_app.png" width="50%">
@@ -69,7 +70,8 @@ Now, let's move on to exporting and bundling the MobileNet v3 model.
 
 ### 1. Export Model
 
-Export the MobileNet v3 model using the command line with Core ML and XNNPACK backends
+Export the MobileNet v3 model using the command line with Core ML, XNNPACK, and MLX
+backends. The MLX model is only exported on macOS, where that delegate is available.
 
 ```bash
 python3 mv3/python/export.py

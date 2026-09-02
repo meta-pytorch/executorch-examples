@@ -8,10 +8,16 @@
 import torch
 import torchvision.models as models
 from executorch.backends.apple.coreml.partition import CoreMLPartitioner
-from executorch.backends.mlx import MLXPartitioner
 from executorch.exir import to_edge 
 from executorch.backends.xnnpack.partition.xnnpack_partitioner import XnnpackPartitioner
 from executorch.exir import EdgeCompileConfig, to_edge_transform_and_lower
+
+try:
+    from executorch.backends.mlx import MLXPartitioner
+except ImportError:
+    # The MLX delegate is only built into the macOS package, so a run on another
+    # platform exports the rest rather than nothing at all.
+    MLXPartitioner = None
 
 
 def main() -> None:
@@ -28,11 +34,6 @@ def main() -> None:
         compile_config=EdgeCompileConfig(_skip_dim_order=True),
     ).to_executorch()
 
-    et_program_mlx = to_edge_transform_and_lower(
-        torch.export.export(model, sample_inputs),
-        partitioner=[MLXPartitioner()],
-    ).to_executorch()
-
     et_program_xnnpack = to_edge_transform_and_lower(
         torch.export.export(model, sample_inputs),
         partitioner=[XnnpackPartitioner()],
@@ -42,10 +43,16 @@ def main() -> None:
         et_program_portable.write_to_file(file)
     with open("mv3_coreml_all.pte", "wb") as file:
         et_program_coreml.write_to_file(file)
-    with open("mv3_mlx.pte", "wb") as file:
-        et_program_mlx.write_to_file(file)
     with open("mv3_xnnpack_fp32.pte", "wb") as file:
         et_program_xnnpack.write_to_file(file)
+
+    if MLXPartitioner is not None:
+        et_program_mlx = to_edge_transform_and_lower(
+            torch.export.export(model, sample_inputs),
+            partitioner=[MLXPartitioner()],
+        ).to_executorch()
+        with open("mv3_mlx.pte", "wb") as file:
+            et_program_mlx.write_to_file(file)
 
 
 if __name__ == "__main__":
