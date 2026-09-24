@@ -96,7 +96,7 @@ lazy-loader==0.5
 lhotse==1.33.0
 libcst==1.1.0
 librosa==0.11.0
-lightning==2.4.0
+lightning==2.6.6
 lightning-utilities==0.15.3
 lintrunner==0.12.7
 lintrunner-adapters==0.13.0
