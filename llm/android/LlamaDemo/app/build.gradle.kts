@@ -273,7 +273,14 @@ dependencies {
     implementation("com.halilibo.compose-richtext:richtext-commonmark:1.0.0-alpha02")
     implementation("com.halilibo.compose-richtext:richtext-ui-material3:1.0.0-alpha02")
     if (useLocalAar == true) {
-        implementation(files("libs/executorch.aar"))
+        val localAar = file("libs/executorch.aar")
+        if (!localAar.isFile) {
+            throw GradleException(
+                "useLocalAar=true requires app/libs/executorch.aar. " +
+                "Copy your custom ExecuTorch AAR there before building."
+            )
+        }
+        implementation(files(localAar))
     } else {
         implementation("org.pytorch:executorch-android:1.1.0")
         // https://mvnrepository.com/artifact/org.pytorch/executorch-android-qnn
