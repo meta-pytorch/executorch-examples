@@ -81,7 +81,8 @@ public class BirdDetectionActivity extends AppCompatActivity {
 
         // Initialize bird detection pipeline
         try {
-            birdPipeline = new BirdDetectionPipeline(this);
+            String modelDir = getIntent().getStringExtra("model_dir");
+            birdPipeline = new BirdDetectionPipeline(this, modelDir);
             Log.d(TAG, "Bird detection pipeline initialized successfully");
         } catch (Exception e) {
             Log.e(TAG, "Failed to initialize bird pipeline", e);
