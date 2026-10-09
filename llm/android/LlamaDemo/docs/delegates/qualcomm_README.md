@@ -199,7 +199,7 @@ export BUILD_AAR_DIR=aar-out
 
 4. Run the following command to build the AAR:
 ```sh
-sh scripts/build_android_library.sh
+bash scripts/build_android_library.sh
 ```
 
 5. Now go to the demo app root (containing the main README.md) and copy the AAR to the app:
@@ -211,7 +211,18 @@ cp $EXECUTORCH_ROOT/aar-out/executorch.aar app/libs/executorch.aar
 
 This runs the shell script which configures the required core ExecuTorch, Llama 2/3, and Android libraries, builds them into an AAR, and copies it to the app.
 
-6. Add QNN runtime dependency to Gradle:
+6. Select the local AAR by adding the following line to the demo app's
+`gradle.properties`:
+```properties
+useLocalAar=true
+```
+
+Copying the AAR into `app/libs` alone does not select it. Without this property,
+the app still uses `org.pytorch:executorch-android` from Maven Central. Keep
+`QNN_SDK_ROOT` set when building the AAR so that the native QNN runner is included.
+
+7. Add the QNN runtime dependency to the `dependencies` block in
+`app/build.gradle.kts`:
 ```
 implementation("com.qualcomm.qti:qnn-runtime:2.33.0")
 ```
@@ -228,13 +239,34 @@ Without Android Studio UI, we can run Gradle directly to build the app. We need 
 ```
 export ANDROID_HOME=<path_to_android_sdk_home>
 cd LlamaDemo
-./gradlew :app:installDebug
+./gradlew :app:installDebug -PuseLocalAar=true
 ```
 If the app successfully runs on your device, you should see something like the screenshot below:
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/pytorch/executorch/refs/heads/main/docs/source/_static/img/opening_the_app_details.png" style="width:800px">
 </p>
+
+## Troubleshooting model category 4
+
+If loading a Qualcomm model fails with:
+```text
+Invalid model type category: 4. Valid values are: 1 or 2
+```
+the loaded native library does not support the QNN text-model runner. The demo
+uses category `4` for QNN static Llama models; changing it to `1` does not enable
+that runner.
+
+Check that `app/libs/executorch.aar` was built with `QNN_SDK_ROOT` set and that
+`useLocalAar=true` is selected. The app now reports a build error if this property
+is set but the local AAR is missing. You can inspect the dependencies with:
+```sh
+./gradlew :app:dependencies --configuration debugRuntimeClasspath -PuseLocalAar=true
+```
+The local-AAR build should not include the default
+`org.pytorch:executorch-android` Maven dependency. Adding the QNN runtime library
+alone does not replace the ExecuTorch native runner. Rebuild and reinstall the
+app after selecting the QNN-enabled AAR.
 
 ## Reporting Issues
 If you encountered any bugs or issues following this tutorial, please file a bug/issue here on [GitHub](https://github.com/pytorch/executorch/issues/new).
