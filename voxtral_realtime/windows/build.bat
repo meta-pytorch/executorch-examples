@@ -1,4 +1,10 @@
 @echo off
+REM Copyright (c) Meta Platforms, Inc. and affiliates.
+REM All rights reserved.
+REM
+REM This source code is licensed under the BSD-style license found in the
+REM LICENSE file in the root directory of this source tree.
+
 echo === Building Voxtral Realtime Windows App ===
 cd /d "%~dp0VoxtralRealtime"
 
