@@ -1,0 +1,26 @@
+# Model directories (download with huggingface-cli)
+# hf download lucylq/gemma3 --local-dir models/gemma3
+gemma3/
+models/
+
+# Model files
+*.pte
+*.bin
+*.onnx
+*.pt
+*.pth
+*.safetensors
+
+# Metal runtime (work in progress)
+runtime_inference_metal.py
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# OS
+.DS_Store

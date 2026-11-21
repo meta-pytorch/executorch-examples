@@ -1,0 +1,10 @@
+# Ask Anything Backend Dependencies
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.6
+pillow>=10.0.0
+pydantic>=2.0.0
+
+# ExecuTorch dependencies (assumed installed in environment)
+# torch
+# transformers
