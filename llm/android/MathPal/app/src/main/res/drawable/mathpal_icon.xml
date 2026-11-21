@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Background circle -->
+    <path
+        android:fillColor="#4A90D9"
+        android:pathData="M54,54m-50,0a50,50 0,1 1,100 0a50,50 0,1 1,-100 0"/>
+    <!-- Plus sign -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M25,50L25,58L50,58L50,50Z"/>
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,41L34,67L42,67L42,41Z"/>
+    <!-- Torch flame -->
+    <path
+        android:fillColor="#FF9100"
+        android:pathData="M72,28C72,28 68,38 68,42C68,44.2 69.8,46 72,46C74.2,46 76,44.2 76,42C76,38 72,28 72,28Z"/>
+    <!-- Torch handle -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M70,46L74,46L74,70L70,70Z"/>
+</vector>
