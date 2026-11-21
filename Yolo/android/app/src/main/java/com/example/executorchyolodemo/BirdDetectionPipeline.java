@@ -115,9 +115,21 @@ public class BirdDetectionPipeline {
     }
 
     public BirdDetectionPipeline(Context context) throws IOException {
+        this(context, null);
+    }
+
+    public BirdDetectionPipeline(Context context, String modelDir) throws IOException {
         try {
-            String yoloPath = Utils.assetFilePath(context, "yolo_detector.pte");
-            String classifierPath = Utils.assetFilePath(context, "bird_classifier.pte");
+            String yoloPath;
+            String classifierPath;
+
+            if (modelDir != null) {
+                yoloPath = modelDir + "/yolo_detector.pte";
+                classifierPath = modelDir + "/bird_classifier.pte";
+            } else {
+                yoloPath = Utils.assetFilePath(context, "yolo_detector.pte");
+                classifierPath = Utils.assetFilePath(context, "bird_classifier.pte");
+            }
 
             yoloModule = Module.load(yoloPath);
             classifierModule = Module.load(classifierPath);
